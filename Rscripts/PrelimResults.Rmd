@@ -7,7 +7,7 @@ output:
 ---
 
 ### Introduction
-Test a change, and another, and another
+Test a change, and another, and another, and another
 In the following I have quantified the trend in parasite relatedness (based on identity by descent, IBD, estimated under a hidden Markov model, HMM, described elsewhere) with inter-state distance (km), with a view to assessing the potential for comparison with the Thai-Myanmar border, where, on average, the log-odds of relatedness decrease by 0.02 with every kilometer between collection sites and week between collection dates. It is a preliminary analysis based on the following steps, which may be erroneous. 
 
  * I have used lon/lat for Tadó, Buenaventura, Guapi and Tumaco to represent data from states Choco, Valle, Cauca and Nariño, respectively. 

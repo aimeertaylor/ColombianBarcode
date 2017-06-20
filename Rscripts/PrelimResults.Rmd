@@ -1,0 +1,290 @@
+---
+title: Preliminary exploration of geographic trends in *P. falciparum* relatedness
+  on the Colombian coast
+output:
+  html_document: default
+  pdf_document: default
+---
+
+### Introduction
+
+In the following I have quantified the trend in parasite relatedness (based on identity by descent, IBD, estimated under a hidden Markov model, HMM, described elsewhere) with inter-state distance (km), with a view to assessing the potential for comparison with the Thai-Myanmar border, where, on average, the log-odds of relatedness decrease by 0.02 with every kilometer between collection sites and week between collection dates. It is a preliminary analysis based on the following steps, which may be erroneous. 
+
+ * I have used lon/lat for Tadó, Buenaventura, Guapi and Tumaco to represent data from states Choco, Valle, Cauca and Nariño, respectively. 
+ * I have assumed the names of SNPs 1 to 250 are the SNP IDs in Additional file 1 of Echeverry et al., with the same order, but including only SNPs with a cross in the column labelled '250 most informative SNPs'. 
+ * I based chromosome number and position on the SNP ID. Positions will thus differ to 3d7, but distances between SNPs (required under the HMM) should be roughly equivalent. 
+ * I have treated heteroallelic calls as missing. 
+ * I have treated calls labelled '--' as missing. 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, cache.comments = FALSE, include=FALSE, echo = FALSE}
+rm(list = ls())
+require(arm) # invlogit
+library(Hmisc) # cut2
+
+
+# Load HMM results
+Result <- read.delim('/Users/aimeet/Documents/BroadLaptop/ColombianData/HMMOutput/HMMoutput.txt.hmm_fract.txt')
+
+# Load geo_dist info
+load('/Users/aimeet/Documents/BroadLaptop/ColombianData/RData/geo_dist_info.RData')
+Site_comps <- geo_dist_info$pairwise_site_distance_all[-(7:12)]
+
+# Load RData
+load('/Users/aimeet/Documents/BroadLaptop/ColombianData/RData/SNPData.RData')
+SNPData$COLLECTION.DATE <- as.Date(as.character(SNPData$COLLECTION.DATE), format = "%m/%d/%Y")
+
+# Match up sites with states
+states <- as.character(SNPData$STATE)
+states[states == "Nari\x96o "] <- 'Narino'
+states[states == "Nari\x96o"] <- 'Narino'
+states[states == "Choc\x97"] <- 'Choco'
+states[states == "Valle "] <- 'Valle'
+SNPData$STATE <- states
+
+# Generate IBS (to check IBD approach was more-or-less okay)
+# Order of as.vector(dist)
+nSamples <- nrow(SNPData)
+ind_j <- rep(1:nSamples, (nSamples:1)-1)
+ind_i <- c()
+for(i in 2:nSamples){
+  ind_i <- c(ind_i, i:nSamples)
+}
+require(proxy)
+source('/Users/aimeet/Documents/BroadLaptop/TM_border/Rfunctions/distance_functions.R')
+IBS <- as.vector(dist(SNPData[6:255], method = bs_distance_function))
+names(IBS) <- apply(cbind(rownames(SNPData)[ind_i], rownames(SNPData)[ind_j]), 1, 
+                    function(x){paste(sort(x), collapse = '', sep = '')})
+
+# Add additional columns/covariates 
+Result$sample_comp <- apply(Result[,c('sample1', 'sample2')], 1, 
+                            function(x){paste(sort(x), collapse = '', sep = '')})
+Result$state_comp <- apply(cbind(SNPData[as.character(Result$sample1), 'STATE'], 
+                                 SNPData[as.character(Result$sample2), 'STATE']), 1, 
+                           function(x){paste(sort(x), sep = '', collapse = '_')})
+Result$IBS <- IBS[Result$sample_comp]
+Result$geo_dist <- Site_comps[Result$state_comp]
+Result$IBD_tail <- 1*(Result$fract_sites_IBD > 0.49)
+Result$Choco <- Result$state_comp == "Choco_Choco"
+Result$Narino <- Result$state_comp == "Narino_Narino"
+Result$Valle <- Result$state_comp == "Valle_Valle"
+Result$Cauca <- Result$state_comp == "Cauca_Cauca"
+Result$Within <- apply(Result[,c('Choco', 'Narino', 'Valle', 'Cauca')], 1, any)
+Result$time_dist <- abs(difftime(SNPData[as.character(Result$sample1), 'COLLECTION.DATE'], 
+         SNPData[as.character(Result$sample2), 'COLLECTION.DATE'],
+         units = 'weeks'))
+```
+
+***
+
+### Pairwise identity by state 
+
+The empirical density of proportion identity by state (IBS) for all pairwise sample comparisons appears to be Guassian: 
+
+
+```{r, cache = TRUE, cache.comments = FALSE, echo = FALSE}
+par(mfrow = c(1,2))
+hist(Result$IBS, col = 'gray', freq = FALSE, breaks = 100, 
+     main = '', ylim = c(0, 10), xlab = 'Pairwise probability of IBD') 
+abline(v = 0.5, lty = 'dotted')
+qqnorm(Result$IBS, bty = 'n')
+```
+
+***
+
+### Pairwise identity by descent 
+
+The empirical density of probability IBD for all pairwise sample comparisons is positively skewed with some highly related parasites:
+
+
+```{r, cache = TRUE, cache.comments = FALSE, echo = FALSE}
+par(mfrow = c(1,1))
+hist(Result$fract_sites_IBD, col = 'gray', freq = FALSE, breaks = 100, 
+     main = '', ylim = c(0, 10), xlab = 'Pairwise probability of IBD') 
+abline(v = 0.5, lty = 'dotted')
+```
+***
+
+### IBD versus IBS
+
+IBD and IBS do not appear to be correlated: 
+
+```{r, cache = TRUE, cache.comments = FALSE, echo = FALSE}
+plot(x = Result$fract_sites_IBD, y = Result$IBS, main = '', 
+     xlab = 'Pairwise probability of IBD', pch = 20, 
+     ylab = 'Pairwise proportion IBS', bty = 'n',
+     col = adjustcolor('black', alpha.f = 0.5)) 
+```
+
+***
+
+### Proportions of related comparisons correlate with distance
+
+The proportion of parasite comparisons with IBD > 0.49 correlate with distance, but there is a lot of within-state variablility, and Nariño appears to have particulary low within and across state IBD: 
+
+```{r, cache = TRUE, cache.comments = FALSE, echo = FALSE}
+Proportions <- array(dim = c(length(unique(Result$state_comp))), 
+                     dimnames = list(unique(Result$state_comp)))
+for(i in unique(Result$state_comp)){
+  ind <- Result$state_comp == i 
+  Proportions[i] <- sum(Result$IBD_tail)/sum(ind)
+}
+
+# Plot of proportion > 0.5 versus distance
+plot(y = Proportions[names(Site_comps)],
+     x = Site_comps, bty = 'n', pch = 21, bg = 'gray', cex = 2, 
+     xlab = 'Inter-state distance', ylab = 'Proportion probability IBD > 0.49')
+text(y = Proportions[names(Site_comps)], # pos 1,2,3,4 = below, left, above, right
+     x = Site_comps, labels = names(Site_comps), cex = 0.7, 
+     pos = c(4,1,3,1,4,2,4,4,4,4))
+```
+
+***
+
+### Within-state variability ordered by transmission
+
+Plot of within-state relatedness in order of decreasing transmission (order based on Figure 1B of Echeverry et al., such that an increase is expected from left to right). Again, Nariño appears to have particulary low within-state IBD:
+
+
+```{r, cache = TRUE, cache.comments = FALSE, echo = FALSE}
+# Plot within in order of transmission intensity
+barplot(Proportions[c('Choco_Choco', 'Narino_Narino', 'Cauca_Cauca', 'Valle_Valle')], las = 2, 
+        ylab = 'Probability IBD > 0.5', cex.names = 0.75)
+```
+
+***
+
+### Normalised proportions of related comparisons correlate with distance
+
+Correlation between normalised proportions and distance appears to be driven by within versus across comparisons: 
+
+
+```{r, cache = TRUE, cache.comments = FALSE, echo = FALSE}
+# Normalised trends
+for(i in unique(Result$state_comp)){
+  sites <- strsplit(i, split = '_')[[1]]
+  ind_denom <- Result$state_comp == i | Result$state_comp == paste(rep(sites[1],2), collapse = "_") |  Result$state_comp == paste(rep(sites[2],2), collapse = "_")
+  ind_num <- Result$state_comp == i 
+  Proportions[i] <- sum(Result$fract_sites_IBD[ind_num] > 0.5)/sum(Result$fract_sites_IBD[ind_denom] > 0.5)
+}
+
+# Plot of relatedness versus distance
+plot(y = Proportions[rev(names(Site_comps))],
+     x = rev(Site_comps), bty = 'n', pch = 21, bg = 'gray', cex = 2, 
+     xlab = 'Inter-site diastance', ylab = 'Normalised Proportion probability IBD > 0.5')
+text(y = c(1, Proportions[names(Site_comps)][-(7:10)]), # pos 1,2,3,4 = below, left, above, right
+     x = c(0, Site_comps[-(7:10)]), labels = c('Witin site', names(Site_comps)[-(7:10)]), cex = 0.7, 
+     pos = c(4,2,1,3,1,4,2))
+```
+
+****
+### Plot of IBD probability against time 
+
+Relatedness is also negatively associated with time between sampling dates:
+
+```{r, cache = TRUE, cache.comments = FALSE, echo = FALSE}
+# Plot of IBD against time and geodist
+par(mfrow = c(1,1))
+plot(y = Result$fract_sites_IBD, x = Result$time_dist, bty = 'n', 
+     xlab = 'Time difference (weeks)', ylab = 'Probability IBD', main = '', pch = 20, 
+     col = adjustcolor('black', alpha.f = 0.5))
+# plot(y = Result$fract_sites_IBD[!Result$Within], x = Result$time_dist[!Result$Within], bty = 'n',
+#      xlab = 'Time difference (weeks)', ylab = 'Probability IBD', main = 'Across sites')
+# plot(y = Result$fract_sites_IBD, x = Result$geo_dist+rnorm(length(Result$geo_dist), 0, 1), bty = 'n',
+#      xlab = 'Inter-state distance (km)', ylab = 'Probability IBD')
+```
+
+### Regression results
+
+```{r, cache = TRUE, cache.comments = FALSE, echo = FALSE}
+# Binned residuals (borrowed from TM boder)
+binned_residuals <- function(bin_by, fitted, y, yaxis_label, main_title){
+  
+  # Binned residual bin_by plots 
+  X <- data.frame(bin_by = bin_by)
+  X$residuals <- y - fitted
+  if(length(unique(bin_by)) > 8){
+   X$groups <- as.numeric(cut2(bin_by, g = min(length(unique(bin_by)),30)))  
+  } else {
+   X$groups <- as.numeric(as.factor(as.character(bin_by)))
+  }
+ 
+  Binned_res_bin_by <- aggregate(X[, 1:2], list(X$groups), mean)
+  
+  #CIs
+  p <- mean(y)
+  two_se <- 2 * sqrt((p * (1-p))/table(X$groups))
+  Binned_res_bin_by$CI_low <- + two_se
+  Binned_res_bin_by$CI_hig <- - two_se
+  
+  # Plot
+  plot(y = Binned_res_bin_by$residuals, x = Binned_res_bin_by$bin_by, 
+       pch = 21, bg = 'gray', bty = 'n', xlab = yaxis_label, ylab = 'Binned residuals', 
+       ylim = range(Binned_res_bin_by[,-(1:2)]), main = main_title)
+  lines(y = Binned_res_bin_by$CI_low, x = Binned_res_bin_by$bin_by, lty = 'dotted')
+  lines(y = Binned_res_bin_by$CI_hig, x = Binned_res_bin_by$bin_by, lty = 'dotted')
+  abline(h = 0, lty = 'dotted')
+}
+```
+
+***
+ 
+Before accounting for inter-state variability, regression coefficients suggest significant decrease of IBD with time and distance, but binned residuals suggest a poor fit: 
+
+```{r, cache = TRUE, cache.comments = FALSE, echo = FALSE}
+# Regression (and if we remove Narino_Valle)
+X <- Result
+GLMfit <- glm('IBD_tail ~ geo_dist*time_dist', 
+              data = X, family = binomial(logit), 
+              na.action = na.exclude)
+print(summary(GLMfit)$coefficients)
+
+binned_residuals(bin_by = GLMfit$fitted.values, 
+                 fitted = GLMfit$fitted.values,
+                 y = Result$IBD_tail, 
+                 yaxis_label = 'Fitted', main_title = 'inter-clinic distance')
+```
+
+*** 
+
+After accounting for within-state variance, fit is better, but there is no-longer evidence of a geographic trend:  
+
+```{r, cache = TRUE, cache.comments = FALSE, echo = FALSE}
+# Regression (and if we remove Narino_Valle)
+X <- Result
+GLMfit <- glm('IBD_tail ~ Choco + Narino + Valle + Cauca + geo_dist*time_dist', 
+              data = X, family = binomial(logit), 
+              na.action = na.exclude)
+print(summary(GLMfit)$coefficients) 
+
+binned_residuals(bin_by = GLMfit$fitted.values, 
+                 fitted = GLMfit$fitted.values,
+                 y = Result$IBD_tail, 
+                 yaxis_label = 'Fitted', main_title = 'inter-clinic distance')
+```
+
+*** 
+
+Removal of data from Nariño, however, further improves fit and recovers the trend, which is of the same order of weeks:  
+
+```{r, cache = TRUE, cache.comments = FALSE, echo = FALSE}
+# Regression (and if we remove Narino_Valle)
+X <- Result[!grepl('Narino', Result$state_comp), ]
+GLMfit <- glm('IBD_tail ~ Choco + Narino + Valle + Cauca + geo_dist*time_dist', 
+              data = X, family = binomial(logit), 
+              na.action = na.exclude)
+print(summary(GLMfit)$coefficients) 
+
+binned_residuals(bin_by = GLMfit$fitted.values, 
+                 fitted = GLMfit$fitted.values,
+                 y = X$IBD_tail, 
+                 yaxis_label = 'Fitted', main_title = 'inter-clinic distance')
+```
+
+### Conclusion
+
+In summary, based on data from Choco, Valle and Cauca, there appears to be a decrease in the log-odds of relatedness of 0.01 with every kilometer and week between samples. This is less than that found on the Thai-Myanmar border, but the spatio-temporal equivalence is the same. Data from Nariño does not appear to follow the trend. It remains to be seen if this is a robust conclusion (this is a very rough preliminary analysis). 

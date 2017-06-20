@@ -2,12 +2,12 @@
 title: Preliminary exploration of geographic trends in *P. falciparum* relatedness
   on the Colombian coast
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ### Introduction
-Test a change
+Test a change, and another
 In the following I have quantified the trend in parasite relatedness (based on identity by descent, IBD, estimated under a hidden Markov model, HMM, described elsewhere) with inter-state distance (km), with a view to assessing the potential for comparison with the Thai-Myanmar border, where, on average, the log-odds of relatedness decrease by 0.02 with every kilometer between collection sites and week between collection dates. It is a preliminary analysis based on the following steps, which may be erroneous. 
 
  * I have used lon/lat for Tadó, Buenaventura, Guapi and Tumaco to represent data from states Choco, Valle, Cauca and Nariño, respectively. 
@@ -28,14 +28,14 @@ library(Hmisc) # cut2
 
 
 # Load HMM results
-Result <- read.delim('/Users/aimeet/Documents/BroadLaptop/ColombianData/HMMOutput/HMMoutput.txt.hmm_fract.txt')
+Result <- read.delim('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/HMMOutput/HMMoutput.txt.hmm_fract.txt')
 
 # Load geo_dist info
-load('/Users/aimeet/Documents/BroadLaptop/ColombianData/RData/geo_dist_info.RData')
+load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/geo_dist_info.RData')
 Site_comps <- geo_dist_info$pairwise_site_distance_all[-(7:12)]
 
 # Load RData
-load('/Users/aimeet/Documents/BroadLaptop/ColombianData/RData/SNPData.RData')
+load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/SNPData.RData')
 SNPData$COLLECTION.DATE <- as.Date(as.character(SNPData$COLLECTION.DATE), format = "%m/%d/%Y")
 
 # Match up sites with states

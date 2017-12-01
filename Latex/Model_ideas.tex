@@ -1,0 +1,80 @@
+\documentclass[letterpaper]{article}	           		
+\usepackage{amsmath, amsthm, amsfonts} 
+\usepackage{geometry}  
+\geometry{letterpaper, lmargin=1.5cm, rmargin=1.5cm}
+\usepackage{setspace}
+\setstretch{1.2}
+\usepackage{xfrac}
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage{bm}
+\pagestyle{empty}
+
+\begin{document}
+
+
+Write up thoughts from today
+
+
+%====================================================
+% PhD notes
+%====================================================
+\subsection{Joint model over frequency estimates and regression with a subdivision specific child effect}
+
+Below summarises my first attempt at a joint model over both frequency estimation and regression that takes into account structure at the level of the child within and across subdivisions of the data. 
+
+Due to the dependence between both $\pi_{1 r},  \ldots \pi_{K r}$ and $\pi_{k 1},  \ldots \pi_{k R}$,  instead of modelling $\bm{\pi}_{\text{child} }$ as a realisation from a distribution centred about $\bm{\pi}_{\text{population}} \in \mathbb{S}_{R}$, $\bm{\pi}_{\text{child} }$ ought to be modelled jointly for $k = 1, \ldots, K$ as a realisation, $\bm{\pi}_{\text{child}} \in (0,1)^{K \times R}$, from a matrix variate distribution centred about $\bm{\pi}_{\text{population}} \in (0,1)^{K \times R}$, where both $\bm{\pi}_{\text{child}}$ and $\bm{\pi}_{\text{population}}$ are a $K \times R$ matrices of dependent haplotype frequencies. I therefore need a distribution over matrices in which the columns sum to one (each row is a realisation from a dirichlet), and the rows are correlated. Unfortunately, I can't model $\bm{\pi}_{\text{child} \; k} \in (0,1)^R \sim \mathcal{D}\text{irichlet}(\bm{\pi}_{\text{child}} \in (0,1)^R)$ and $\bm{\pi}_{\text{child}} \in (0,1)^R \sim \mathcal{D}\text{irichlet}(\bm{\pi}_{\text{population}} \in (0,1)^R)$), since $\bm{\pi}_{\text{population}}$ needs to be a ${K \times R}$ in order to do regression with correlation across $K \times R$. I therefore assumed $\pi_{\text{child}\; k}$ were independent given $\pi_{\text{population}\; k}$. The correlation between $k = 1,\ldots, K$ is accounted for by $\bm{V}_k$ (scale matrix among over rows) in the regression. This is basically the joint model that the extended model plus regression using the approach  
+
+\small{
+\begin{align} 
+\rho(\bm{\pi}_{\text{poppulation}}, \bm{\pi}_{\text{child}}, \bm{a}, \bm{m}, \bm{B}, \bm{V} \mid \bm{y}) &\propto
+\prod_{\text{child}=1}^{\# \text{children}}\left\{ \prod_{i=1}^{I_{\text{child}_k}} \left\{
+\prod_{j=1}^J \left\{ \rho\left(\bm{y}_{ijk \; \text{child}}|\bm{a}_{ik\; \text{child}}\right)  \right\}  \right. \right. \nonumber\\  
+&\left. \times \; \rho\left(\bm{a}_{ik\; \text{child}}|m_{ik\; \text{child}},\bm{\pi}_{k \;\text{child}}\right) \rho\left(m_{ik\; \text{child}}\right) \right\}  \nonumber\\
+&\left. \times \; \prod_{k = 1}^K \left\{ \rho\left(\bm{\pi}_{k \; \text{child}} \mid \bm{\pi}_{k \; \text{population}}\right) \right\} \right\}  \nonumber\\
+&\times \; \rho\left(\bm{\theta}_{\text{population}} \mid \bm{B}, \bm{V}_k, \bm{V}_r \right)
+\left| \text{det}\left( \left\{\dfrac{\partial \bm{\pi}_{\text{population}}}{\partial \bm{\theta}_{\text{population}}}\right\}^{-1} \right)\right| \nonumber \\ 
+&\times \;  \rho(\bm{B})\; \rho(\bm{V}_k) \rho(\bm{V}_r) 
+\label{eq: joint model with child hierarchy}
+\end{align}}
+%
+\normalsize
+where $\rho\left(\bm{y}_{ijk \; \text{child} }|\bm{a}_{ik\; \text{child} }\right)$, 
+$\rho\left(\bm{a}_{ik\; \text{child} }|m_{ik\; \text{child} },\bm{\pi}_{k \; \text{child} }\right)$, 
+and $\rho\left(m_{ik\; \text{child}}\right)$  are equivalent to previous definitions  and
+%
+\begin{align}
+\rho\left(\bm{\pi}_{\text{child} \; k} \mid \bm{\pi}_{\text{population} \; k} \right) &= \mathcal{D}\text{irichlet}(\bm{\pi}_{\text{population} \; k})\\
+\rho\left(\bm{\theta}_{\text{population}} \right) &=
+\mathcal{M}\mathcal{N}_{K R-1}(\bm{X}\bm{B},  \bm{V}_k, \bm{V}_r) \\
+\rho(\bm{B}) &= \mathcal{M}\mathcal{N}_{P R-1}(\bm{M},  \bm{U}_p, \bm{U}_r), \text{say, and}\\
+\rho(\bm{V}_k) &= \mathcal{W}_K^{-1}(\bm{\Psi_k}, \nu_k)\\
+\rho(\bm{V}_r) &= \mathcal{W}_{R-1}^{-1}(\bm{\Psi_r}, \nu_r)
+\end{align}
+%
+Where the two inverse wishart prior distributions, $\mathcal{W}^{-1}(\cdot)$, each have two parameters, a scale matrix ($\bm{\Psi_k} \in {\mathbb{R}^+_0}^{K \times K}$ and $\bm{\Psi_r}\in {\mathbb{R}^+_0}^{R-1 \times R-1}$), that either encodes the prior knowledge about the correlation across studies ($\bm{\Psi_k}$), or the correlation across haplotypes  ($\bm{\Psi_r}$), and a tuning parameter, ($\nu_k$ and $\nu_r$) that specifies strength of the prior belief. 
+
+ 
+\subsection{A note regarding child-level frequencies based on the Ugandan data.}
+Note that, when there was no child effect, ${\pi_{\text{child}}}_{r}$, were generally well aligned (there were some peculiar results - for example \textit{pfcrt}-76, AL, 2012 - perhaps due to poor mixing, but I didn't look at the trace for every child in every partition). When there was a child effect, ${\pi_{\text{child}}}_{r}$ variation was high. For the most part all children had the same major and minor allele. For one study, however (\textit{pfmdr}-86, AL, 2010) had different children appeared to have different major and minor alleles. This is probably due to the random sample of 10 children used to generate the plot (which differs to the 16 children used for the $m_i$ and $\bm{a}_i$ plots). For example, for \textit{pfmdr}-86, AL, 2010, only 34 of 200 samples were wild type. If a given child have multiple wild type infections (which is compatible with the hypothesis of inter-individual immunity if the episodes are further apart than the AL half life within 2010), they might not experience much shrinkage, hence have different major/minor alleles to the overall mean. To test this I would need to investigate the major/minor relationship in light of the infections per child (the mutatednness, the number of episodes and the duration between them). I'm not going to do this, as the goal in this study was to concentrate on $\bm{\pi}_{\text{population}}$, treating $\bm{\pi}_{\text{child}}$ as a nuisance parameter. In any case, there were too few data per child to report on $\bm{\pi}_{\text{child}}$ in a meaningful manner (many children suffered only one episode per partition).
+
+\subsection{A note regarding spurious precision under the exchangeability assumption.}
+It seems unlikely that spurious precision with have an effect on the frequency trends (recall that, the frequency trends based on point estimates (Figure X) are practically identical to the trends based on the full posterior densities (Figure X), despite the difference in uncertainty being 100\%). 
+
+\subsection{A note regarding a child effect on the MOI.}
+Note that, neither a population nor child estimate of the MOI ($m_{\text{population}}$ nor $m_{\text{child}}$, respectively) feature in the child effect model (equation \eqref{eq: stage 1 with child hierarchy}) because we opt to treat $m_{i\; \text{child}}$ as a nuisance parameter, included to aid estimation of $\bm{\pi}_{\text{population}}$. That said, human attributes such as acquired immunity are thought to impact the MOI distribution (REF). We could allow different children to have different MOI propensities (replace $\rho\left(m_{i\; \text{child}}\right)$ with $\rho\left(m_{i\; \text{child}} \mid m_{\text{child}}\right)$, say, and let $m_{\text{child}} \sim \mathcal{G}\text{eometric}(\lambda^{-1}, 0.05)$, say); however, there is a scarcity of information in the data  to support MOI estimates (at best, we can discern demonstrably multiclonal infections), so we opt not to include $m_{\text{child}}$.
+
+
+% Model implementation (based on simulated data)
+\subsection{Future work} 
+
+% Further work 
+\subsubsection{Regression}
+
+
+
+Need to read about how to incorporate correlations due to time. Also how to implement this model. p.480(Mendeley) p.380 Bayesian Data Analysis onwards.
+How does this impact the choice of conjugate priors? Need to read into it. $\bm{\beta}_r | \bm{V}_r$ can no-longer be equivalent to $\mathcal{N}_P (\bm{\mu}_0, \sigma^2 \bm{V}_0)$ since $\bm{V}_r$ is $K \times K$ and the prior is a $P$ variate normal distribution, but can use a inverse wishart prior on $\bm{V}_r$
+
+
+\end{document}

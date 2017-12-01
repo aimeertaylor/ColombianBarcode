@@ -1,0 +1,6 @@
+City Latitude Longitude Description
+Quibdo 5.68861111111111 -76.6591666666667 (In the town)
+Tado 5.2675 -76.5658333333333 (just outside the town)
+Buenaventura 3.88 -77.0311111111111 (in the city)
+Guapi 2.57138888888889 -77.8875 (in the city)
+Tumaco 1.80944444444444 -78.7627777777778 (in an island near Coliseo del pueblo)

@@ -1,0 +1,55 @@
+
+```{r}
+rm(list = ls())
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, include=FALSE, cache=TRUE, 
+                      cache.comments = FALSE, fig.pos = 'H', fig.width = 7, dev = 'png', dpi = 300)
+
+# Load and summarise raw data 
+library(RColorBrewer)
+library(knitr)
+
+load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/SNPData.RData') 
+SNPDataBinary <- SNPData[,6:255] # Extract the SNPData w/o meta data
+numSNPs <- ncol(SNPDataBinary)
+numSamples <- nrow(SNPDataBinary)
+unique(as.vector(as.matrix(SNPDataBinary))) # Check only 1, 0 and NA
+Frequencies <- colMeans(SNPDataBinary, na.rm = TRUE)
+h_constant <- mean(2*Frequencies*(1-Frequencies), na.rm = TRUE)
+```
+
+# Summary of the data 
+
+The data set includes 325 samples collected from 5 cities on the Colombian Pacific coast between 1993 and 2007 (Table \ref{tab: sample counts}). Samples were genotyped at 250 SNPs (Figure \ref{fig: Raw data}), with minor allele frequencies ranging from 0.006 to  0.495 (Figure \ref{fig: MAF}). 
+
+```{r, include = TRUE}
+# Counts of samples per city and state and time
+counts_table <- array(dim = c(length(unique(SNPData$City))+1, length(unique(SNPData$Year))+1), 
+                      dimnames = list(c(unique(SNPData$City), 'Total'), c(sort(unique(SNPData$Year)), 'Total')))
+
+for(city in rownames(counts_table)){
+  for(year in colnames(counts_table)){
+    counts_table[city, as.character(year)] <- sum(SNPData$City == city & SNPData$Year == year)
+  }
+}
+counts_table[,'Total'] <- rowSums(counts_table)
+counts_table['Total',] <- colSums(counts_table)
+kable(counts_table, caption = '\\label{tab: sample counts} Yearly sample counts per city')
+```
+
+```{r Raw_data_ordered, include=TRUE,fig.cap= "\\label{fig: Raw data} Plot of raw data."}
+# Plot the raw data 
+par(mfrow = c(1,1), family = 'serif')
+cols <- brewer.pal(3,'Dark2')
+image(t(as.matrix(SNPDataBinary[names(sort(rowSums(SNPDataBinary, na.rm = T))),])), 
+      ylab = '', xlab = '', xaxt = 'n', yaxt = 'n', col = cols)
+title(ylab = sprintf('Sample ID (%s samples)', numSamples), 
+      xlab = sprintf('SNP ID (%s SNPs)', numSNPs), line = 1)
+legend('topleft', bty = 'n', legend =
+         c('Major', 'Minor', 'Missing'), fill = c(cols[c(1,3)], adjustcolor('white')))
+```
+
+```{r MAF, include = TRUE, fig.cap= "\\label{fig: MAF} Minor allele frequency distribution of all 250 SNPs."}
+par(family = 'serif', mar = c(4,5,1,1))
+hist(1-Frequencies, breaks = 20, freq = FALSE, col = 'gray', 
+     main = '', xlab = 'Minor allele frequency')
+```

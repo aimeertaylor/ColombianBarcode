@@ -1,0 +1,255 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Deep-dive into Buenaventura and Tumaco
+
+```{r markdown setup, include = FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, include=FALSE, cache=TRUE, cache.comments = FALSE, 
+                      fig.pos = 'H', fig.width = 7, fig.height = 7, dev = 'png', dpi = 300)
+```
+
+```{r analysis setup}
+rm(list = ls())
+library(igraph) # For network plot
+library(proxy) # for dist
+library(RColorBrewer)
+library(gtools) # for perturbations
+
+set.seed(10) # For jitter on network plot Layout
+load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/Result.RData') # Load data
+load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/SNPData.RData') # For Layout sites dates etc
+Result$sample1 = as.character(Result$sample1) # Convert factors to characters
+Result$sample2 = as.character(Result$sample2)
+ind_result = (Result$site_comp == "Buenaventura_Tumaco") | (Result$site_comp == "Buenaventura_Buenaventura") |  (Result$site_comp == "Tumaco_Tumaco")
+Result_subset = Result[ind_result,] 
+```
+
+
+```{r create network}
+# Construct an adjacency matrix for network plot
+Rownames = unique(c(Result_subset$sample1, Result_subset$sample2))
+nSamples = length(Rownames)   
+Adjmatrix = array(0, dim = c(nSamples, nSamples), dimnames = list(Rownames, Rownames))
+for(i in 1:nrow(Result_subset)){
+  Col = Result_subset[i,'sample1']
+  Row = Result_subset[i,'sample2']
+  Adjmatrix[Row,Col] = Result_subset[i,'IBD'] 
+  Adjmatrix[Col,Row] = Result_subset[i,'IBD'] 
+}
+
+# This is a lower diagonal matrix
+all(is.na(Adjmatrix[upper.tri(Adjmatrix)]))
+
+# Create an adjacency matrix from IBD
+G = graph_from_adjacency_matrix(adjmatrix = Adjmatrix, mode = 'undirected', diag=F, weighted = TRUE, add.colnames = F)
+G = set_vertex_attr(G, "label", value = NA) # Remove names 
+
+# Load sites and dates for layout
+sites <- SNPData[Rownames, 'City'] 
+dates <- SNPData[Rownames, 'COLLECTION.DATE'] 
+years <- SNPData[Rownames, 'Year'] 
+Layout = cbind(x = as.numeric(dates), y = rnorm(nSamples) + 10 * (sites ==  'Buenaventura'))
+```
+
+```{r create haplotype labels}
+# Function that takes a matrix of haplotypes and a fuzzy matching parameter
+# and returns a list of distinct haplotypes with two or more corrsponding samples
+enlist_distinct_haps = function(Haplotypes, no_diff_allowed){
+  
+  # Use dist rather than strings to allow some fuzzy matches between haps
+  Hap_identity_matrix = as.matrix(dist(Haplotypes,  function(x,y){sum(x != y, na.rm = TRUE) <= no_diff_allowed }))
+  repeat_store = list() # List of samples with repeat haplotypes and all the things they are the same as
+  
+  for(Row in Rownames_withIBD1_comp){
+    x = Hap_identity_matrix[Row,] == 1 # For each row, are any 1s are observed?
+    if(any(x)){ # If yes were any colnames of said row previously recorded as a repeat?
+      z = names(x)[x] %in% names(repeat_store)
+      if(all(!z)){ # If not add row with corresponding colnames
+        repeat_store[[Row]] = names(x)[x] 
+      }
+    }
+  }
+  # For each element in repeat store, add its name as an entry
+  for(x in names(repeat_store)){repeat_store[[x]] <- c(x, repeat_store[[x]])}
+  
+  # Check no repeat sample names in the store... 
+  if(any(table(unlist(repeat_store)) > 1)){
+    print(sprintf('Some samples are labelled by more than one haplotype when %s diffs allowed', no_diff_allowed))}
+  
+  # Rename
+  no_repeats = length(repeat_store)
+  names(repeat_store) <- paste('hap', 1:no_repeats, sep = '')
+  
+  return(repeat_store)
+}
+
+# Fuzzy matching required because despite IBS >= IBD in general (plot(Result_subset$IBS, Result_subset$IBD))
+sum(Result_subset$IBS[Result_subset$IBD == 1] < 1) # There are 82 IBD == 1 with IBS < 1
+sum(Result_subset$IBD[Result_subset$IBS == 1] < 1) # There are zero IBS = 1 with IBD < 1
+
+# Majority of samples have one or more IBD == 1 comparison?
+ind_IBD1 = Result_subset$IBD == 1 # IBD = 1 comparisons
+Rownames_withIBD1_comp = unique(c(Result_subset$sample1[ind_IBD1], Result_subset$sample2[ind_IBD1]))
+nSamples_withIBD1_comp = length(Rownames_withIBD1_comp)
+# nSamples_withIBD1_comp / nSamples # The majority
+
+# Extract all haplotypes 
+Haplotypes = SNPData[Rownames_withIBD1_comp, 6:255] # replace Rownames_withIBD1_comp with Rownames to relax IBD == 1 comparison constraint
+
+# How fuzzy does matching need to be to get a stable number of distinct haplotypes? 
+no_diffs_allowed = 1:20
+no_distinct_haps = sapply(no_diffs_allowed, function(x){length(enlist_distinct_haps(Haplotypes, x))})
+plot(no_diffs_allowed, no_distinct_haps) # Conclusion: seems 4:15 are stable (allow 4)
+repeat_store = enlist_distinct_haps(Haplotypes, 4) 
+repeat_haps = names(repeat_store)
+no_repeat_haps = length(repeat_haps)
+
+# Unpackage repeat_store s.t. each sample is labelled with a single haplotype
+hap0s = array('Singleton', dim = nSamples, dimnames = list(Rownames)) # Make a vector entirely of Singletons
+hap_labels = rep(names(repeat_store), sapply(repeat_store, length)) # Unpackage non singletons
+names(hap_labels) = unlist(repeat_store) # Add sample names
+hap_labels = c(hap_labels, hap0s[!Rownames %in% names(hap_labels)])  # Add the singletons non repeat sample names
+all(Rownames %in% names(hap_labels)) # Check all accounted for
+
+# Create colours for the haplotypes
+cols = colorRampPalette(brewer.pal(12, "Paired"))
+vertex.cols <- c("#FFFFFFFF", cols(no_repeat_haps))
+names(vertex.cols) = c('Singleton', repeat_haps)
+
+# Create pchs for added visual resolution (simply recycle circles and squares)
+all_haps = names(vertex.cols)
+pchs = array(c('circle', 'square'), dim = length(all_haps), dimnames = list(all_haps))
+
+# Colour edges by haplotypes (rememver only edges > 0 have edge weights)
+ind_IBD <- Result_subset$IBD > 0
+edge.haps = array('Singleton', dim = sum(ind_IBD), dimnames = list(Result_subset$sample_comp[ind_IBD])) # First label all as Singleton
+edge.haps[Result_subset$sample_comp[ind_IBD1]] = hap_labels[Result_subset$sample1[ind_IBD1]] # Then for those with IBD 1 comparison add hap label
+# Check the labels are symmetrical over samples (only true if samples have unique haplotype labels)
+all(hap_labels[Result_subset$sample1[ind_IBD1]] == hap_labels[Result_subset$sample2[ind_IBD1]])
+```
+
+
+```{r dated_network_BT, include=TRUE, fig.width=20, fig.height=10, fig.cap = '\\label{fig: dated_network_BT} Edges with IBD between 0 and 100\\% (non inclusive) are white, while those with 100\\% IBD are coloured by haplotype labels. Edges with IBD < 50\\% are dashed, while those with IBD > 50\\% are solid.'}
+par(mar = c(4,0,0,0), family = 'serif', bg = 'lightgray')
+
+plot(G, layout = Layout, # Remove layout for not dated
+     asp = 0, # Prevents a square plot
+     vertex.size = 1, 
+     vertex.shape = pchs[hap_labels[Rownames]],
+     vertex.color = vertex.cols[hap_labels[Rownames]],  
+     edge.color = vertex.cols[edge.haps],  
+     edge.width = edge_attr(G)$weight, 
+     edge.lty = abs((edge_attr(G)$weight > 0.5) - 2)) # Change to 1 to remove dashed lines
+
+plot(G, layout = Layout, asp=0, add = T,
+     vertex.size = 1,
+     vertex.shape = pchs[hap_labels[Rownames]],
+     vertex.color = vertex.cols[hap_labels[Rownames]],
+     edge.color = vertex.cols[edge.haps],
+     edge.width = 1*(edge_attr(G)$weight == 1), # Replots only colour so overlaid
+     edge.lty = 1)
+
+# Annotate sites
+text(x = c(-1, -1), y = c(1, -0.80), pos = 4, cex = 2, labels = c('Buenaventura', 'Tumaco'))
+
+# Add date axes (must map to -1,1)
+unique_yrs = unique(as.numeric(years))
+min_yr = min(unique_yrs)
+max_yr = max(unique_yrs)
+yr01 = (unique_yrs-min_yr)/(max_yr - min_yr)
+axis(side = 1, labels = unique(years), las = 2, cex.axis = 2, at = -1 + yr01 * 2, line = -1)
+pchs_legend = pchs
+pchs_legend[pchs_legend == 'circle'] = 21
+pchs_legend[pchs_legend == 'square'] = 22
+names(pchs_legend) = names(pchs)
+legend('left', pt.bg = vertex.cols, 
+       pch = as.numeric(pchs_legend[names(vertex.cols)]),
+       legend = paste(names(vertex.cols), ' ', '(', table(hap_labels)[names(vertex.cols)], ')', sep = ''), 
+       bty = 'n')
+```
+
+Assuming travel between cites Tumaco and Buenaventura is symmetrical (try to confirm with expert knowledge / maritime traffic data), the site with higher incidence (Tumaco) is the most likely source. 
+
+Vertical lines are compatible with a transmission event (but could also arise due to similar haplotypes being detected at the same time across sites). Diagonal lines are not representative of direct travel. 
+
+Assuming Tumaco to be the source, Figure \ref{fig: dated_network_BT} suggests haplotypes 5 and 7 were transmitted from Tumaco to Buenaventura sometime after haplotypes 1 and 12 (circa years 2005 and 2003, respectively). Haplotype 2 was not detected in either site before 2005, we thus speculate that it was transmitted across sites sometime around 2005. Upon inspection of Figure \ref{fig: dated_network_BT} it is important to note however that absence of evidence is not evidence of absence due to non-exhaustive sampling of infections (e.g. all haplotypes could have been present in either site prior to their detection due to unsampled infections) and therefore insight is mostly speculative. 
+
+Of the haplotypes shared across Buenaventura and Tumaco, haplotypes 5, 7 and 12 are all highly related to one another, while haplotypes 1 and 2 are not highly related to any of the other repeat haplotypes (Figure \ref{fig: relatedness of repeat haps}). 
+
+
+```{r}
+#==========================================================
+# How closely related are the distinct haplotypes?
+#==========================================================
+
+# Plot all repeats
+Rep_Haplotypes = Haplotypes[names(hap_labels)[names(hap_labels) %in% Rownames_withIBD1_comp], ]
+image(t(as.matrix(Rep_Haplotypes))) 
+
+# For each haplotype extract a representative sample (a sample that captures the majority sequence as best possible)
+rep_samples = sapply(repeat_store, function(x){
+  consensus_seq = 1*(colMeans(Haplotypes[x,], na.rm = T) > 0.5) # Generate the consensus seq
+  # Look for samples that match the consensus seq without NAs
+  Z0 = apply(Haplotypes[x,], 1, function(x){all(x == consensus_seq)})
+  if(any(Z0, na.rm = T)){
+    return(names(Z0)[which(Z0)][1])  # If match return first (arbitrary) match
+  } else { # Else allow NAs
+    Z1 = apply(Haplotypes[x,], 1, function(x){all(x == consensus_seq, na.rm = T)}) 
+    if(any(Z1)){
+      return(names(Z1)[which(Z1)][1])  # If match return first (arbitrary) match
+    } else { # Else return closest NAs
+      Z2 = apply(Haplotypes[x,], 1, function(x){sum(x == consensus_seq, na.rm = T)}) 
+      return(names(Z2)[max(Z2, na.rm = T)])
+    }}})
+
+# Extract the IBD values between representative samples 
+rep_samples_perm = apply(permutations(n = length(rep_samples), r = 2, v = rep_samples), 
+                         1, paste, collapse = '')
+ind = Result_subset$sample_comp %in% rep_samples_perm
+rep_samples_comp = Result_subset$sample_comp[ind]
+IBDs = array(Result_subset$IBD[ind], dim = sum(ind), 
+             dimnames = list(rep_samples_comp))
+
+# Construct an IBD adjacency matrix for haplotype repeat network plot
+Adjmatrix_haps = array(1, dim = c(no_repeat_haps, no_repeat_haps), 
+                       dimnames = list(repeat_haps, repeat_haps))
+for(i in repeat_haps){
+  for(j in repeat_haps){
+    opt1 = paste(rep_samples[i], rep_samples[j], sep = '')
+    opt2 = paste(rep_samples[j], rep_samples[i], sep = '')
+    if(opt1 %in% rep_samples_comp){
+      Adjmatrix_haps[i,j] = IBDs[opt1]
+    } else {
+      Adjmatrix_haps[i,j] = IBDs[opt2]
+    }
+  }
+}
+
+# Create an adjacency matrix from IBD
+G_haps = graph_from_adjacency_matrix(adjmatrix = Adjmatrix_haps, mode = 'undirected', diag=F, weighted = TRUE, add.colnames = F)
+#G_haps = set_vertex_attr(G_haps, "label", value = NA) # Remove names 
+```
+
+```{r, include=TRUE, fig.width=10, fig.height=10, fig.cap='\\label{fig: relatedness of repeat haps} Relateness across repeat haplotypes.'}
+par(mar = c(4,0,0,0), family = 'serif')
+
+# Plot
+plot(G_haps, 
+     vertex.size = 6, 
+     vertex.shape = pchs[repeat_haps],
+     vertex.color = vertex.cols[repeat_haps], 
+     edge.width = 1*(edge_attr(G_haps)$weight > 0.5), # Only edges > 0 have edge weights
+     edge.color = 'black')
+
+legend('left', pt.bg = vertex.cols[repeat_haps], 
+       pch = as.numeric(pchs_legend[repeat_haps]),
+       legend = repeat_haps, 
+       bty = 'n')
+```
+
+
+<!-- fig: relatedness of repeat haps -->
+<!-- fig: dated_network_BT -->

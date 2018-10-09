@@ -1,12 +1,14 @@
 ##############################################################################################
-# Prelim-analysis of Colombian data: formatting the data s.t. it can be analysed under the HMM
-# Format for HMM: chrom pos sample (0,1,-1)
-#
+# Formatting the Colombian data for hmmIBD and downstream analyses 
+# Format for hmmIBD: chrom pos sample (0,1,-1)
+# Time to run: 0.689 sec 
+# 
 # To-do list:
 # Confirm missing '--' (skype Diego)
-# Double check order!
 ##############################################################################################
 rm(list = ls())
+library(tictoc)
+tic()
 
 # Load data, remove surplus and allocate dimnames
 SNPData <- read.csv('../OriginalData/ColombianDataset_from_DiegoEcheverry_with_cities.csv',nrow = 325, row.names = 1)
@@ -56,15 +58,26 @@ To_recode <- SNPData[,6:255][,MAF_ind] # Single out data where 0 currently encod
 matrix1s <- array(data = 1, dim = dim(To_recode)) # Create matrix of 1s to add to To_recode
 matrix1s[To_recode == 1] <- -1 # Make 1 -> -1 where the goal is to convert 1 -> 0 
 SNPData[,6:255][,MAF_ind] <- To_recode + matrix1s # convert 0 + 1 -> 1 and 0 - 1 -> 0
+unique(as.vector(as.matrix(SNPData[,6:255]))) # Check only 1, 0 and NA
 
 # Replace Tunaco with Tumaco, which according to googlemaps and the paper is the correct spelling
-# Also remove accents for data analyses 
+# and remove accents
 SNPData$City <- gsub('Tunaco', 'Tumaco', SNPData$City)
 SNPData$City <- gsub('Tad\x97', 'Tado', SNPData$City)
 SNPData$City <- gsub('Quibd\x97', 'Quibdo', SNPData$City)
+SNPData$STATE <- gsub('Nari\x96o', 'Narino', as.character(SNPData$STATE))
+SNPData$STATE <- gsub('Choc\x97', 'Choco', as.character(SNPData$STATE))
+SNPData$STATE <- gsub('Nario ', 'Narino', as.character(SNPData$STATE))
+SNPData$STATE <- gsub('Valle ', 'Valle', as.character(SNPData$STATE))
 unique(SNPData$City)
+unique(SNPData$STATE)
 
-# Format for hmmIBD
+
+# Change date formats
+SNPData$COLLECTION.DATE <- as.Date(as.character(SNPData$COLLECTION.DATE), format = "%m/%d/%Y")
+SNPData$Year <- do.call(rbind, strsplit(as.character(SNPData$COLLECTION.DATE), split = "-"))[,1]
+
+# Format for hmmIBD (replace missing with -1)
 pos <- SNPPos$V5
 chroms <- as.numeric(do.call(rbind, strsplit(as.character(SNPPos$V2), split = '_'))[,2])
 HMMData <- cbind(chroms, pos, t(SNPData[,6:255]))
@@ -74,10 +87,4 @@ HMMData[is.na(HMMData)] <- -1
 write.table(HMMData, file = '/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/TxtData/hmmIBD_input.txt', 
             quote = FALSE, row.names = FALSE, sep = '\t')
 save(SNPData, file = '/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/SNPData.RData')
-
-# # Run HMM (12 seconds)
-# Last run Mon Nov 13th 2017
-system.time(system('~/Documents/BroadLaptop/hmmIBD-2.0.0/hmmIBD -i ../TxtData/hmmIBD_input.txt -o ../TxtData/hmmIBD_output')) # 66.905 sec
-#system.time(system('~/Documents/BroadLaptop/hmmIBD-2.0.0/hmmIBD_error0 -n 5 -i ../TxtData/hmmIBD_input.txt -o ../TxtData/hmmIBD_output_error0')) # 66.905 sec
-#system.time(system('~/Documents/BroadLaptop/hmmIBD-2.0.0/hmmIBD_error0_maxdiscord0.5 -n 5 -i ../TxtData/hmmIBD_input.txt -o ../TxtData/hmmIBD_output_error0')) # 66.905 sec
-
+toc()

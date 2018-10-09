@@ -21,7 +21,7 @@ numComparisons <- nrow(Pair_wise_site_comparisons)
 
 # Magic no.s/variables
 registerDoMC(cores = 3) # For foreach
-n_repeat <- 1000
+n_repeat <- 10000
 
 # ============================================================================
 # Function to calculate pairwise Fst estimates 

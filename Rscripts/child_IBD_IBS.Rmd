@@ -1,0 +1,401 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, include=FALSE, cache=TRUE, cache.comments = FALSE, 
+                      fig.pos = 'H', fig.width = 7, fig.height = 7, dev = 'png', dpi = 300)
+```
+
+# Summary of IBD analyses 
+In the following I have explored the trend in parasite relatedness (based on identity by descent, IBD, estimated using hmmIBD [REF]) with inter-city distance (km), with a view to comparison with the Thai-Myanmar border, where, on average, the log-odds of relatedness decrease by 0.02 with every kilometer between collection sites and week between collection dates. I have treated het calls and those labelled '--' as missing since all the samples were previously categorized as single-genotype. 
+
+```{r}
+rm(list = ls())
+library(plotrix) # For gap.barplot
+library(ggplot2) # For scatter+histogram
+library(ggExtra) # For scatter+histogram
+library(arm) # invlogit
+library(Hmisc) # cut2
+library(knitr) # For kable
+library(RColorBrewer)
+source('/Users/aimeet/Documents/BroadLaptop/TM_border/QuantLocalPfConnIBD/FunctionFiles/simtests.R')
+
+# Load geo_dist info and raw data 
+load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/geo_dist_info.RData')
+attach(geo_dist_info)
+
+# Load and summarise raw data 
+load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/SNPData.RData') 
+SNPDataBinary <- SNPData[,6:255] # Extract the SNPData w/o meta data
+numSNPs <- ncol(SNPDataBinary)
+numSamples <- nrow(SNPDataBinary)
+Frequencies <- colMeans(SNPDataBinary, na.rm = TRUE)
+h_constant <- mean(2*Frequencies*(1-Frequencies), na.rm = TRUE)
+
+# Load FST results (for comparisons)
+load('~/Documents/BroadLaptop/ColombianBarcode/RData/Fst_barcode.RData') 
+attach(Fst_barcode, warn.conflicts = FALSE)
+comparison_names <- rownames(Pair_wise_site_comparisons_Fst)
+numComparisons <- length(comparison_names)
+
+# Load IBD and IBS results
+load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/Result.RData') 
+load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/Thresholds.RData') 
+threshold_IBD = Thresholds['threshold_IBD']
+threshold_IBS = Thresholds['threshold_IBS']
+```
+
+```{r}
+# Compare IBD, IBS and IBSc
+par(pty = 's', mfrow = c(1,3))
+plot(x = Result$IBD, y = Result$IBD_indep, ylim = c(0,1), xlim = c(0,1))
+plot(x = Result$IBD, y = Result$IBSc, ylim = c(0,1), xlim = c(0,1))
+plot(x = Result$IBD, y = Result$IBS, ylim = c(0,1), xlim = c(0,1))
+abline(h = 1-h_constant)
+```
+
+
+## Plots of $\hat{\pi}_{\text{IBD}}$ and $\hat{\pi}_{\text{IBS}}$
+
+```{r IBD_hist, include = TRUE, fig.width=7, fig.cap= "\\label{fig: IBD distribution} Estimates of $\\pi_{\\text{IBD}}$ for all pairwise comparisons of 325 samples."}
+par(family = 'serif')
+X <- hist(Result$fract_sites_IBD, breaks = 100, plot = FALSE)
+gap.barplot(y = X$density, gap=c(4,66), # Range to be left out
+            main = "", 
+            xaxt = 'n', ylab = 'Density', xlab = expression(hat(pi)[IBD]), 
+            ytics = c(1,4,51,round(max(X$density)),0), las = 2,
+            col = c(rainbow(1, start = 0.40), rainbow(101, start = 0.55, end = 0.95)))
+abline(v = 50, lty = 'dotted')
+axis(side = 1, line = 0, at = seq(0,100,25), labels = seq(0,1,0.25))
+```
+
+
+```{r IBD_v_IBS, include = TRUE, fig.width=7, fig.cap= "\\label{fig: IBD vs IBS distribution} Estimates of $\\pi_{\\text{IBS}}$ versus $\\pi_{\\text{IBD}}$ for all pairwise comparisons of 325 samples."}
+# create dataset with 1000 normally distributed points
+df <- data.frame(x = Result$fract_sites_IBD, y = Result$IBS)
+# create a ggplot2 scatterplot
+p <- ggplot(df, aes(x, y)) + geom_point(colour = adjustcolor('black', alpha.f = 0.5)) + theme_classic() + labs(x = expression(hat(pi)[IBD]), y = expression(hat(pi)[IBS])) + geom_hline(yintercept = threshold_IBS, lty = 'dotted') + geom_vline(xintercept = threshold_IBD, lty = 'dotted')
+# add marginal histograms
+ggMarginal(p, type = "histogram")
+#plot(1:10)
+```
+
+```{r, include = TRUE, fig.width=7, fig.cap= "\\label{fig: IBD vs IBS distribution} Estimates of $\\pi_{\\text{IBS}}$ for all pairwise comparisons of 325 samples."}
+par(family = 'serif')
+hist(c(0,Result$IBS), breaks = 100, plot = TRUE, freq = FALSE, 
+     col = c(rainbow(1, start = 0.40), rainbow(101, start = 0.55, end = 0.95)), 
+     xlim = c(0,1), xlab = expression(hat(pi)[IBS]), main = '')
+abline(v = threshold_IBS, lty = 'dotted')
+abline(v = 1-h_constant, col = 'green', lwd = 2)
+legend('left', legend = expression('Threshold based on'~hat(pi)[IBD]~'percentile'), 
+       lty = 'dotted', bty = 'n')
+```
+
+## Plot of $\hat{\pi}_{\text{IBD}}$ and $\hat{\pi}_{\text{IBS}}$ against distance 
+
+```{r, include = TRUE, fig.height = 8, fig.width = 7}
+par(mfrow = c(2,1), family = 'serif')
+# Plot of proportion > 0.5 versus distance
+plot(y = Result$fract_sites_IBD, x = Result$geo_dist + rnorm(nrow(Result), 0, 5), 
+     bty = 'n', pch = 21, bg = 'gray', cex = 1, 
+     xlab = 'Inter-city distance (km)', ylab = expression(hat(pi)[IBD]))
+abline(h = 0.5, lty = 'dotted')
+
+plot(y = Result$IBS, x = Result$geo_dist + rnorm(nrow(Result), 0, 5), 
+     bty = 'n', pch = 21, bg = 'gray', cex = 1, ylim = c(0,1),
+     xlab = 'Inter-city distance (km)', ylab = expression(hat(pi)[IBS]))
+abline(h = 0.5, lty = 'dotted')
+```
+
+## Plot of $\hat{\pi}_{\text{IBD}}$ and $\hat{\pi}_{\text{IBS}}$ against time 
+
+
+```{r, include = TRUE, fig.height = 8, fig.width = 7}
+par(mfrow = c(2,1), family = 'serif')
+plot(y = Result$IBD, x = Result$time_dist, bty = 'n', 
+     xlab = 'Time difference (weeks)', ylim = c(0,1), 
+     ylab = expression(hat(pi)[IBD]), main = '', pch = 20, 
+     col = adjustcolor('black', alpha.f = 0.2))
+plot(y = Result$IBS, x = Result$time_dist, bty = 'n', 
+     xlab = 'Time difference (weeks)', ylim = c(0,1), 
+     ylab = expression(hat(pi)[IBS]), main = '', pch = 20, 
+     col = adjustcolor('black', alpha.f = 0.2)) 
+```
+
+
+
+```{r}
+#=================================================================
+# Calculate proportions by time and site comp
+#=================================================================
+nrep <- 1000 # For bootstrap confidence intervals
+interval <- 50 # The resolution of time bins in weeks
+max_time_dist = max(as.numeric(Result$time_dist))
+time_breaks <- seq(0, max_time_dist, interval) 
+max_time_breaks = max(time_breaks)
+if(max_time_breaks < max_time_dist){time_breaks = c(time_breaks, max_time_breaks + interval)}
+time_bins = time_breaks[-length(time_breaks)] # The time bins value are the min for each bin
+no_time_bins = length(time_bins)
+site_comps = unique(Result$site_comp)
+no_site_comps = length(site_comps)
+set.seed(1) # For reproducibility
+
+# Add time bins 
+Result$time_bins = NA
+for(i in 1:no_time_bins){
+  ind <- (as.numeric(Result$time_dist) >= time_breaks[i]) & (as.numeric(Result$time_dist) < time_breaks[i+1])
+  Result$time_bins[ind] = time_bins[i]
+}
+
+# Stores (inc. those where intervals are broken down into site_comps and time bins)
+proportions_time <- array(dim = c(no_time_bins, 2), dimnames = list(time_bins, c('IBD', 'IBS')))
+proportions_dist <- array(dim = c(no_site_comps, 2), dimnames = list(site_comps, c('IBD', 'IBS')))
+proportions_time_deltas <- array(dim = c(no_time_bins, 2, nrep), dimnames = list(time_bins, c('IBD', 'IBS'), NULL))
+proportions_dist_deltas <- array(dim = c(no_site_comps, 2, nrep), dimnames = list(site_comps,c('IBD', 'IBS'), NULL))
+proportions_time_grouped = array(0, dim = c(no_site_comps, no_time_bins, 3), 
+                                 dimnames = list(site_comps, time_bins, c('lowIBD','highIBD', 'all')))
+proportions_dist_grouped = array(0, dim = c(no_time_bins, no_site_comps, 3), 
+                                 dimnames = list(time_bins, site_comps, c('lowIBD','highIBD', 'all')))
+
+# Function to extract proportion related based on bootstrap
+X <- array(dim = c(2, nrep)) # For array in apply(fun_boot)
+fun_boot <- function(x, denom, actual_IBD, actual_IBS){
+  X <- cbind(x = mean(actual_IBD[sample(denom, size = denom, replace = TRUE)]),
+             y = mean(actual_IBS[sample(denom, size = denom, replace = TRUE)]))
+  return(X)
+}
+
+# Calculation proportions with time
+for(i in time_bins){
+  
+  index_i = as.character(i)
+  
+  # Extract data 
+  ind <- Result$time_bins == i
+  actual_IBD <- Result$IBD_tail[ind]
+  actual_IBS <- Result$IBS_tail[ind]
+  denom = sum(ind)
+  
+  # Proportions of different site comps within
+  site_comp_breakdown_all = table(Result$site_comp[ind])
+  site_comp_breakdown_highIBD = table(Result$site_comp[ind][as.logical(Result$IBD_tail[ind])])
+  site_comp_breakdown_lowIBD = table(Result$site_comp[ind][!as.logical(Result$IBD_tail[ind])])
+  proportions_time_grouped[names(site_comp_breakdown_all), index_i, 'all'] = site_comp_breakdown_all/denom
+  proportions_time_grouped[names(site_comp_breakdown_highIBD), index_i, 'highIBD'] = site_comp_breakdown_highIBD/denom
+  proportions_time_grouped[names(site_comp_breakdown_lowIBD), index_i, 'lowIBD'] = site_comp_breakdown_lowIBD/denom
+  
+  # Observed proportion overall wrt time
+  proportions_time[index_i, 'IBD'] <- mean(actual_IBD)
+  proportions_time[index_i, 'IBS'] <- mean(actual_IBS)
+  
+  # Boostrap proportions wrt time
+  bootstrap <- apply(X, 2, FUN = fun_boot, denom, actual_IBD, actual_IBS)
+  deltas <- bootstrap - proportions_time[index_i, ]
+  proportions_time_deltas[index_i, ,] <- deltas
+}
+
+# Check proptions wrt time the same if grouped or not: Yes 
+# cbind(rowSums(t(proportions_time_grouped[,,'highIBD']), na.rm = TRUE), proportions_time[,'IBD'])
+
+# Calculate proportions with site
+for(i in site_comps){
+  
+  # Extract data
+  ind <- Result$site_comp == i 
+  actual_IBD <- Result$IBD_tail[ind]
+  actual_IBS <- Result$IBS_tail[ind]
+  denom = sum(ind)
+  
+  # Proportions of different times within
+  time_bin_breakdown_all = table(Result$time_bins[ind])
+  time_bin_breakdown_highIBD = table(Result$time_bins[ind][as.logical(Result$IBD_tail[ind])])
+  time_bin_breakdown_lowIBD = table(Result$time_bins[ind][!as.logical(Result$IBD_tail[ind])])
+  proportions_dist_grouped[names(time_bin_breakdown_all), i, 'all'] = time_bin_breakdown_all/denom
+  proportions_dist_grouped[names(time_bin_breakdown_highIBD), i, 'highIBD'] = time_bin_breakdown_highIBD/denom
+  proportions_dist_grouped[names(time_bin_breakdown_lowIBD), i, 'lowIBD'] = time_bin_breakdown_lowIBD/denom
+  
+  # Observed proportion 
+  proportions_dist[i, 'IBD'] <- mean(actual_IBD)
+  proportions_dist[i, 'IBS'] <- mean(actual_IBS)
+  
+  # Boostrap proportions
+  bootstrap <- apply(X, 2, FUN = fun_boot, denom, actual_IBD, actual_IBS)
+  deltas <- bootstrap - proportions_dist[i, ]
+  proportions_dist_deltas[i, ,] <- deltas
+}
+
+# # Check proptions wrt time the same if grouped or not: Yes 
+# cbind(rowSums(t(proportions_dist_grouped[,,'highIBD']), na.rm = TRUE), proportions_dist[,'IBD'])
+
+# Extract 95% percentiles and save
+deltaCIs_time <- apply(proportions_time_deltas, c(1,2), quantile, probs = c(0.025, 0.975), na.rm = TRUE)
+deltaCIs_dist <- apply(proportions_dist_deltas, c(1,2), quantile, probs = c(0.025, 0.975), na.rm = TRUE)
+# deltaCIs <- list(deltaCIs_time = deltaCIs_time, deltaCIs_dist = deltaCIs_dist)
+# save(delataCIs, file = "/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/delataCIs.RData")
+```
+
+
+## Plot of proportions $\hat{\pi}_{\text{IBD}} > 0.5$ and $\hat{\pi}_{\text{IBS}} > 0.84$ against time 
+
+```{r, include = TRUE, fig.height = 14, fig.width = 7}
+par(mfrow = c(2,1), family = 'serif', mar = c(4,5,1,1))
+CIs <- rbind(proportions_time[, 'IBS'], proportions_time[, 'IBS']) + deltaCIs_time[,,'IBS']
+X <- barplot(proportions_time[, 'IBS'], las = 2, xlab = expression(Delta~'Time (weeks)'), 
+             ylab = bquote('Proportion of'~hat(pi)[IBS]>.(round(threshold_IBS, 1))), 
+             cex.names = 0.5, ylim = c(0,max(CIs)))
+segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
+
+CIs <- rbind(proportions_time[, 'IBD'], proportions_time[, 'IBD']) + deltaCIs_time[,,'IBD']
+X <- barplot(proportions_time[, 'IBD'], las = 2,  xlab = expression(Delta~'Time (weeks)'),
+             ylab = bquote('Proportion of'~hat(pi)[IBD]>.(round(threshold_IBD,2))), 
+             cex.names = 0.5,ylim = c(0,max(CIs)))
+segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
+```
+
+## Plot of proportions $\hat{\pi}_{\text{IBD}} > 0.5$ in time broken down by site comparison  
+
+```{r, include = TRUE, fig.height = 8, fig.width = 16}
+par(mfrow = c(1,2))
+# Break down it to site comparsion contributions 
+CIs <- rbind(proportions_time[, 'IBD'], proportions_time[, 'IBD']) + deltaCIs_time[,,'IBD']
+X <- barplot(proportions_time_grouped[, ,'highIBD'], las = 2, xlab = expression(Delta~'Time (weeks)'), 
+             ylab = bquote('Cumulative proportion of'~hat(pi)[IBD]>.(round(threshold_IBD, 1))), 
+             cex.names = 0.5, ylim = c(0,max(CIs)), col = rainbow(no_site_comps))
+segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
+legend('topright', fill = rainbow(no_site_comps), bty = 'n',
+       legend = sapply(site_comps, function(x)gsub('_', ' & ',x)))
+
+# Grouped version 
+X <- barplot(proportions_time_grouped[, ,'all'], las = 2, xlab = expression(Delta~'Time (weeks)'), 
+             ylab = expression('Cumulative proportion of all'~hat(pi)[IBD]), 
+             cex.names = 0.5, col = rainbow(no_site_comps))
+```
+
+## Plot of proportions $\hat{\pi}_{\text{IBD}} > 0.5$ and $\hat{\pi}_{\text{IBS}} > 0.84$ against city comparisons 
+
+```{r, include = TRUE, fig.height = 8, fig.width = 7}
+par(mfrow = c(2,1), family = 'serif', mar = c(4,5,1,1))
+intra_inter <- sort(pairwise_site_distance_all[names(pairwise_site_distance_all)[c(1:10,21:25)]])
+
+CIs <- rbind(proportions_dist[names(intra_inter), 'IBS'], proportions_dist[names(intra_inter), 'IBS']) + deltaCIs_dist[, names(intra_inter),'IBS']
+X <- barplot(proportions_dist[names(intra_inter), 'IBS'], las = 2, 
+             xlab = '', ylab = bquote('Proportion of'~hat(pi)[IBS]>.(round(threshold_IBS, 1))), 
+             cex.names = 0.5, ylim = c(0,max(CIs)))
+segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
+
+CIs <- rbind(proportions_dist[names(intra_inter), 'IBD'], proportions_dist[names(intra_inter), 'IBD']) + deltaCIs_dist[, names(intra_inter),'IBD']
+barplot(proportions_dist[names(intra_inter), 'IBD'], las = 2,  
+        xlab = '', ylab = bquote('Proportion of'~hat(pi)[IBD]>.(round(threshold_IBD,1))), 
+        cex.names = 0.5, ylim = c(0,max(CIs)))
+segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
+```
+
+## Plot of proportions $\hat{\pi}_{\text{IBD}} > 0.5$ in time broken down by time between collection dates (weeks)
+
+```{r, include = TRUE, fig.height = 8, fig.width = 16}
+par(mfrow = c(1,2), family = 'serif', mar = c(4,5,1,1))
+intra_inter <- sort(pairwise_site_distance_all[names(pairwise_site_distance_all)[c(1:10,21:25)]])
+
+# Break down it to site comparsion contributions 
+CIs <- rbind(proportions_dist[names(intra_inter),'IBD'], proportions_dist[names(intra_inter), 'IBD']) + deltaCIs_dist[,names(intra_inter),'IBD']
+X <- barplot(proportions_dist_grouped[,names(intra_inter) ,'highIBD'], las = 2, xlab = '', 
+             ylab = bquote('Cumulative proportion of'~hat(pi)[IBD]>.(round(threshold_IBD, 1))), 
+             cex.names = 0.5, ylim = c(0,max(CIs)), col = rainbow(no_time_bins))
+segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
+legend('topright', fill = rainbow(no_time_bins), bty = 'n',legend = time_bins)
+
+# Grouped version 
+X <- barplot(proportions_dist_grouped[,names(intra_inter),'all'], las = 2, xlab = '', 
+             ylab = expression('Cumulative proportion of all'~hat(pi)[IBD]), 
+             cex.names = 0.5, col = rainbow(no_site_comps))
+
+```
+
+## Plot of proportions $\hat{\pi}_{\text{IBD}} > 0.5$ against inter-city distance
+
+```{r, include = TRUE, fig.height = 5, fig.width = 7}
+par(mfrow = c(1,1), family = 'serif', mar = c(4,5,1,1))
+plot(y = proportions_dist[, 'IBD'], 
+     x = pairwise_site_distance_all[rownames(proportions_dist)], 
+     bty = 'n', pch = 21, bg = 'gray', cex = 1, 
+     xlab = 'Inter-city distance (km)', 
+     ylab = expression('Proportion of'~hat(pi)[IBD]>0.5))
+text(y = proportions_dist[, 'IBD'], # pos 1,2,3,4 = b, l, 
+     x = pairwise_site_distance_all[rownames(proportions_dist)], 
+     labels = rownames(proportions_dist), 
+     cex = 0.3, 
+     pos = 3)
+segments(y0 = CIs[1,rownames(proportions_dist)], y1 = CIs[2,rownames(proportions_dist)], 
+         x0 = pairwise_site_distance_all[rownames(proportions_dist)], 
+         x1 = pairwise_site_distance_all[rownames(proportions_dist)])
+```
+
+## Plot of city level FST estimates against proportions $\hat{\pi}_{\text{IBD}} > 0.5$ 
+
+```{r, include = TRUE}
+# pi_IBD versus FST (not clear pattern)
+par(mfrow = c(1,1), family = 'serif', mar = c(4,5,1,1))
+inter_city_comp <- names(Fst_barcode$Pair_wise_site_comparisons_Fst)
+plot(y = Fst_barcode$Pair_wise_site_comparisons_Fst, 
+     x = proportions_dist[names(Fst_barcode$Pair_wise_site_comparisons_Fst),'IBD'], 
+     bty = 'n', pch = 21, bg = 'gray', 
+     xlab = expression('Proportion of'~hat(pi)[IBD]>0.5), 
+     ylab = expression(hat(F)[ST]^Hudson))
+segments(x0 = CIs[1,names(Fst_barcode$Pair_wise_site_comparisons_Fst)], 
+         x1 = CIs[2,names(Fst_barcode$Pair_wise_site_comparisons_Fst)], 
+         y0 = Fst_barcode$Pair_wise_site_comparisons_Fst, 
+         y1 = Fst_barcode$Pair_wise_site_comparisons_Fst)
+segments(x0 = proportions_dist[names(Fst_barcode$Pair_wise_site_comparisons_Fst),'IBD'], 
+         x1 = proportions_dist[names(Fst_barcode$Pair_wise_site_comparisons_Fst),'IBD'],
+         y0 = Fst_barcode$Pair_wise_site_comparisons_Fst_CIs[comparison_names, '2.5%'], 
+         y1 = Fst_barcode$Pair_wise_site_comparisons_Fst_CIs[comparison_names, '97.5%'])
+
+```
+
+### Are all Buenaventura Tomaco disproportionally from 2005? Was it a clonal outbreak? 
+
+```{r, include = TRUE, fig.width=10, fig.height=5}
+ind_all <- Result$site_comp == "Buenaventura_Tumaco"
+ind_high <- Result$site_comp == "Buenaventura_Tumaco" & Result$IBD_tail == 1
+par(mfrow = c(1,2), family = 'serif')
+
+for(ind in list(ind_all, ind_high)){
+  
+  # Need to reorganise the samples for all in one site and other in other site 
+  X <- array(dim = c(sum(ind), 2, 2), 
+             dimnames = list(NULL, c('date', 'site'), c('sample1', 'sample2')))
+  X[,'date','sample1'] <- as.character(SNPData[as.character(Result$sample1[ind]), 'COLLECTION.DATE'])
+  X[,'date','sample2'] <- as.character(SNPData[as.character(Result$sample2[ind]), 'COLLECTION.DATE'])
+  X[,'site','sample1'] <- SNPData[as.character(Result$sample1[ind]), 'City']
+  X[,'site','sample2'] <- SNPData[as.character(Result$sample2[ind]), 'City']
+  
+  # Indeces to re-organise by site
+  ind_B1 <- which(X[,'site','sample1'] == 'Buenaventura')
+  ind_B2 <- which(X[,'site','sample2'] == 'Buenaventura')
+  
+  # All those collected 
+  plot(x = as.Date(c(X[ind_B1,'date','sample1'], X[ind_B2,'date','sample2'])), 
+       y = as.Date(c(X[ind_B1,'date','sample2'], X[ind_B2,'date','sample1'])), 
+       bty = 'n', 
+       xlab = 'Buenaventura date of collection', ylab = 'Tumaco date of collection', 
+       ylim = as.Date(c("1993-01-01", "2007-12-31")), 
+       xlim = as.Date(c("1993-01-01", "2007-12-31")))
+  
+  # Add source sink some how and intra relatedness
+  polygon(x = as.Date(c("1993-01-01", "2007-12-31", "2007-12-31")), 
+          y = as.Date(c("1993-01-01", "2007-12-31", "1993-01-01")), col = 'blue', border = NA)
+  polygon(x = as.Date(c("1993-01-01", "1993-01-01", "2007-12-31")), 
+          y = as.Date(c("1993-01-01", "2007-12-31", "2007-12-31")), col = 'pink', border = NA)
+  
+  # Points
+  points(x = as.Date(c(X[ind_B1,'date','sample1'], X[ind_B2,'date','sample2'])) , 
+         y = as.Date(c(X[ind_B1,'date','sample2'], X[ind_B2,'date','sample1'])) , 
+         pch = 20, col = adjustcolor('black', alpha = 0.5))
+}
+```
+
+
+

@@ -1,0 +1,261 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, include=FALSE, cache=TRUE, cache.comments = FALSE, 
+                      fig.pos = 'H', fig.width = 7, fig.height = 7, dev = 'png', dpi = 300)
+library(Hmisc) # cut2
+library(knitr)
+# Load IBD and IBS results
+load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/Result.RData') 
+```
+
+```{r}
+#======================================================================
+# Define models
+#======================================================================
+M1 <- '~ geo_dist + time_dist'
+M2 <- '~ geo_dist * time_dist' 
+M3 <- '~ geo_dist + time_dist + Tumaco + Guapi + Buenaventura + Quibdo + Tado'
+M4 <- '~ geo_dist * time_dist + Tumaco + Guapi + Buenaventura + Quibdo + Tado'
+M5 <- '~ geo_dist + time_dist + Within' # Alternative to Tumaco + Guapi + Buenaventura + Quibdo + Tado
+M6 <- '~ geo_dist + time_dist * Within' # Note that (Within * geo_dist) is perfectly colinear
+```
+
+# Regression analyses thus far
+
+In this section we compare six models fit to raw IBD estimates (using a ordinary linear model, OLM) and dichotomized IBD estimates (using a generalised linear model, GLM). This six models are,
+
+- Model 1: `r M1`
+- Model 2: `r M2`
+- Model 3: `r M3`
+- Model 4: `r M4`
+- Model 5: `r M5`
+- Model 6: `r M6`
+
+## GLMs
+
+The glm models without interaction terms (1,3 and 5) are preferable to those with (2,4,6). Of those without interaction terms, model 3 has the most favourable AIC. In terms of binned residules, model 1 is poor; models 3 and 5 are comparable, but many unexplained anomalies remain (Figure \ref{fig: binned resid M1,M3,M5}). If we fit to across site comparisons only using model 1 (models 3 and 5 irrelvant when intra site comparisons are removed), regression coefficients remain significant and negative (AIC is not comparable since data are different); there are more binned residual outliers, however. We thus henceforth discount models fit to partial data. 
+
+## OLM
+
+All the lm models (1 to 6) seem to be viable candidates, with more as-expected coefficient signs and significant coefficients than those generated under the GLMs. According to the residual squared error, M3 seems to be the best model. It is far from fitting the linear model assumptions, however (Figure \ref{fig: resid linear M3}). 
+
+## Conclusion
+
+To conclude, model 3 appears to be the best of all linear models and GLMs (regression coefficients, Table \ref{tab: model 3 estimates}). Neither fit the data perfectly however (the violations of the linear model seem worse, but this is arguably because of a lack of plots for the GLM). I suspect the addition of travel distance, will improve model fit.  
+<!-- \ref{fig: binned resid M1,M3,M5} -->
+<!-- \ref{fig: binned resid M1 across only} -->
+<!-- \ref{fig: resid linear M3} -->
+
+
+```{r}
+#======================================================================
+# Define functions
+#======================================================================
+# Binned residuals (adapted from TM boder)
+binned_residuals <- function(bin_by, fitted, y, yaxis_label, main_title){
+  
+  # Binned residual bin_by plots 
+  X <- data.frame(bin_by = bin_by)
+  X$residuals <- y - fitted
+  if(length(unique(bin_by)) > 8){
+    X$groups <- as.numeric(cut2(bin_by, g = min(length(unique(bin_by)),30)))  
+  } else {
+    X$groups <- as.numeric(as.factor(as.character(bin_by)))
+  }
+  
+  Binned_res_bin_by <- aggregate(X[, 1:2], list(X$groups), mean)
+  
+  #CIs
+  p <- mean(y)
+  two_se <- 2 * sqrt((p * (1-p))/table(X$groups))
+  Binned_res_bin_by$CI_low <- + two_se
+  Binned_res_bin_by$CI_hig <- - two_se
+  
+  # Plot
+  plot(y = Binned_res_bin_by$residuals, x = Binned_res_bin_by$bin_by, 
+       pch = 21, bg = 'gray', bty = 'n', xlab = yaxis_label, ylab = 'Binned residuals', 
+       ylim = range(Binned_res_bin_by[,-(1:2)]), main = main_title, cex.main = 0.5)
+  lines(y = Binned_res_bin_by$CI_low, x = Binned_res_bin_by$bin_by, lty = 'dotted')
+  lines(y = Binned_res_bin_by$CI_hig, x = Binned_res_bin_by$bin_by, lty = 'dotted')
+  abline(h = 0, lty = 'dotted')
+}
+
+# Formatting functions
+sig3 <- function(x){formatC(signif(x,3), format='e', digits=2)} # Format scientific
+fmt3 <- function(x){formatC(round(x, 3), format='f', digits=3)} # Format trailing zeros
+
+# Tabulatin function
+tabular_format <- function(x){
+  y <- summary(x)$coefficients
+  z <- y[,c(1,4)] 
+  apply(z, 1, function(x){sprintf('%s (%s)', sig3(x[1]), sig3(x[2]))})
+}
+```
+
+
+```{r}
+#======================================================================
+# Fit models
+#======================================================================
+# IBD tail results (all data)
+GLM1_IBD <- glm(sprintf('IBD_tail %s', M1), data = Result, family = binomial(logit), na.action = na.exclude)
+GLM2_IBD <- glm(sprintf('IBD_tail %s', M2), data = Result, family = binomial(logit), na.action = na.exclude)
+GLM3_IBD <- glm(sprintf('IBD_tail %s', M3), data = Result, family = binomial(logit), na.action = na.exclude)
+GLM4_IBD <- glm(sprintf('IBD_tail %s', M4), data = Result, family = binomial(logit), na.action = na.exclude)
+GLM5_IBD <- glm(sprintf('IBD_tail %s', M5), data = Result, family = binomial(logit), na.action = na.exclude)
+GLM6_IBD <- glm(sprintf('IBD_tail %s', M6), data = Result, family = binomial(logit), na.action = na.exclude)
+
+# IBD results (all data)
+LM1_IBD <- lm(sprintf('IBD %s', M1), data = Result,  na.action = na.exclude)
+LM2_IBD <- lm(sprintf('IBD %s', M2), data = Result,  na.action = na.exclude)
+LM3_IBD <- lm(sprintf('IBD %s', M3), data = Result,  na.action = na.exclude)
+LM4_IBD <- lm(sprintf('IBD %s', M4), data = Result,  na.action = na.exclude)
+LM5_IBD <- lm(sprintf('IBD %s', M5), data = Result,  na.action = na.exclude)
+LM6_IBD <- lm(sprintf('IBD %s', M6), data = Result,  na.action = na.exclude)
+```
+
+```{r}
+#======================================================================
+# Explore glm models 
+#======================================================================
+print(summary(GLM1_IBD))# AIC: 21531 and all signif
+print(summary(GLM2_IBD))# AIC: 21530 and interaction term insignificant
+print(summary(GLM3_IBD))# AIC: 20849 and all signif except Tado (all makes a lot of sense - look at plots of proportions broken down by time)
+print(summary(GLM4_IBD))# AIC: 20808 and all signif except geo_dist (now +) with signif negative interaction (counter intuitive)
+print(summary(GLM5_IBD)) # AIC: 21095 all signif
+print(summary(GLM6_IBD)) # AIC: 21093 and interaction term insignificant
+
+# Conclusion: drop glm models with interaction terms (2,4,6) 
+# Of those without interaction terms (1,3,5) M3 has most favourable AIC 
+
+#======================================================================
+# Explore lm models 
+#======================================================================
+print(summary(LM1_IBD))# All highly signif with signs as expected
+print(summary(LM2_IBD))# All highly signif with signs as expected
+print(summary(LM3_IBD))# All highly signif with signs as expected
+print(summary(LM4_IBD))# All highly signif with exception of interaction term
+print(summary(LM5_IBD))# All highly signif with signs as expected
+print(summary(LM6_IBD))# All highly signif with signs as expected
+
+anova(LM1_IBD) # Residual Sum Sq: 2042
+anova(LM2_IBD) # Residual Sum Sq: 2037
+anova(LM3_IBD) # Residual Sum Sq: 1951 
+anova(LM4_IBD) # Residual Sum Sq: 1951 
+anova(LM5_IBD) # Residual Sum Sq: 1986
+anova(LM6_IBD) # Residual Sum Sq: 1986
+
+# Conclusion: all lm model seem to be excellent candidates, and better than glms; according to the residual squared error, M3 seems to be the best
+# It is far from fitting the linear model assumptions, however (Figure \ref{fig: resid linear M3})
+```
+
+
+```{r, include = TRUE, fig.cap = '\\label{fig: binned resid M1,M3,M5} Plots of binned residuals for candidate models fit to dichotomized IBD estimates.'}
+#======================================================================
+# Plots for glm models 
+#======================================================================
+par(mfrow = c(2,2), family = 'serif')
+binned_residuals(bin_by = GLM1_IBD$fitted.values, 
+                 fitted = GLM1_IBD$fitted.values,
+                 y = Result$IBD_tail, yaxis_label = 'Fitted', main_title = M1)
+binned_residuals(bin_by = GLM3_IBD$fitted.values, 
+                 fitted = GLM3_IBD$fitted.values,
+                 y = Result$IBD_tail, yaxis_label = 'Fitted', main_title = M3)
+binned_residuals(bin_by = GLM5_IBD$fitted.values, 
+                 fitted = GLM5_IBD$fitted.values,
+                 y = Result$IBD_tail, yaxis_label = 'Fitted', main_title = M5)
+```
+
+```{r, include = FALSE, fig.cap = '\\label{fig: binned resid M1 across only}'}
+GLM_IBD1_inter_only <- glm(sprintf('IBD_tail %s', M1), data = Result[Result$geo_dist > 0,], family = binomial(logit), na.action = na.exclude)
+print(summary(GLM_IBD1_inter_only)) # Still significant and negative, low AIC (9699)
+binned_residuals(bin_by = GLM_IBD1_inter_only$fitted.values, 
+                 fitted = GLM_IBD1_inter_only$fitted.values,
+                 y = Result$IBD_tail[Result$geo_dist > 0], yaxis_label = 'Fitted', main_title = '')
+
+# What happens to M1 with we remover the within and focus on inter only (no point fitting M3 since inter)? 
+LM_IBD1_inter_only <- lm(sprintf('IBD %s', M1), data = Result[Result$geo_dist > 0,],  na.action = na.exclude)
+print(summary(LM_IBD1_inter_only)) # Still significant and negative
+```
+
+```{r, include = TRUE, fig.width = 7, fig.height = 7, fig.cap = '\\label{fig: resid linear M3} Plots of candidate linear least square models fit.'}
+#======================================================================
+# Plots for lm models 
+#======================================================================
+par(mfrow = c(2,2), family = 'serif')
+plot(LM3_IBD)
+```
+
+```{r, include = TRUE}
+#======================================================================
+# Table of results for model 3
+#======================================================================
+names_coefs <- names(GLM3_IBD$coefficients)
+Reg_results <- array(dim = c(length(names_coefs), 2), 
+                     dimnames = list(names_coefs, c('Generalised linear model', 'Ordinary linear model')))
+M3_GLM <- tabular_format(GLM3_IBD)
+M3_LM <- tabular_format(LM3_IBD)
+
+Reg_results[names(M3_GLM), 'Generalised linear model'] <- M3_GLM
+Reg_results[names(M3_LM), 'Ordinary linear model'] <- M3_LM
+kable(Reg_results, caption = '\\label{tab: model 3 estimates} Regression coefficient estimates with p-values in parentheses.')
+```
+
+```{r, include = FALSE}
+#=======================================================================
+# IBS tail results with tabulated glm results alonside flm IBD
+# Given updated understanding of IBS and IBD these results are redundant
+# Kept in case of use in IBD and IBS paper (likely need to update)
+#=======================================================================
+
+# Fit models to dichotomized IBS
+GLM1_IBS <- glm(sprintf('IBS_tail %s', M1), data = Result, family = binomial(logit), na.action = na.exclude)
+GLM2_IBS <- glm(sprintf('IBS_tail %s', M2), data = Result, family = binomial(logit), na.action = na.exclude)
+GLM3_IBS <- glm(sprintf('IBS_tail %s', M3), data = Result, family = binomial(logit), na.action = na.exclude)
+
+# Fit to IBS directly
+LM1_IBS <- lm(sprintf('IBS %s', M1), data = Result,  na.action = na.exclude)
+LM2_IBS <- lm(sprintf('IBS %s', M2), data = Result,  na.action = na.exclude)
+LM3_IBS <- lm(sprintf('IBS %s', M3), data = Result,  na.action = na.exclude)
+
+# Explore result summaries
+print(summary(GLM1_IBS))#21531 (geo dist not significant)
+print(summary(GLM2_IBS))#21530 and interaction term insignificant (slightly significant)
+print(summary(GLM3_IBS))#20849 and all signif except Tado
+print(summary(LM1_IBS))# All highly signif negative
+print(summary(LM2_IBS))# All highly signif 
+print(summary(LM3_IBS))# All highly signif 
+
+# Plot binned residuals
+binned_residuals(bin_by = GLM1_IBS$fitted.values, 
+                 fitted = GLM1_IBS$fitted.values,
+                 y = Result$IBS_tail, yaxis_label = 'Fitted', main_title = '')
+binned_residuals(bin_by = GLM3_IBS$fitted.values, 
+                 fitted = GLM3_IBS$fitted.values,
+                 y = Result$IBS_tail, yaxis_label = 'Fitted', main_title = '')
+
+# Tabulate IBS results alongside IBD 
+coefs <- names(GLM3_IBS$coefficients)
+Reg_results <- array(dim = c(length(coefs), 4), 
+                     dimnames = list(coefs, c('M1_IBD', 'M3_IBD', 'M1_IBS', 'M3_IBS')))
+M1_IBD <- tabular_format(GLM1_IBD)
+M3_IBD <- tabular_format(GLM3_IBD)
+M1_IBS <- tabular_format(GLM1_IBS)
+M3_IBS <- tabular_format(GLM3_IBS)
+Reg_results[names(M1_IBS), 'M1_IBS'] <- M1_IBS
+Reg_results[names(M3_IBS), 'M3_IBS'] <- M3_IBS
+Reg_results[names(M1_IBD), 'M1_IBD'] <- M1_IBD
+Reg_results[names(M3_IBD), 'M3_IBD'] <- M3_IBD
+kable(Reg_results)
+```
+
+
+
+
+

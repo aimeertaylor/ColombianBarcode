@@ -3,6 +3,7 @@ output:
   pdf_document: default
   html_document: default
 ---
+<!-- coloured haps by relatedness but I haven't had the time yet.  -->
 
 # Deep-dive into Buenaventura and Tumaco
 
@@ -171,14 +172,19 @@ legend('left', pt.bg = vertex.cols,
        bty = 'n')
 ```
 
+We see a lot of genetic relatedness within and between sites and want to know if there is A) ongoing or one-time gene flow and B) two-way or source to sink gene flow. 
+
 Assuming travel between cites Tumaco and Buenaventura is symmetrical (try to confirm with expert knowledge / maritime traffic data), the site with higher incidence (Tumaco) is the most likely source. 
 
-Vertical lines are compatible with a transmission event (but could also arise due to similar haplotypes being detected at the same time across sites). Diagonal lines are not representative of direct travel. 
+Vertical lines are compatible with a transmission event, but could also arise due to similar haplotypes being detected at the same time across sites. Diagonal lines are not compatible with direct travel. 
 
-Assuming Tumaco to be the source, Figure \ref{fig: dated_network_BT} suggests haplotypes 5 and 7 were transmitted from Tumaco to Buenaventura sometime after haplotypes 1 and 12 (circa years 2005 and 2003, respectively). Haplotype 2 was not detected in either site before 2005, we thus speculate that it was transmitted across sites sometime around 2005. Upon inspection of Figure \ref{fig: dated_network_BT} it is important to note however that absence of evidence is not evidence of absence due to non-exhaustive sampling of infections (e.g. all haplotypes could have been present in either site prior to their detection due to unsampled infections) and therefore insight is mostly speculative. 
+The fact that there are multiple repeat haplotypes suggests gene flow was not a one-time event. The fact that each site has some private repeat haplotypes suggests that there is potential for two-way flow. 
 
-Of the haplotypes shared across Buenaventura and Tumaco, haplotypes 5, 7 and 12 are all highly related to one another, while haplotypes 1 and 2 are not highly related to any of the other repeat haplotypes (Figure \ref{fig: relatedness of repeat haps}). 
+Assuming Tumaco to be the source, Figure \ref{fig: dated_network_BT} suggests haplotypes 5 and 7 were transmitted from Tumaco to Buenaventura sometime after haplotypes 1 and 12 (circa years 2005 and 2003, respectively). Haplotype 2 was not detected in either site before 2005, we thus speculate that it was transmitted across sites sometime around 2005. Upon inspection of Figure \ref{fig: dated_network_BT} it is important to note however that absence of evidence is not evidence of absence due to non-exhaustive sampling of infections (e.g. all haplotypes could have been present in either site prior to their detection due to unsampled infections). 
 
+The number of differently coloured repeat haplotypes might give a false impression of the number of independent pieces of information, however. A network of relatedness between the repeat haplotypes (white edge IBD = 0.001, darkest edge IBD = 0.83) was thus plotted (Figure \ref{fig: relatedness of repeat haps}). 
+
+Of the haplotypes shared across Buenaventura and Tumaco, haplotypes 5, 7 and 12 are all highly related to one another, so might originate from a single parasite. On the contary, haplotypes 1 and 2 are not highly related to the above cluster nor one-another. Together these results suggest three travel events. 
 
 ```{r}
 #==========================================================
@@ -236,13 +242,13 @@ G_haps = graph_from_adjacency_matrix(adjmatrix = Adjmatrix_haps, mode = 'undirec
 ```{r, include=TRUE, fig.width=10, fig.height=10, fig.cap='\\label{fig: relatedness of repeat haps} Relateness across repeat haplotypes.'}
 par(mar = c(4,0,0,0), family = 'serif')
 
+
 # Plot
 plot(G_haps, 
      vertex.size = 6, 
      vertex.shape = pchs[repeat_haps],
      vertex.color = vertex.cols[repeat_haps], 
-     edge.width = 1*(edge_attr(G_haps)$weight > 0.5), # Only edges > 0 have edge weights
-     edge.color = 'black')
+     edge.color = gray(1-edge_attr(G_haps)$weight)) # Normalise 
 
 legend('left', pt.bg = vertex.cols[repeat_haps], 
        pch = as.numeric(pchs_legend[repeat_haps]),

@@ -94,7 +94,7 @@ par(family = 'serif', mar = c(4,5,1,1))
 plot(y = Pair_wise_site_comparisons_Fst, 
      x = pairwise_site_distance_all[comparison_names], 
      bty = 'n', 
-     ylab = expression(hat(F)[ST]^Hudson), 
+     ylab = expression(widehat(F)[ST]^Hudson), 
      xlab = 'Inter-state distance (km)', 
      bg = 'blue', pch = 21, xlim = c(50, 550),   
      panel.first = grid(), ylim = range(Pair_wise_site_comparisons_Fst_CIs))
@@ -115,7 +115,7 @@ abline(h = 0, lty = 'dotted')
 par(family = 'serif', mar = c(4,5,1,1))
 plot(NULL, xlim = range(pairwise_site_distance_all[comparison_names]), 
      ylim = range(Pair_wise_site_comparisons_Fst_perSNP, na.rm = TRUE), panel.first = grid(),
-     ylab = expression('SNP-wise'~hat(F)[ST]^Hudson), 
+     ylab = expression('SNP-wise'~widehat(F)[ST]^Hudson), 
      xlab = 'Inter-state distance (km)', )
 for(i in comparison_names){
   Z <- Pair_wise_site_comparisons_Fst_perSNP[,i]
@@ -182,16 +182,16 @@ Pair_wise_site_comparisons_Fst['Buenaventura_Tumaco','GENALEX6'] <- FST_state['N
 par(mfrow = c(2,2), family = 'serif', mar = c(4,5,1,1))
 plot(x = Pair_wise_site_comparisons_Fst[,'reich'], 
      y = Pair_wise_site_comparisons_Fst[,'WandH'], 
-     xlab = expression(hat(F)[ST]^Hudson), 
-     ylab = expression(hat(F)[ST]^'Weir and Hill'), 
+     xlab = expression(widehat(F)[ST]^Hudson), 
+     ylab = expression(widehat(F)[ST]^'Weir and Hill'), 
      bty = 'n', pch = 21, bg = 'gray', panel.first = grid())
 abline(a = 0, b = 1, lty = 'dotted')
 
 # Plot Hudson vs W&C
 plot(x = Pair_wise_site_comparisons_Fst[,'reich'], 
      y = Pair_wise_site_comparisons_Fst[,'WandC'], 
-     xlab = expression(hat(F)[ST]^Hudson), 
-     ylab = expression(hat(F)[ST]^'Weir and Cockerham'), 
+     xlab = expression(widehat(F)[ST]^Hudson), 
+     ylab = expression(widehat(F)[ST]^'Weir and Cockerham'), 
      bty = 'n', pch = 21, bg = 'gray', panel.first = grid())
 abline(a = 0, b = 1, lty = 'dotted')
 
@@ -210,8 +210,8 @@ text(y = 0.05, x = 6, labels = sprintf('r = %s (p-value = %s)',
 # Hudson and GENALEX6 are highly correlated but absolute values don't agree 
 plot(x = Pair_wise_site_comparisons_Fst[,'reich'], 
      y = Pair_wise_site_comparisons_Fst[,'GENALEX6'], 
-     xlab = expression(hat(F)[ST]^'Hudson'), 
-     ylab = expression(hat(F)[ST]^'GENALEX6'), 
+     xlab = expression(widehat(F)[ST]^'Hudson'), 
+     ylab = expression(widehat(F)[ST]^'GENALEX6'), 
      bty = 'n', pch = 21, bg = 'gray', panel.first = grid())
 CorTest <- cor.test(y = Pair_wise_site_comparisons_Fst[,'reich'], 
                     x = Pair_wise_site_comparisons_Fst[,'GENALEX6'])
@@ -299,32 +299,32 @@ Pair_wise_state_comparisons_Fst['Narino_Valle','DivRsity'] <- Res['sid1,', 'sid7
 par(mfrow = c(2,2), family = 'serif',  mar = c(4,5,1,1))
 plot(y = Pair_wise_state_comparisons_Fst[,'reich'], 
      x = Pair_wise_state_comparisons_Fst[,'DivRsity'], 
-     ylab =  expression(hat(F)[ST]^'Hudson'), 
-     xlab =  expression(hat(F)[ST]^'DivRsity'), 
+     ylab =  expression(widehat(F)[ST]^'Hudson'), 
+     xlab =  expression(widehat(F)[ST]^'DivRsity'), 
      bty = 'n', pch = 21, bg = 'gray', panel.first = grid())
 abline(a = 0, b = 1, lty = 'dotted')
 
 # Reich and WandH agree
 plot(y = Pair_wise_state_comparisons_Fst[,'WandH'],
      x = Pair_wise_state_comparisons_Fst[,'DivRsity'],
-     xlab = expression(hat(F)[ST]^'DivRsity'),
-     ylab = expression(hat(F)[ST]^'Weir and Hill'), 
+     xlab = expression(widehat(F)[ST]^'DivRsity'),
+     ylab = expression(widehat(F)[ST]^'Weir and Hill'), 
      bty = 'n', pch = 21, bg = 'gray', panel.first = grid())
 abline(a = 0, b = 1, lty = 'dotted')
 
 # Order of magnitude difference between WandC and Reich, but positive correlation.
 plot(y = Pair_wise_state_comparisons_Fst[,'WandC'],
      x = Pair_wise_state_comparisons_Fst[,'DivRsity'],
-     xlab = expression(hat(F)[ST]^'DivRsity'),
-     ylab = expression(hat(F)[ST]^'Weir and Cockerham'), 
+     xlab = expression(widehat(F)[ST]^'DivRsity'),
+     ylab = expression(widehat(F)[ST]^'Weir and Cockerham'), 
      bty = 'n', pch = 21, bg = 'gray', panel.first = grid())
 abline(a = 0, b = 1, lty = 'dotted')
 
 # No agreement with previously published even using W&C
 plot(y = Pair_wise_state_comparisons_Fst[,'GENALEX6'], 
      x = Pair_wise_state_comparisons_Fst[,'DivRsity'], 
-     xlab = expression(hat(F)[ST]^'DivRsity'), 
-     ylab = expression(hat(F)[ST]^'GENALEX6'),
+     xlab = expression(widehat(F)[ST]^'DivRsity'), 
+     ylab = expression(widehat(F)[ST]^'GENALEX6'),
      bty = 'n', pch = 21, bg = 'gray', panel.first = grid())
 CT <- cor.test(y = Pair_wise_state_comparisons_Fst[,'GENALEX6'], 
                x = Pair_wise_state_comparisons_Fst[,'DivRsity'])
@@ -336,7 +336,7 @@ legend('topright', legend = sprintf('r = %s (p-value = %s)', round(CT$estimate,3
 par(family = 'serif')
 plot(y = Pair_wise_state_comparisons_Fst[,'reich'], x = Geo_dist_state[rownames(Pair_wise_state_comparisons_Fst)], 
      bty = 'n', 
-     ylab = expression(hat(F)[ST]^'Hudson'), 
+     ylab = expression(widehat(F)[ST]^'Hudson'), 
      xlab = 'Inter-state distance (km)',
      bg = 'blue', pch = 21, 
      panel.first = grid())

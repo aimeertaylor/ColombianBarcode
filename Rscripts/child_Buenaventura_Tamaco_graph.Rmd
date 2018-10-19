@@ -240,7 +240,7 @@ G_haps = graph_from_adjacency_matrix(adjmatrix = Adjmatrix_haps, mode = 'undirec
 ```
 
 ```{r, include=TRUE, fig.width=10, fig.height=10, fig.cap='\\label{fig: relatedness of repeat haps} Relateness across repeat haplotypes.'}
-par(mar = c(4,0,0,0), family = 'serif')
+par(mar = c(0,0,0,0), family = 'serif')
 
 
 # Plot

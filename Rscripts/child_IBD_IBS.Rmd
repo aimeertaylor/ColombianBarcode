@@ -5,8 +5,7 @@ output:
 ---
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, include=FALSE, cache=TRUE, cache.comments = FALSE, 
-                      fig.pos = 'H', fig.width = 7, fig.height = 7, dev = 'png', dpi = 300)
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, include=FALSE, cache=TRUE, cache.comments = FALSE, fig.pos = 'H', fig.width = 8, fig.height = 6, dev = 'png', dpi = 300)
 ```
 
 # Summary of IBD analyses 
@@ -22,6 +21,7 @@ library(Hmisc) # cut2
 library(knitr) # For kable
 library(RColorBrewer)
 source('/Users/aimeet/Documents/BroadLaptop/TM_border/QuantLocalPfConnIBD/FunctionFiles/simtests.R')
+source('~/Dropbox/IBD_IBS/plotting_functions.R')
 
 # Load geo_dist info and raw data 
 load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/geo_dist_info.RData')
@@ -46,6 +46,9 @@ load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/Result.RData')
 load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/Thresholds.RData') 
 threshold_IBD = Thresholds['threshold_IBD']
 threshold_IBS = Thresholds['threshold_IBS']
+
+# Color Scheme
+cols = brewer.pal(8, 'Dark2')
 ```
 
 ```{r}
@@ -58,26 +61,34 @@ abline(h = 1-h_constant)
 ```
 
 
-## Plots of $\hat{\pi}_{\text{IBD}}$ and $\hat{\pi}_{\text{IBS}}$
+## Plots of $\widehat{r}$ and $\widehat{\text{IBS}}$
 
-```{r IBD_hist, include = TRUE, fig.width=7, fig.cap= "\\label{fig: IBD distribution} Estimates of $\\pi_{\\text{IBD}}$ for all pairwise comparisons of 325 samples."}
+```{r IBD_hist, include = TRUE, fig.width=7, fig.cap= "\\label{fig: IBD distribution} Estimates of $\\widehat{r}$ for all pairwise comparisons of 325 samples."}
 par(family = 'serif')
-X <- hist(Result$fract_sites_IBD, breaks = 100, plot = FALSE)
-gap.barplot(y = X$density, gap=c(4,66), # Range to be left out
-            main = "", 
-            xaxt = 'n', ylab = 'Density', xlab = expression(hat(pi)[IBD]), 
-            ytics = c(1,4,51,round(max(X$density)),0), las = 2,
-            col = c(rainbow(1, start = 0.40), rainbow(101, start = 0.55, end = 0.95)))
-abline(v = 50, lty = 'dotted')
-axis(side = 1, line = 0, at = seq(0,100,25), labels = seq(0,1,0.25))
+X = hist(Result$IBD, breaks = seq(0,1,0.025), plot = F)
+Gap = gapfunction_counts(x = X$counts)
+Yticks = round(c(max(X$counts), seq(0, floor(Gap[1]), length.out = 4)),0)
+Y = gap.barplot(y = X$counts, 
+                panel.first = grid(), 
+                gap = Gap, xaxt = 'n',
+                ytics = Yticks,
+                main = '', 
+                ylab = expression('Number of'~italic('P. falciparum')~'sample pairs'), 
+                xlab = '',
+                las = 2, col = rep(cols[1], length(X$mids)))
+title(xlab = expression('Estimate of genetic relatedness,'~italic(widehat(r))), 
+      line = 1.5, cex.lab = 1)
+axis(side = 1, line = -1, at = seq(0,length(Y),length.out = 5), 
+     labels = seq(0,1,length.out = 5), cex.axis = 1, tick = FALSE)
+
 ```
 
 
-```{r IBD_v_IBS, include = TRUE, fig.width=7, fig.cap= "\\label{fig: IBD vs IBS distribution} Estimates of $\\pi_{\\text{IBS}}$ versus $\\pi_{\\text{IBD}}$ for all pairwise comparisons of 325 samples."}
+```{r IBD_v_IBS, include = FALSE}
 # create dataset with 1000 normally distributed points
 df <- data.frame(x = Result$fract_sites_IBD, y = Result$IBS)
 # create a ggplot2 scatterplot
-p <- ggplot(df, aes(x, y)) + geom_point(colour = adjustcolor('black', alpha.f = 0.5)) + theme_classic() + labs(x = expression(hat(pi)[IBD]), y = expression(hat(pi)[IBS])) + geom_hline(yintercept = threshold_IBS, lty = 'dotted') + geom_vline(xintercept = threshold_IBD, lty = 'dotted')
+p <- ggplot(df, aes(x, y)) + geom_point(colour = adjustcolor('black', alpha.f = 0.5)) + theme_classic() + labs(x = 'rhat', y = 'IBS') + geom_hline(yintercept = threshold_IBS, lty = 'dotted') + geom_vline(xintercept = threshold_IBD, lty = 'dotted')
 # add marginal histograms
 ggMarginal(p, type = "histogram")
 #plot(1:10)
@@ -85,43 +96,46 @@ ggMarginal(p, type = "histogram")
 
 ```{r, include = TRUE, fig.width=7, fig.cap= "\\label{fig: IBD vs IBS distribution} Estimates of $\\pi_{\\text{IBS}}$ for all pairwise comparisons of 325 samples."}
 par(family = 'serif')
-hist(c(0,Result$IBS), breaks = 100, plot = TRUE, freq = FALSE, 
-     col = c(rainbow(1, start = 0.40), rainbow(101, start = 0.55, end = 0.95)), 
-     xlim = c(0,1), xlab = expression(hat(pi)[IBS]), main = '')
-abline(v = threshold_IBS, lty = 'dotted')
+hist(c(0,Result$IBS), breaks = 100, plot = TRUE, 
+     panel.first = grid(), 
+     col = cols[2], las = 2, xaxt = 'n', 
+     xlim = c(0,1), xlab = '', 
+     ylab = expression('Number of'~italic('P. falciparum')~'sample pairs'), main = '')
+axis(side = 1, tick = F, line = -1)
+title(xlab = expression(widehat(IBS)), line = 1)
 abline(v = 1-h_constant, col = 'green', lwd = 2)
-legend('left', legend = expression('Threshold based on'~hat(pi)[IBD]~'percentile'), 
-       lty = 'dotted', bty = 'n')
+legend('topleft', legend = bquote(1-italic(h)==.(round(1-h_constant,2))), 
+       fill = 'green', inset = 0.1)
 ```
 
-## Plot of $\hat{\pi}_{\text{IBD}}$ and $\hat{\pi}_{\text{IBS}}$ against distance 
+## Plot of $\widehat{r}_m$ and $\widehat{\text{IBS}}_m$ against distance 
 
-```{r, include = TRUE, fig.height = 8, fig.width = 7}
-par(mfrow = c(2,1), family = 'serif')
+```{r, include = TRUE, fig.height = 8}
+par(mfrow = c(2,1), family = 'serif', mar = c(4,4,1,1))
 # Plot of proportion > 0.5 versus distance
 plot(y = Result$fract_sites_IBD, x = Result$geo_dist + rnorm(nrow(Result), 0, 5), 
-     bty = 'n', pch = 21, bg = 'gray', cex = 1, 
-     xlab = 'Inter-city distance (km)', ylab = expression(hat(pi)[IBD]))
+     bty = 'n', pch = 21, bg = cols[1], cex = 1, 
+     xlab = 'Inter-city distance (km)', ylab = expression(italic(widehat(r))))
 abline(h = 0.5, lty = 'dotted')
 
 plot(y = Result$IBS, x = Result$geo_dist + rnorm(nrow(Result), 0, 5), 
-     bty = 'n', pch = 21, bg = 'gray', cex = 1, ylim = c(0,1),
-     xlab = 'Inter-city distance (km)', ylab = expression(hat(pi)[IBS]))
+     bty = 'n', pch = 21, bg = cols[2], cex = 1, ylim = c(0,1),
+     xlab = 'Inter-city distance (km)', ylab = expression(widehat(IBS)))
 abline(h = 0.5, lty = 'dotted')
 ```
 
-## Plot of $\hat{\pi}_{\text{IBD}}$ and $\hat{\pi}_{\text{IBS}}$ against time 
+## Plot of $\widehat{r}_m$ and $\widehat{\text{IBS}}_m$ against time 
 
 
-```{r, include = TRUE, fig.height = 8, fig.width = 7}
+```{r, include = TRUE, fig.height = 8}
 par(mfrow = c(2,1), family = 'serif')
 plot(y = Result$IBD, x = Result$time_dist, bty = 'n', 
      xlab = 'Time difference (weeks)', ylim = c(0,1), 
-     ylab = expression(hat(pi)[IBD]), main = '', pch = 20, 
+     ylab = expression(italic(widehat(r))), main = '', pch = 20, 
      col = adjustcolor('black', alpha.f = 0.2))
 plot(y = Result$IBS, x = Result$time_dist, bty = 'n', 
      xlab = 'Time difference (weeks)', ylim = c(0,1), 
-     ylab = expression(hat(pi)[IBS]), main = '', pch = 20, 
+     ylab = expression(widehat(IBS)), main = '', pch = 20, 
      col = adjustcolor('black', alpha.f = 0.2)) 
 ```
 
@@ -238,91 +252,135 @@ deltaCIs_dist <- apply(proportions_dist_deltas, c(1,2), quantile, probs = c(0.02
 ```
 
 
-## Plot of proportions $\hat{\pi}_{\text{IBD}} > 0.5$ and $\hat{\pi}_{\text{IBS}} > 0.84$ against time 
+## Plot of proportions $\widehat{r}_m > 0.5$ and $\widehat{\text{IBS}}_m > 0.84$ against time 
 
-```{r, include = TRUE, fig.height = 14, fig.width = 7}
-par(mfrow = c(2,1), family = 'serif', mar = c(4,5,1,1))
-CIs <- rbind(proportions_time[, 'IBS'], proportions_time[, 'IBS']) + deltaCIs_time[,,'IBS']
-X <- barplot(proportions_time[, 'IBS'], las = 2, xlab = expression(Delta~'Time (weeks)'), 
-             ylab = bquote('Proportion of'~hat(pi)[IBS]>.(round(threshold_IBS, 1))), 
-             cex.names = 0.5, ylim = c(0,max(CIs)))
-segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
-
+```{r, include = TRUE}
+par(mfrow = c(1,1), family = 'serif', mar = c(4,5,1,1))
 CIs <- rbind(proportions_time[, 'IBD'], proportions_time[, 'IBD']) + deltaCIs_time[,,'IBD']
-X <- barplot(proportions_time[, 'IBD'], las = 2,  xlab = expression(Delta~'Time (weeks)'),
-             ylab = bquote('Proportion of'~hat(pi)[IBD]>.(round(threshold_IBD,2))), 
-             cex.names = 0.5,ylim = c(0,max(CIs)))
+X <- barplot(proportions_time[, 'IBD'], las = 2,col = cols[1], xaxt = 'n', 
+             xlab = '',
+             ylab = bquote('Proportion of'~~italic(widehat(r))>.(round(threshold_IBD,2))), 
+             cex.names = 0.75,ylim = c(0,max(CIs)))
 segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
+axis(side = 1, at = X, labels = rownames(proportions_time), tick = F, line = -0.5)
+title(xlab = expression(Delta~'Time (weeks)'), line = 2)
 ```
 
-## Plot of proportions $\hat{\pi}_{\text{IBD}} > 0.5$ in time broken down by site comparison  
+```{r, include = TRUE}
+par(mfrow = c(1,1), family = 'serif', mar = c(4,5,1,1))
+CIs <- rbind(proportions_time[, 'IBS'], proportions_time[, 'IBS']) + deltaCIs_time[,,'IBS']
+X <- barplot(proportions_time[, 'IBS'], las = 2, col = cols[2], xaxt = 'n', 
+             xlab = '', 
+             ylab = bquote('Proportion of'~~widehat(IBS)>.(round(threshold_IBS, 1))), 
+             cex.names = 0.75, ylim = c(0,max(CIs)))
+segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
+axis(side = 1, at = X, labels = rownames(proportions_time), tick = F, line = -0.5)
+title(xlab = expression(Delta~'Time (weeks)'), line = 2)
+```
 
-```{r, include = TRUE, fig.height = 8, fig.width = 16}
-par(mfrow = c(1,2))
+## Plot of proportions $\widehat{r}_m > 0.5$ in time broken down by site comparison  
+
+```{r, include = TRUE, fig.height = 10}
+par(mfrow = c(2,1), family = 'serif')
 # Break down it to site comparsion contributions 
 CIs <- rbind(proportions_time[, 'IBD'], proportions_time[, 'IBD']) + deltaCIs_time[,,'IBD']
-X <- barplot(proportions_time_grouped[, ,'highIBD'], las = 2, xlab = expression(Delta~'Time (weeks)'), 
-             ylab = bquote('Cumulative proportion of'~hat(pi)[IBD]>.(round(threshold_IBD, 1))), 
-             cex.names = 0.5, ylim = c(0,max(CIs)), col = rainbow(no_site_comps))
+X <- barplot(proportions_time_grouped[, ,'highIBD'], 
+             las = 2, 
+             xlab = expression(Delta~'Time (weeks)'), 
+             xaxt = 'n',
+             ylab = bquote('Proportion of'~~italic(widehat(r))>.(round(threshold_IBD, 1))), 
+             cex.names = 0.75, ylim = c(0,max(CIs)), col = rainbow(no_site_comps))
+axis(side = 1, at = X, labels = colnames(proportions_time_grouped))
 segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
 legend('topright', fill = rainbow(no_site_comps), bty = 'n',
        legend = sapply(site_comps, function(x)gsub('_', ' & ',x)))
 
 # Grouped version 
-X <- barplot(proportions_time_grouped[, ,'all'], las = 2, xlab = expression(Delta~'Time (weeks)'), 
-             ylab = expression('Cumulative proportion of all'~hat(pi)[IBD]), 
-             cex.names = 0.5, col = rainbow(no_site_comps))
+X <- barplot(proportions_time_grouped[, ,'all'], las = 2, xaxt = 'n', 
+             xlab = expression(Delta~'Time (weeks)'), 
+             ylab = expression('Proportion of'~~italic(widehat(r))), 
+             cex.names = 0.75, col = rainbow(no_site_comps))
+axis(side = 1, at = X, labels = colnames(proportions_time_grouped))
 ```
 
-## Plot of proportions $\hat{\pi}_{\text{IBD}} > 0.5$ and $\hat{\pi}_{\text{IBS}} > 0.84$ against city comparisons 
+## Plot of proportions $\widehat{r}_m > 0.5$ and $\widehat{\text{IBS}}_m > 0.84$ against city comparisons 
 
-```{r, include = TRUE, fig.height = 8, fig.width = 7}
-par(mfrow = c(2,1), family = 'serif', mar = c(4,5,1,1))
+```{r, include = TRUE}
+par(mfrow = c(1,1), family = 'serif', mar = c(7,5,1,1))
 intra_inter <- sort(pairwise_site_distance_all[names(pairwise_site_distance_all)[c(1:10,21:25)]])
 
 CIs <- rbind(proportions_dist[names(intra_inter), 'IBS'], proportions_dist[names(intra_inter), 'IBS']) + deltaCIs_dist[, names(intra_inter),'IBS']
-X <- barplot(proportions_dist[names(intra_inter), 'IBS'], las = 2, 
-             xlab = '', ylab = bquote('Proportion of'~hat(pi)[IBS]>.(round(threshold_IBS, 1))), 
+X <- barplot(proportions_dist[names(intra_inter), 'IBS'], 
+             las = 2, col = cols[2], 
+             xlab = '', xaxt = 'n',
+             ylab = bquote('Proportion of'~~widehat(IBS)>.(round(threshold_IBS, 1))), 
              cex.names = 0.5, ylim = c(0,max(CIs)))
 segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
+axis(side = 1, at = X, las = 2, cex.axis = 0.5, tick = F, 
+     labels = sapply(site_comps, function(x)gsub('_', ' & ',x)))
 
 CIs <- rbind(proportions_dist[names(intra_inter), 'IBD'], proportions_dist[names(intra_inter), 'IBD']) + deltaCIs_dist[, names(intra_inter),'IBD']
-barplot(proportions_dist[names(intra_inter), 'IBD'], las = 2,  
-        xlab = '', ylab = bquote('Proportion of'~hat(pi)[IBD]>.(round(threshold_IBD,1))), 
-        cex.names = 0.5, ylim = c(0,max(CIs)))
+X = barplot(proportions_dist[names(intra_inter), 'IBD'], 
+            las = 2,  col = cols[1],
+            xlab = '', xaxt = 'n',
+            ylab = bquote('Proportion of'~~italic(widehat(r))>.(round(threshold_IBD,1))), 
+            cex.names = 0.5, ylim = c(0,max(CIs)))
 segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
+axis(side = 1, at = X, las = 2, cex.axis = 0.5, tick = F, 
+     labels = sapply(site_comps, function(x)gsub('_', ' & ',x)))
+
 ```
 
-## Plot of proportions $\hat{\pi}_{\text{IBD}} > 0.5$ in time broken down by time between collection dates (weeks)
+## Plot of proportions $\widehat{r}_m > 0.5$ in time broken down by time between collection dates (weeks)
 
-```{r, include = TRUE, fig.height = 8, fig.width = 16}
-par(mfrow = c(1,2), family = 'serif', mar = c(4,5,1,1))
+
+
+```{r, include = TRUE, fig.height = 10}
+par(mfrow = c(2,1), family = 'serif', mar = c(7,5,1,1))
+# Break down it to site comparsion contributions 
+CIs <- rbind(proportions_dist[comparison_names,'IBD'],
+             proportions_dist[comparison_names, 'IBD']) + deltaCIs_dist[,comparison_names,'IBD']
+X <- barplot(proportions_dist_grouped[,comparison_names ,'highIBD'], las = 2, xlab = '', 
+             ylab = bquote('Proportion of'~~italic(widehat(r))>.(round(threshold_IBD, 1))), 
+             cex.names = 0.5, ylim = c(0,max(CIs)), col = rainbow(no_time_bins))
+segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
+legend('topleft', fill = rainbow(no_time_bins), bty = 'n',legend = time_bins)
+
+# Grouped version 
+X <- barplot(proportions_dist_grouped[,comparison_names,'all'], las = 2, xlab = '', 
+             ylab = expression('Proportion of'~italic(widehat(r))), 
+             cex.names = 0.5, col = rainbow(no_site_comps))
+
+```
+
+```{r, include = TRUE, fig.height = 10}
+par(mfrow = c(2,1), family = 'serif', mar = c(7,5,1,1))
 intra_inter <- sort(pairwise_site_distance_all[names(pairwise_site_distance_all)[c(1:10,21:25)]])
 
 # Break down it to site comparsion contributions 
 CIs <- rbind(proportions_dist[names(intra_inter),'IBD'], proportions_dist[names(intra_inter), 'IBD']) + deltaCIs_dist[,names(intra_inter),'IBD']
 X <- barplot(proportions_dist_grouped[,names(intra_inter) ,'highIBD'], las = 2, xlab = '', 
-             ylab = bquote('Cumulative proportion of'~hat(pi)[IBD]>.(round(threshold_IBD, 1))), 
+             ylab = bquote('Proportion of'~~italic(widehat(r))>.(round(threshold_IBD, 1))), 
              cex.names = 0.5, ylim = c(0,max(CIs)), col = rainbow(no_time_bins))
 segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
 legend('topright', fill = rainbow(no_time_bins), bty = 'n',legend = time_bins)
 
 # Grouped version 
 X <- barplot(proportions_dist_grouped[,names(intra_inter),'all'], las = 2, xlab = '', 
-             ylab = expression('Cumulative proportion of all'~hat(pi)[IBD]), 
+             ylab = expression('Proportion of'~italic(widehat(r))), 
              cex.names = 0.5, col = rainbow(no_site_comps))
 
 ```
 
-## Plot of proportions $\hat{\pi}_{\text{IBD}} > 0.5$ against inter-city distance
+## Plot of proportions $\widehat{r}_m > 0.5$ against inter-city distance
 
-```{r, include = TRUE, fig.height = 5, fig.width = 7}
+```{r, include = TRUE}
 par(mfrow = c(1,1), family = 'serif', mar = c(4,5,1,1))
 plot(y = proportions_dist[, 'IBD'], 
      x = pairwise_site_distance_all[rownames(proportions_dist)], 
      bty = 'n', pch = 21, bg = 'gray', cex = 1, 
      xlab = 'Inter-city distance (km)', 
-     ylab = expression('Proportion of'~hat(pi)[IBD]>0.5))
+     ylab = expression('Proportion of'~~italic(widehat(r))>0.5))
 text(y = proportions_dist[, 'IBD'], # pos 1,2,3,4 = b, l, 
      x = pairwise_site_distance_all[rownames(proportions_dist)], 
      labels = rownames(proportions_dist), 
@@ -333,7 +391,7 @@ segments(y0 = CIs[1,rownames(proportions_dist)], y1 = CIs[2,rownames(proportions
          x1 = pairwise_site_distance_all[rownames(proportions_dist)])
 ```
 
-## Plot of city level FST estimates against proportions $\hat{\pi}_{\text{IBD}} > 0.5$ 
+## Plot of city level FST estimates against proportions $\widehat{r}_m > 0.5$ 
 
 ```{r, include = TRUE}
 # pi_IBD versus FST (not clear pattern)
@@ -342,8 +400,9 @@ inter_city_comp <- names(Fst_barcode$Pair_wise_site_comparisons_Fst)
 plot(y = Fst_barcode$Pair_wise_site_comparisons_Fst, 
      x = proportions_dist[names(Fst_barcode$Pair_wise_site_comparisons_Fst),'IBD'], 
      bty = 'n', pch = 21, bg = 'gray', 
-     xlab = expression('Proportion of'~hat(pi)[IBD]>0.5), 
-     ylab = expression(hat(F)[ST]^Hudson))
+     panel.first = grid(), 
+     xlab = expression('Proportion of'~~italic(widehat(r))>0.5), 
+     ylab = expression(italic(widehat(F)[ST]^Hudson)))
 segments(x0 = CIs[1,names(Fst_barcode$Pair_wise_site_comparisons_Fst)], 
          x1 = CIs[2,names(Fst_barcode$Pair_wise_site_comparisons_Fst)], 
          y0 = Fst_barcode$Pair_wise_site_comparisons_Fst, 

@@ -396,10 +396,14 @@ X <- barplot(proportions_dist[intra_inter, 'IBS'],
              ylab = bquote('Proportion of'~~widehat(IBS)>.(round(threshold_IBS, 1))), 
              cex.names = 0.5, ylim = c(0,max(CIs)))
 segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
-axis(side = 1, at = X, las = 2, cex.axis = 0.5, tick = F, 
-     labels = sapply(intra_inter, function(x)gsub('_', ' & ',x)))
 legend('top',density = c(100,35), fill = cols[2], bty = 'n', 
        legend = c('within site', 'across sites'))
+#rotate 60 degrees, srt=60
+text(x = X, y = -0.01, 
+     srt = 60, adj= 1, xpd = TRUE,
+     labels = c(do.call(rbind,strsplit(intra, split = '_'))[,1], 
+                sapply(inter, function(x)gsub('_', ' ',x))), cex=0.8)
+
 
 CIs <- rbind(proportions_dist[intra_inter, 'IBD'], proportions_dist[intra_inter, 'IBD']) + deltaCIs_dist[, intra_inter,'IBD']
 X = barplot(proportions_dist[intra_inter, 'IBD'], 
@@ -429,18 +433,31 @@ text(x = X, y = -0.01,
 ```{r, include = TRUE, fig.height = 10}
 par(mfrow = c(2,1), family = 'serif', mar = c(7,5,1,1))
 # Break down it to site comparsion contributions 
-CIs <- rbind(proportions_dist[comparison_names,'IBD'],
-             proportions_dist[comparison_names, 'IBD']) + deltaCIs_dist[,comparison_names,'IBD']
-X <- barplot(proportions_dist_grouped[,comparison_names ,'highIBD'], las = 2, xlab = '', 
+CIs <- rbind(proportions_dist[inter,'IBD'],
+             proportions_dist[inter, 'IBD']) + deltaCIs_dist[,inter,'IBD']
+X <- barplot(proportions_dist_grouped[,inter ,'highIBD'], las = 2, xlab = '', 
              ylab = bquote('Proportion of'~~italic(widehat(r))>.(round(threshold_IBD, 1))), 
-             cex.names = 0.5, ylim = c(0,max(CIs)), col = rainbow(no_time_bins))
+             cex.names = 0.5, ylim = c(0,max(CIs)), col = rainbow(no_time_bins), 
+             xaxt = 'n')
 segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
-legend('topleft', fill = rainbow(no_time_bins), bty = 'n',legend = time_bins)
+legend('topleft', fill = rainbow(no_time_bins), bty = 'n',
+       legend = time_bins, title = expression(Delta~'Time (weeks)'))
+#rotate 60 degrees, srt=60
+text(x = X, y = -0.002, 
+     srt = 30, adj= 1, xpd = TRUE,
+     labels = sapply(inter, function(x)gsub('_', ' ',x)), cex=1)
 
 # Grouped version 
-X <- barplot(proportions_dist_grouped[,comparison_names,'all'], las = 2, xlab = '', 
+X <- barplot(proportions_dist_grouped[,inter,'all'], las = 2,xaxt = 'n',
              ylab = expression('Proportion of'~italic(widehat(r))), 
-             cex.names = 0.5, col = rainbow(no_site_comps))
+             cex.names = 0.5, col = rainbow(no_site_comps), xlab = ' ')
+#rotate 60 degrees, srt=60
+text(x = X, y = -0.01, 
+     srt = 30, adj= 1, xpd = TRUE,
+     labels = c(do.call(rbind,strsplit(intra, split = '_'))[,1], 
+                sapply(inter, function(x)gsub('_', ' ',x))), cex=0.8)
+
+
 
 ```
 

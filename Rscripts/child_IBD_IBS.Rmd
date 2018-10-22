@@ -16,19 +16,19 @@ rm(list = ls())
 library(plotrix) # For gap.barplot
 library(ggplot2) # For scatter+histogram
 library(ggExtra) # For scatter+histogram
-library(arm) # invlogit
-library(Hmisc) # cut2
+library(arm) # invlogitut
+#library(Hmisc) # cut2
 library(knitr) # For kable
 library(RColorBrewer)
-source('/Users/aimeet/Documents/BroadLaptop/TM_border/QuantLocalPfConnIBD/FunctionFiles/simtests.R')
+source('./simtests.R')
 source('~/Dropbox/IBD_IBS/plotting_functions.R')
 
 # Load geo_dist info and raw data 
-load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/geo_dist_info.RData')
+load('../RData/geo_dist_info.RData')
 attach(geo_dist_info)
 
 # Load and summarise raw data 
-load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/SNPData.RData') 
+load('../RData/SNPData.RData') 
 SNPDataBinary <- SNPData[,6:255] # Extract the SNPData w/o meta data
 numSNPs <- ncol(SNPDataBinary)
 numSamples <- nrow(SNPDataBinary)
@@ -36,20 +36,21 @@ Frequencies <- colMeans(SNPDataBinary, na.rm = TRUE)
 h_constant <- mean(2*Frequencies*(1-Frequencies), na.rm = TRUE)
 
 # Load FST results (for comparisons)
-load('~/Documents/BroadLaptop/ColombianBarcode/RData/Fst_barcode.RData') 
+load('../RData/Fst_barcode.RData') 
 attach(Fst_barcode, warn.conflicts = FALSE)
 comparison_names <- rownames(Pair_wise_site_comparisons_Fst)
 numComparisons <- length(comparison_names)
 
 # Load IBD and IBS results
-load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/Result.RData') 
-load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/Thresholds.RData') 
+load('../RData/Result.RData') 
+load('../RData/Thresholds.RData') 
 threshold_IBD = Thresholds['threshold_IBD']
 threshold_IBS = Thresholds['threshold_IBS']
 
 # Color Scheme
 cols = brewer.pal(8, 'Dark2')
 ```
+
 
 ```{r}
 # Compare IBD, IBS and IBSc
@@ -80,7 +81,6 @@ title(xlab = expression('Estimate of genetic relatedness,'~italic(widehat(r))),
       line = 1.5, cex.lab = 1)
 axis(side = 1, line = -1, at = seq(0,length(Y),length.out = 5), 
      labels = seq(0,1,length.out = 5), cex.axis = 1, tick = FALSE)
-
 ```
 
 
@@ -137,6 +137,77 @@ plot(y = Result$IBS, x = Result$time_dist, bty = 'n',
      xlab = 'Time difference (weeks)', ylim = c(0,1), 
      ylab = expression(widehat(IBS)), main = '', pch = 20, 
      col = adjustcolor('black', alpha.f = 0.2)) 
+```
+
+# Travel time info
+
+From Vladimir
+\begin{itemize}
+\item Guapi to Buenaventura: fast boat, 6-8 ppl, 4 hr; ship cargo, approx. 50 ppl, 12hr; 
+Tumaco road is a bad road
+\item no public transport between Guapi and Tumaco, only contract fast boat; 1 hr to El Charco (just south of Guapi) and 5hrs from El Charco to Tumaco. 
+\item plantain produced in Tumaco is sold in Guapi (and probably Buenventura)
+\item many goods that are received in Buenaventura (the major port of Colombia) are delivered to Tumaco
+\end{itemize}
+
+Via Diego (all the info is directly from the sites)
+\begin{itemize}
+
+\item By Ship (barco): price: around 80.000 – 100.000 COP (1 USD is  3050 COP)
+\begin{itemize}
+\item Tumaco – Buenaventura: about 17-18 hours.
+\item Guapi – Buenaventura: about 10 – 12 hours
+\end{itemize}
+
+By Boat (lancha): price around 120.000 COP
+\begin{itemize}
+\item Buenaventura – Guapi: 4h
+\item Guapi – Tumaco: 3 – 3,5 H
+\item Buenaventura-Tumaco: No transportation. the sea rout is Buenaventura-Guapi and them Tumaco (and Vice-versa).A express transportation with good accommodation, food, Buenaventura-Guapi-Tumaco may cost up to 4.000.000 COP.
+\end{itemize}
+
+\item Road trip Between Guapi and the Panamerican freeway (the blue road in the map): No access at all.
+\item The only inter-municipal road in Guapi es between Guapi (Cauca) and Chanzara (Narino), it is a rudimentary and dangerous way, about 2 hours. People do no use this road.
+\end{itemize}
+
+
+Google maps (hours)
+
+\begin{itemize}
+\item Quidbo Tado: 1.5
+\item Quidbo Buenaventura: 10 
+\item Buenaventura Tado: 8.5
+\iten Buenaventura Tumaco: 15
+\item Tado Tumaco: 19.5
+\item Quidbo Tumaco: 21 
+\end{itemize}
+
+```{r, include = TRUE}
+# Travel_time instead of distance
+
+# Guapi Buenaventura: c(4, 12)/2 = 8
+# Guapi Tumaco: (6, 3.5)/2 = 4.75
+# Buenaventura Tumaco: (17.5, 7, 15)/3 = 13
+
+# 1 = road
+# 2 = sea
+# 3 = both
+pairwise_site_distance$travel_time = c(1.5, 4.75, 8.5, 8, 10, 13, 8+8.5, 8+10, 19.5, 21)
+pairwise_site_distance$travel_type = c(1,2,1,2,1,3,3,3,1,1)
+
+par(family = 'serif')
+plot(x = pairwise_site_distance$distance, 
+     y = pairwise_site_distance$travel_time, 
+     ylab = 'Travel time estimate (hr)', xlab = 'Distance (km)', 
+     panel.first = grid(), col = cols[pairwise_site_distance$travel_type], 
+     pch = 16, bty = 'n')
+X = cor.test(pairwise_site_distance$distance, pairwise_site_distance$travel_time)
+text(x = 400, y = 5, labels = sprintf('correlation = %s', round(X$estimate, 3)))
+legend('topleft', legend = c('Road (Google maps)', 
+                             '† Sea (averaged over cargo ship and boat)', 
+                             'Combination of road and sea'), 
+       bty = 'n', pch = c(16), col = cols[1:3])
+text(y = 15, x = 30, labels = '† All info. is directly from the sites', pos = 4)
 ```
 
 
@@ -307,27 +378,47 @@ axis(side = 1, at = X, labels = colnames(proportions_time_grouped))
 
 ```{r, include = TRUE}
 par(mfrow = c(1,1), family = 'serif', mar = c(7,5,1,1))
-intra_inter <- sort(pairwise_site_distance_all[names(pairwise_site_distance_all)[c(1:10,21:25)]])
+inter = apply(pairwise_site_distance[,1:2], 1, function(x){paste(sort(x), collapse = '_')})
+intra <- c('Guapi_Guapi',
+                 'Tumaco_Tumaco',
+                 'Tado_Tado', 
+                 'Buenaventura_Buenaventura', 
+                 'Quibdo_Quibdo')
+inter_sort = sort.int(pairwise_site_distance$distance, index.return = T)
+intra_inter = c(intra, inter[inter_sort$ix])
+#plot(pairwise_site_distance_all[inter[inter_sort$ix]]) # Check order by distance
 
-CIs <- rbind(proportions_dist[names(intra_inter), 'IBS'], proportions_dist[names(intra_inter), 'IBS']) + deltaCIs_dist[, names(intra_inter),'IBS']
-X <- barplot(proportions_dist[names(intra_inter), 'IBS'], 
+CIs <- rbind(proportions_dist[intra_inter, 'IBS'], proportions_dist[intra_inter, 'IBS']) + deltaCIs_dist[, intra_inter,'IBS']
+X <- barplot(proportions_dist[intra_inter, 'IBS'], 
              las = 2, col = cols[2], 
+             density = rep(c(100,25), c(length(intra), length(inter))),
              xlab = '', xaxt = 'n',
              ylab = bquote('Proportion of'~~widehat(IBS)>.(round(threshold_IBS, 1))), 
              cex.names = 0.5, ylim = c(0,max(CIs)))
 segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
 axis(side = 1, at = X, las = 2, cex.axis = 0.5, tick = F, 
-     labels = sapply(site_comps, function(x)gsub('_', ' & ',x)))
+     labels = sapply(intra_inter, function(x)gsub('_', ' & ',x)))
+legend('top',density = c(100,35), fill = cols[2], bty = 'n', 
+       legend = c('within site', 'across sites'))
 
-CIs <- rbind(proportions_dist[names(intra_inter), 'IBD'], proportions_dist[names(intra_inter), 'IBD']) + deltaCIs_dist[, names(intra_inter),'IBD']
-X = barplot(proportions_dist[names(intra_inter), 'IBD'], 
+CIs <- rbind(proportions_dist[intra_inter, 'IBD'], proportions_dist[intra_inter, 'IBD']) + deltaCIs_dist[, intra_inter,'IBD']
+X = barplot(proportions_dist[intra_inter, 'IBD'], 
             las = 2,  col = cols[1],
             xlab = '', xaxt = 'n',
             ylab = bquote('Proportion of'~~italic(widehat(r))>.(round(threshold_IBD,1))), 
+            density = rep(c(100,25), c(length(intra), length(inter))),
             cex.names = 0.5, ylim = c(0,max(CIs)))
 segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
-axis(side = 1, at = X, las = 2, cex.axis = 0.5, tick = F, 
-     labels = sapply(site_comps, function(x)gsub('_', ' & ',x)))
+legend('right',density = c(100,35), fill = cols[1], bty = 'n', 
+       legend = c('within site', 'across sites'))
+
+#rotate 60 degrees, srt=60
+text(x = X, y = -0.01, 
+     srt = 60, adj= 1, xpd = TRUE,
+     labels = c(do.call(rbind,strsplit(intra, split = '_'))[,1], 
+                sapply(inter, function(x)gsub('_', ' ',x))), cex=0.8)
+
+
 
 ```
 
@@ -358,15 +449,15 @@ par(mfrow = c(2,1), family = 'serif', mar = c(7,5,1,1))
 intra_inter <- sort(pairwise_site_distance_all[names(pairwise_site_distance_all)[c(1:10,21:25)]])
 
 # Break down it to site comparsion contributions 
-CIs <- rbind(proportions_dist[names(intra_inter),'IBD'], proportions_dist[names(intra_inter), 'IBD']) + deltaCIs_dist[,names(intra_inter),'IBD']
-X <- barplot(proportions_dist_grouped[,names(intra_inter) ,'highIBD'], las = 2, xlab = '', 
+CIs <- rbind(proportions_dist[intra_inter,'IBD'], proportions_dist[intra_inter, 'IBD']) + deltaCIs_dist[,intra_inter,'IBD']
+X <- barplot(proportions_dist_grouped[,intra_inter ,'highIBD'], las = 2, xlab = '', 
              ylab = bquote('Proportion of'~~italic(widehat(r))>.(round(threshold_IBD, 1))), 
              cex.names = 0.5, ylim = c(0,max(CIs)), col = rainbow(no_time_bins))
 segments(y0 = CIs[1,], y1 = CIs[2,], x0 = X, x1 = X)
 legend('topright', fill = rainbow(no_time_bins), bty = 'n',legend = time_bins)
 
 # Grouped version 
-X <- barplot(proportions_dist_grouped[,names(intra_inter),'all'], las = 2, xlab = '', 
+X <- barplot(proportions_dist_grouped[,intra_inter,'all'], las = 2, xlab = '', 
              ylab = expression('Proportion of'~italic(widehat(r))), 
              cex.names = 0.5, col = rainbow(no_site_comps))
 

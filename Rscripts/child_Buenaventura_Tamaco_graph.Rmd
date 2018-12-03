@@ -5,6 +5,11 @@ output:
 ---
 <!-- coloured haps by relatedness but I haven't had the time yet.  -->
 
+A comment from Dan: 
+Do you want to explicitly mention how 5 highly related haplotypes could connect Buenaventura and Tumaco via one event (a multiply infected person or mosquito)? You could mention COI distribution to emphasize low likelihood of a single event. 
+
+To-do remind yourself of Choco Narino, find out MOI distribution, reformat akin to Seth's plot; Another way to ask fuzzy question would be how fuzzy does it need to be to capture all IBD = 1!
+
 # Deep-dive into Buenaventura and Tumaco
 
 ```{r markdown setup, include = FALSE}
@@ -15,7 +20,7 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, include=FALSE, c
 ```{r analysis setup}
 rm(list = ls())
 library(igraph) # For network plot
-#library(proxy) # for dist
+library(proxy) # for dist
 library(RColorBrewer)
 library(gtools) # for perturbations
 
@@ -24,38 +29,16 @@ load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/Result.RData') 
 load('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/SNPData.RData') # For Layout sites dates etc
 Result$sample1 = as.character(Result$sample1) # Convert factors to characters
 Result$sample2 = as.character(Result$sample2)
-ind_result = (Result$site_comp == "Buenaventura_Tumaco") | (Result$site_comp == "Buenaventura_Buenaventura") |  (Result$site_comp == "Tumaco_Tumaco")
-Result_subset = Result[ind_result,] 
-```
+inter = (Result$site_comp == "Buenaventura_Tumaco")
+intra = (Result$site_comp == "Buenaventura_Buenaventura") |  (Result$site_comp == "Tumaco_Tumaco")
+ind_result = inter | intra
+Result_subset = Result[ind_result,]
 
-
-```{r create network}
-# Construct an adjacency matrix for network plot
 Rownames = unique(c(Result_subset$sample1, Result_subset$sample2))
-nSamples = length(Rownames)   
-Adjmatrix = array(0, dim = c(nSamples, nSamples), dimnames = list(Rownames, Rownames))
-for(i in 1:nrow(Result_subset)){
-  Col = Result_subset[i,'sample1']
-  Row = Result_subset[i,'sample2']
-  Adjmatrix[Row,Col] = Result_subset[i,'IBD'] 
-  Adjmatrix[Col,Row] = Result_subset[i,'IBD'] 
-}
-
-# This is a lower diagonal matrix
-all(is.na(Adjmatrix[upper.tri(Adjmatrix)]))
-
-# Create an adjacency matrix from IBD
-G = graph_from_adjacency_matrix(adjmatrix = Adjmatrix, mode = 'undirected', diag=F, weighted = TRUE, add.colnames = F)
-G = set_vertex_attr(G, "label", value = NA) # Remove names 
-
-# Load sites and dates for layout
-sites <- SNPData[Rownames, 'City'] 
-dates <- SNPData[Rownames, 'COLLECTION.DATE'] 
-years <- SNPData[Rownames, 'Year'] 
-Layout = cbind(x = as.numeric(dates), y = rnorm(nSamples) + 10 * (sites ==  'Buenaventura'))
+nSamples = length(Rownames)  
 ```
 
-```{r create haplotype labels}
+```{r function_definition_1}
 # Function that takes a matrix of haplotypes and a fuzzy matching parameter
 # and returns a list of distinct haplotypes with two or more corrsponding samples
 enlist_distinct_haps = function(Haplotypes, no_diff_allowed){
@@ -86,7 +69,33 @@ enlist_distinct_haps = function(Haplotypes, no_diff_allowed){
   
   return(repeat_store)
 }
+```
 
+```{r create network}
+# Construct an adjacency matrix for network plot
+Adjmatrix = array(0, dim = c(nSamples, nSamples), dimnames = list(Rownames, Rownames))
+for(i in 1:nrow(Result_subset)){
+  Col = Result_subset[i,'sample1']
+  Row = Result_subset[i,'sample2']
+  Adjmatrix[Row,Col] = Result_subset[i,'IBD'] 
+  Adjmatrix[Col,Row] = Result_subset[i,'IBD'] 
+}
+
+# This is a lower diagonal matrix
+all(is.na(Adjmatrix[upper.tri(Adjmatrix)]))
+
+# Create an adjacency matrix from IBD
+G = graph_from_adjacency_matrix(adjmatrix = Adjmatrix, mode = 'undirected', diag=F, weighted = TRUE, add.colnames = F)
+G = set_vertex_attr(G, "label", value = NA) # Remove names 
+
+# Load sites and dates for layout
+sites <- SNPData[Rownames, 'City'] 
+dates <- SNPData[Rownames, 'COLLECTION.DATE'] 
+years <- SNPData[Rownames, 'Year'] 
+Layout = cbind(x = as.numeric(dates), y = rnorm(nSamples) + 10 * (sites ==  'Buenaventura'))
+```
+
+```{r create haplotype labels}
 # Fuzzy matching required because despite IBS >= IBD in general (plot(Result_subset$IBS, Result_subset$IBD))
 sum(Result_subset$IBS[Result_subset$IBD == 1] < 1) # There are 82 IBD == 1 with IBS < 1
 sum(Result_subset$IBD[Result_subset$IBS == 1] < 1) # There are zero IBS = 1 with IBD < 1
@@ -101,7 +110,7 @@ nSamples_withIBD1_comp = length(Rownames_withIBD1_comp)
 Haplotypes = SNPData[Rownames_withIBD1_comp, 6:255] # replace Rownames_withIBD1_comp with Rownames to relax IBD == 1 comparison constraint
 
 # How fuzzy does matching need to be to get a stable number of distinct haplotypes? 
-no_diffs_allowed = 1:20
+no_diffs_allowed = 0:20
 no_distinct_haps = sapply(no_diffs_allowed, function(x){length(enlist_distinct_haps(Haplotypes, x))})
 plot(no_diffs_allowed, no_distinct_haps) # Conclusion: seems 4:15 are stable (allow 4)
 repeat_store = enlist_distinct_haps(Haplotypes, 4) 
@@ -116,8 +125,8 @@ hap_labels = c(hap_labels, hap0s[!Rownames %in% names(hap_labels)])  # Add the s
 all(Rownames %in% names(hap_labels)) # Check all accounted for
 
 # Create colours for the haplotypes
-cols = colorRampPalette(brewer.pal(12, "Paired"))
-vertex.cols <- c("#FFFFFFFF", cols(no_repeat_haps))
+cols = colorRampPalette(brewer.pal(12, "Paired")) # Function
+vertex.cols <- c("#FFFFFFFF", cols(no_repeat_haps)) # White then colours
 names(vertex.cols) = c('Singleton', repeat_haps)
 
 # Create pchs for added visual resolution (simply recycle circles and squares)
@@ -183,7 +192,6 @@ The fact that there are multiple repeat haplotypes suggests gene flow was not a 
 Assuming Tumaco to be the source, Figure \ref{fig: dated_network_BT} suggests haplotypes 5 and 7 were transmitted from Tumaco to Buenaventura sometime after haplotypes 1 and 12 (circa years 2005 and 2003, respectively). Haplotype 2 was not detected in either site before 2005, we thus speculate that it was transmitted across sites sometime around 2005. Upon inspection of Figure \ref{fig: dated_network_BT} it is important to note however that absence of evidence is not evidence of absence due to non-exhaustive sampling of infections (e.g. all haplotypes could have been present in either site prior to their detection due to unsampled infections). 
 
 The number of differently coloured repeat haplotypes might give a false impression of the number of independent pieces of information, however. A network of relatedness between the repeat haplotypes (white edge IBD = 0.001, darkest edge IBD = 0.83) was thus plotted (Figure \ref{fig: relatedness of repeat haps}). 
-
 Of the haplotypes shared across Buenaventura and Tumaco, haplotypes 5, 7 and 12 are all highly related to one another, so might originate from a single parasite. On the contary, haplotypes 1 and 2 are not highly related to the above cluster nor one-another. Together these results suggest three travel events. 
 
 ```{r}

@@ -80,6 +80,9 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, include=FALSE, c
 ```{r, child = 'child_Buenaventura_Tamaco_graph.Rmd'}
 ```
 
+```{r, child = 'child_haps.Rmd'}
+```
+
 ```{r, child = 'child_IBD_segments.Rmd'}
 ```
 

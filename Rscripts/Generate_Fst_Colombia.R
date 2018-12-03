@@ -21,7 +21,7 @@ numComparisons <- nrow(Pair_wise_site_comparisons)
 
 # Magic no.s/variables
 registerDoMC(cores = 3) # For foreach
-n_repeat <- 10000
+n_repeat <- 1000
 
 # ============================================================================
 # Function to calculate pairwise Fst estimates 
@@ -166,12 +166,10 @@ system.time(Fst_barcode <- fst_calculations(SNPDataBinary = SNPData[,c(6:255)]))
 system.time(Fst_barcode_Permuted <- fst_Permuted(SNPDataBinary = SNPData[,c(6:255)]))
 Fst_barcode$Pair_wise_site_comparisons_Fst_Permuted <- Fst_barcode_Permuted$Pair_wise_site_comparisons_Fst
 
-# Calculate CIs (2.569 sec for 10)
+# Calculate boostrap percentile interval (2.569 sec for 10) (pg. 112 of All of Statistics)
 system.time(Fst_barcode_bootstrapped <- fst_bootstrapped(SNPDataBinary = SNPData[,c(6:255)]))
 A <- Fst_barcode_bootstrapped$Pair_wise_site_comparisons_Fst
-A_deltas <- apply(A, 2, FUN = function(x){x[geo_order] - Fst_barcode$Pair_wise_site_comparisons_Fst[geo_order]}) # Calculate differences
-A_percentiles <- apply(A_deltas, 1, quantile, probs = c(0.025, 0.975), na.rm = TRUE)
-Fst_barcode$Pair_wise_site_comparisons_Fst_CIs <- apply(A_percentiles, 1, FUN = function(x){Fst_barcode$Pair_wise_site_comparisons_Fst[geo_order] - x[geo_order]})
+Fst_barcode$Pair_wise_site_comparisons_Fst_CIs <- t(apply(A, 1, quantile, probs = c(0.025, 0.975), na.rm = TRUE))[geo_order,]
 
 # Save in one big list
 save(Fst_barcode, file = '~/Documents/BroadLaptop/ColombianBarcode/RData/Fst_barcode.RData')

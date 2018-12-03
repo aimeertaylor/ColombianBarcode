@@ -173,7 +173,6 @@ A_deltas <- apply(A, 2, FUN = function(x){x[geo_order] - Fst_barcode$Pair_wise_s
 A_percentiles <- apply(A_deltas, 1, quantile, probs = c(0.025, 0.975), na.rm = TRUE)
 Fst_barcode$Pair_wise_site_comparisons_Fst_CIs <- apply(A_percentiles, 1, FUN = function(x){Fst_barcode$Pair_wise_site_comparisons_Fst[geo_order] - x[geo_order]})
 
-# W
 
 # Save in one big list
 save(Fst_barcode, file = '~/Documents/BroadLaptop/ColombianBarcode/RData/Fst_barcode.RData')

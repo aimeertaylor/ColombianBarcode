@@ -1,5 +1,7 @@
 ##########################################################
-# This script is adapted from XXX
+# This script is adapted from PlasmodiumRelatedness/Generate_mles.R
+# s.t. all mles and parametric bootstrap mles for Colombia only
+# are calculated in one script.
 ##########################################################
 rm(list = ls())
 set.seed(1)
@@ -8,21 +10,13 @@ library(dplyr)
 library(Rcpp)
 library(doParallel)
 library(doRNG)
-source("./simulate_data.R")
-sourceCpp("./hmmloglikelihood.cpp")
+source("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/simulate_data.R") # Download this script from https://github.com/artaylor85/PlasmodiumRelatedness
+sourceCpp("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/hmmloglikelihood.cpp") # Download this script from https://github.com/artaylor85/PlasmodiumRelatedness
 registerDoParallel(cores = detectCores()-2)
 epsilon <- 0.001 # Fix epsilon throughout
-set.seed(1) # for reproducibility
+nboot <- 500 # For CIs
+set.seed(1) # For reproducibility
 
-## Mechanism to compute MLE given fs, Ys, epsilon
-compute_rhat_iid <- function(frequencies, Ys, epsilon){
-  ndata <- nrow(frequencies)
-  distances <- rep(Inf, ndata)
-  ll <- function(r) loglikelihood_cpp(1, r, Ys, frequencies, distances, epsilon, rho = 7.4 * 10^(-7))
-  optimization <- optimize(f = function(x) - ll(x), interval = c(0, 1))
-  rhat <- optimization$minimum
-  return(rhat)
-}
 ## Mechanism to compute MLE given fs, distances, Ys, epsilon
 compute_rhat_hmm <- function(frequencies, distances, Ys, epsilon){
   ndata <- nrow(frequencies)
@@ -32,65 +26,67 @@ compute_rhat_hmm <- function(frequencies, distances, Ys, epsilon){
   return(rhat)
 }
 
-load("../RData/hmmInput_freqs.RData")
-dataset_names <- names(hmmInput_freqs)
-for (idataset in 1:length(dataset_names)){
-  print(dataset_names[idataset])
-  data_set <- hmmInput_freqs[[dataset_names[idataset]]]
-  print(dim(data_set))
+## Mechanism to generate Ys given fs, distances, k, r, epsilon
+simulate_Ys_hmm <- function(frequencies, distances, k, r, epsilon){
+  Ys <- simulate_data(frequencies, distances, k = k, r = r, epsilon, rho = 7.4 * 10^(-7))
+  return(Ys)
 }
 
-for (idataset in 1:length(dataset_names)){
-  print(dataset_names[idataset])
-  data_set <- hmmInput_freqs[[dataset_names[idataset]]]
-  print(dim(data_set))
-  if (dim(data_set)[2] < 100){
-    next
+# Load data
+data_set = read.delim("../TxtData/hmmInput.txt") 
+
+# Create indeces for pairwise comparisons
+individual_names <- names(data_set)[-(1:2)]
+nindividuals <- length(individual_names)
+name_combinations <- matrix(nrow = nindividuals*(nindividuals-1)/2, ncol = 2)
+count <- 0
+for (i in 1:(nindividuals-1)){
+  for (j in (i+1):nindividuals){
+    count <- count + 1
+    name_combinations[count,1] <- individual_names[i]
+    name_combinations[count,2] <- individual_names[j]
   }
-  individual_names <- names(data_set)[4:ncol(data_set)]
-  nindividuals <- length(individual_names)
-  name_combinations <- matrix(nrow = nindividuals*(nindividuals-1)/2, ncol = 2)
-  count <- 0
-  for (i in 1:(nindividuals-1)){
-    for (j in (i+1):nindividuals){
-      count <- count + 1
-      name_combinations[count,1] <- individual_names[i]
-      name_combinations[count,2] <- individual_names[j]
-    }
+}
+
+# Sort data by chromosome and position and add frequencies
+data_set <- data_set %>% arrange(chrom, pos) 
+data_set$fs = rowMeans(data_set[,-(1:2)], na.rm = TRUE) # Calculate frequencies
+frequencies <- cbind(1-data_set$fs, data_set$fs)
+data_set$dt <- c(diff(data_set$pos), Inf)
+pos_change_chrom <- 1 + which(diff(data_set$chrom) != 0) # find places where chromosome changes
+data_set$dt[pos_change_chrom-1] <- Inf
+
+
+# For each pair...  
+mle_df <- foreach(icombination = 1:nrow(name_combinations),.combine = rbind) %dorng% {
+  
+  # Let's focus on one pair of individuals
+  individual1 <- name_combinations[icombination,1]
+  individual2 <- name_combinations[icombination,2]
+  
+  # Indeces of pair
+  i1 <- which(individual1 == names(data_set))
+  i2 <- which(individual2 == names(data_set))
+  
+  # Extract data 
+  subdata <- cbind(data_set[,c("fs","dt")],data_set[,c(i1,i2)])
+  names(subdata) <- c("fs","dt","Yi","Yj")
+  
+  # Generate mle
+  krhat_hmm <- compute_rhat_hmm(frequencies, subdata$dt, cbind(subdata$Yi, subdata$Yj), epsilon)
+  
+  # Generate parametric bootstrap mles 
+  krhats_hmm_boot = foreach(iboot = 1:nboot, .combine = rbind) %dorng% {
+    Ys_boot <- simulate_Ys_hmm(frequencies, distances = data_set$dt, k = krhat_hmm[1], r = krhat_hmm[2], epsilon)
+    compute_rhat_hmm(frequencies, subdata$dt, Ys_boot, epsilon)
   }
   
-  mle_df <- foreach(icombination = 1:nrow(name_combinations), .combine = rbind) %dorng% {
-    individual1 <- name_combinations[icombination,1]
-    individual2 <- name_combinations[icombination,2]
-    # let's focus on one pair of individuals
-    i1 <- which(individual1 == names(data_set))
-    i2 <- which(individual2 == names(data_set))
-    subdata <- data_set[,c(1,2,3,i1,i2)]
-    names(subdata) <- c("chrom", "pos", "fs", "Yi", "Yj")
-    # sort by chromosome and position
-    subdata <- subdata %>% arrange(chrom, pos) 
-    frequencies <- cbind(1-subdata$fs, subdata$fs)
-    subdata$dt <- c(diff(subdata$pos), Inf)
-    pos_change_chrom <- 1 + which(diff(subdata$chrom) != 0) # find places where chromosome changes
-    subdata$dt[pos_change_chrom-1] <- Inf
-    krhat_hmm <- compute_rhat_hmm(frequencies, subdata$dt, cbind(subdata$Yi, subdata$Yj), epsilon)
-    rhat_iid <- compute_rhat_iid(frequencies, cbind(subdata$Yi, subdata$Yj), epsilon)
-    ll_iid <- function(r) loglikelihood_cpp(1, r, cbind(subdata$Yi, subdata$Yj), frequencies, rep(Inf, dim(frequencies)[1]), epsilon, rho = 7.4 * 10^(-7))
-    ll_hmm <- function(k, r) loglikelihood_cpp(k, r, cbind(subdata$Yi, subdata$Yj), frequencies, subdata$dt, epsilon, rho = 7.4 * 10^(-7))
-    # compute second order derivative of -log-likelihood at MLE, divided by large sample size
-    FIM_iid <- numDeriv::hessian(function(x) -ll_iid(x), rhat_iid)/(dim(frequencies)[1])
-    FIM_hmm <- numDeriv::hessian(function(x) -ll_hmm(x[1], x[2]), krhat_hmm)/(dim(frequencies)[1])
-    var_hmm <- try(solve(FIM_hmm))
-    if (inherits(var_hmm, "try-error")){
-      var_hmm <- matrix(NA, 2, 2)
-    }
-    var_iid <- 1/(FIM_iid[1,1])
-    var_k_hmm <- var_hmm[1,1]
-    var_r_hmm <- var_hmm[2,2]
-    data.frame(individual1 = individual1, individual2 = individual2, 
-               rhat_iid = rhat_iid, khat_hmm = krhat_hmm[1], rhat_hmm = krhat_hmm[2],
-               var_iid = var_iid, var_k_hmm = var_k_hmm, var_r_hmm = var_r_hmm)
-  }
-  save(mle_df, file = paste0("./RData/", dataset_names[idataset], "_mles.RData"))
+  X = data.frame(individual1 = individual1, individual2 = individual2, khat = krhat_hmm[1], rhat = krhat_hmm[2])
+  X$khats_boot = list(krhats_hmm_boot[,1])
+  X$rhats_boot = list(krhats_hmm_boot[,2])
+  X
 }
+
+# CIs <- apply(krhats_hmm_boot, 2, quantile, probs = c(0.025, 0.975))
+save(mle_df, file = paste0("../RData/mles.RData"))
 

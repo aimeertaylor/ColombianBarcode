@@ -1,0 +1,42 @@
+
+Search:	("ships"[MeSH Terms] OR "ships"[All Fields] OR "boats"[All Fields]) AND ("anopheles"[MeSH Terms] OR "anopheles"[All Fields])
+Date: 04/17/2018
+Result: 9 
+Relevant: 7/9 (other two historical)
+To-do: Get and read (cite in paper)
+
+1: Tatem AJ, Hay SI, Rogers DJ. Global traffic and disease vector dispersal. Proc
+Natl Acad Sci U S A. 2006 Apr 18;103(16):6242-7. Epub 2006 Apr 10. PubMed PMID:
+16606847; PubMed Central PMCID: PMC1435368.
+
+
+2: Etang J, Mbida Mbida A, Ntonga Akono P, Binyang J, Eboumbou Moukoko CE, Lehman
+LG, Awono-Ambene P, Talipouo A, Ekoko Eyisab W, Tagne D, Tchoffo R, Manga L,
+Mimpfoundi R. Anopheles coluzzii larval habitat and insecticide resistance in the
+island area of Manoka, Cameroon. BMC Infect Dis. 2016 May 20;16:217. doi:
+10.1186/s12879-016-1542-y. PubMed PMID: 27207560; PubMed Central PMCID:
+PMC4875715.
+
+
+3: Mulić R, Aljinović L, Gizdić Z, Petri NM. [Malaria in Croatia: in the past,
+today and tomorrow]. Lijec Vjesn. 2000 Mar;122(3-4):51-5. Croatian. PubMed PMID: 
+10932528.
+
+
+4: Scerbavicienë R, Pilipavicius R. Malaria among seamen in Klaipeda in
+1999-2008. Int Marit Health. 2009;60(1-2):29-32. PubMed PMID: 20205124.
+
+
+5: Gopaul R. [Entomological surveillance in Mauritius]. Sante. 1995
+Nov-Dec;5(6):401-5. French. PubMed PMID: 8784549.
+
+
+6: Delmont J, Brouqui P, Poullin P, Pouymayou C, Faugere B, Ottomani A, Gabriel
+B, Bourgeade A. [Apropos of 2 cases of severe malaria contracted in the port of
+Marseille]. Bull Soc Pathol Exot. 1995 Mar;88(4):170-3. French. PubMed PMID:
+8640079.
+
+
+7: Delmont J, Brouqui P, Poullin P, Bourgeaade A. Harbour-acquired Plasmodium
+falciparum malaria. Lancet. 1994 Jul 30;344(8918):330-1. PubMed PMID: 7914271.
+

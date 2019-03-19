@@ -1,0 +1,47 @@
+Pairwise stats
+gst = Nei & Chesser, (1983)
+Gst = Hedrick, (2005)
+GGst = Meirmans & Hedrick, (2011)
+D = Jost, (2008)
+Fst = Weir & Cockerham's theta, (1984)
+
+gst
+
+pops	sid98,	sid75,	sid50,	sid1,
+sid98,	 			
+sid75,	 0.0865			
+sid50,	 0.1583	0.0855		
+sid1,	 0.1246	0.0191	0.1176	
+
+Gst
+
+pops	sid98,	sid75,	sid50,	sid1,
+sid98,	 			
+sid75,	 0.164			
+sid50,	 0.2666	0.1524		
+sid1,	 0.2298	0.0373	0.204	
+
+GGst
+
+pops	sid98,	sid75,	sid50,	sid1,
+sid98,	 			
+sid75,	 0.2306			
+sid50,	 0.3668	0.2191		
+sid1,	 0.3152	0.0553	0.2877	
+
+D
+
+pops	sid98,	sid75,	sid50,	sid1,
+sid98,	 			
+sid75,	 0.0275			
+sid50,	 0.0451	0.0275		
+sid1,	 0.047	0.0047	0.0392	
+
+Fst
+
+pops	sid98,	sid75,	sid50,	sid1,
+sid98,	 			
+sid75,	 0.155			
+sid50,	 0.2666	0.1549		
+sid1,	 0.2155	0.0311	0.1979	
+

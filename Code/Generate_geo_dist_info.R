@@ -5,7 +5,6 @@ rm(list = ls())
 source('./gcd.hf.R') # For calculating great circle distance
 require(gtools) # For combinations
 library(measurements) # For conv_unit
-Write_LonLat = F # Write LonLat to text file 
 
 # Import coordinatesl data
 LonLat <- read.table('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/TxtData/Geo_coordinates.txt', 
@@ -21,9 +20,9 @@ LonLat$Longitude = gsub('”W', '', LonLat$Longitude)
 LonLat$Latitude = as.numeric(conv_unit(LonLat$Latitude, from = 'deg_min_sec', to = 'dec_deg'))
 LonLat$Longitude = as.numeric(conv_unit(LonLat$Longitude, from = 'deg_min_sec', to = 'dec_deg'))
 
-if(Write_LonLat){
+# Needed for network plot 
   write.table(LonLat, file = '/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/TxtData/LonLat_dec_deg.txt', 
-              row.names = FALSE, col.names = TRUE, quote = FALSE)}
+              row.names = FALSE, col.names = TRUE, quote = FALSE)
 
 # Calculate distances
 sites <- LonLat$City

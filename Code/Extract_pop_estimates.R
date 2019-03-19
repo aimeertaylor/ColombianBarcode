@@ -1,12 +1,8 @@
 ###########################################################
-# Colombia gravity model
+# Script to extract world pop estimates 
 # Last census in 2005 
 # Tutorial following:
 # http://www.guilles.website/2017/12/16/exploring-worldpop-gis-data-with-r/
-#
-# To-do
-# Choose year
-# Finish tutorial
 ###########################################################
 
 library(rgdal)
@@ -17,7 +13,7 @@ library(ggmap)
 library(ggplot2)
 PLOT = F
 
-# Load Colombia data 
+# Load Colombia data (data collected 1993 to 2007)
 WorldPopCol <- raster("~/Documents/Colombia_data/Colombia_100m_Population/COL_pph_v2b_2010.tif")
 
 # Shape file
@@ -49,20 +45,6 @@ populations = sapply(sites, function(site){
 
 # Name without accents
 names(populations) = c("Guapi", "Tumaco", "Buenaventura", "Quibdo", "Tado")
-# save(populations, file = '~/Documents/Colombia_data/populations.RData')
-
-# Load distances
-load('../RData/populations.RData')
-load('../RData/geo_dist_info.RData')
-
-geo_dist_info$pairwise_site_distance$gravity_estimate = NA
-for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
-  x1 = as.character(geo_dist_info$pairwise_site_distance[i,'X1'])
-  x2 = as.character(geo_dist_info$pairwise_site_distance[i,'X2'])
-  g = populations[x1] * populations[x2] / (geo_dist_info$pairwise_site_distance[i,'distance'])^2
-  geo_dist_info$pairwise_site_distance[i, 'gravity_estimate'] = g
-}
-geo_dist_info$pairwise_site_distance
-
+save(populations, file = '~/Documents/Colombia_data/populations.RData')
 
   

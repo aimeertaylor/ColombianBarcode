@@ -60,5 +60,17 @@ geo_dist_info <- list(geo_order = geo_order,
                       pairwise_site_distance = pairwise_site_distance,
                       pairwise_site_distance_all = pairwise_site_distance_all)
 
+
+# Add gravity estimates 
+load('../RData/populations.RData')
+
+geo_dist_info$pairwise_site_distance$gravity_estimate = NA
+for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
+  x1 = as.character(geo_dist_info$pairwise_site_distance[i,'X1'])
+  x2 = as.character(geo_dist_info$pairwise_site_distance[i,'X2'])
+  g = populations[x1] * populations[x2] / (geo_dist_info$pairwise_site_distance[i,'distance'])^2
+  geo_dist_info$pairwise_site_distance[i, 'gravity_estimate'] = g
+}
+
 save(geo_dist_info, file = '/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/geo_dist_info.RData')
 

@@ -5,6 +5,7 @@ output: pdf_document
 ---
 
 # Notes to self
+Read semi-aquatic mammal paper
 
 ### To reproduce all, run 
 1. DataFormat.R
@@ -20,6 +21,10 @@ output: pdf_document
 - Consider modelling as a mixture distribution Beta distributions (one for each of the n choose 2 site comparisons). The number of parameters would be 
     - Beta distributions: 2 shape parameters * choose(number sites,2)
     - Mixing: 1 vector length choose(number sites,2)
+- Usefuly phrase: "Adequate isolation to prevent" repopulation [Blanton2018]"
+- use std devidation of distance measures as did Ollie watson: 
+- check out Lee 2003 (cited in Waples2019) very simple but elegant test of relatedness under null that they are not.  
+
 
 ## Association of genetic signal to human mobility
   - GIS analysis (cost surface creation)

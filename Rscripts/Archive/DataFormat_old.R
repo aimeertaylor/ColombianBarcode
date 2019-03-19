@@ -1,7 +1,8 @@
 ##############################################################################################
-# Formatting the Colombian data for relatedness inference and downstream analyses 
-# Format for relatedness inference: chrom pos sample
+# Formatting the Colombian data for hmmIBD and downstream analyses 
+# Format for hmmIBD: chrom pos sample (0,1,-1)
 # Time to run: 0.689 sec 
+# Archived since originally written for hmmmIBD
 ##############################################################################################
 rm(list = ls())
 library(tictoc)
@@ -42,8 +43,8 @@ sum(het_count > 0) # 185 with one or mor het calls (all het calls considered mis
 # Format data for hmmIBD (uncomment sample to make data completely unrelated)
 X[X == 'AA'] <- '1' #sample(c('0','1'), sum(X == 'AA'), replace = TRUE)
 X[X == 'BB'] <- '0' #sample(c('0','1'), sum(X == 'BB'), replace = TRUE)
-X[X == 'AB'] <- NA # Treat mixed signals as missing (since all these sample have previously been deemed single-genotype)
-X[X == '--'] <- NA # Treat '--' as missing 
+X[X == 'AB'] <- '-1' # Treat mixed signals as missing (since all these sample have previously been deemed single-genotyp)
+X[X == '--'] <- '-1' # Treat '--' as missing 
 SNPData[,6:255] <- t(apply(X, 1, as.numeric))
 SNPData[,6:255][SNPData[,6:255] == '-1'] <- NA # Encode missing as NA for RData
 SNPData$het_count <- het_count
@@ -75,11 +76,12 @@ SNPData$Year <- do.call(rbind, strsplit(as.character(SNPData$COLLECTION.DATE), s
 
 # Format for hmmIBD (replace missing with -1)
 pos <- SNPPos$V5
-chrom <- as.numeric(do.call(rbind, strsplit(as.character(SNPPos$V2), split = '_'))[,2])
-HMMData <- cbind(chrom, pos, t(SNPData[,6:255]))
+chroms <- as.numeric(do.call(rbind, strsplit(as.character(SNPPos$V2), split = '_'))[,2])
+HMMData <- cbind(chroms, pos, t(SNPData[,6:255]))
+HMMData[is.na(HMMData)] <- -1
 
 # Save data in format for HMM and RData
-write.table(HMMData, file = '/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/TxtData/hmmInput.txt', 
+write.table(HMMData, file = '/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/TxtData/hmmIBD_input.txt', 
             quote = FALSE, row.names = FALSE, sep = '\t')
 save(SNPData, file = '/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/RData/SNPData.RData')
 toc()

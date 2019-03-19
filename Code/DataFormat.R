@@ -39,16 +39,15 @@ unique(as.vector(X))
 het_count <- rowSums(X == 'AB')
 sum(het_count > 0) # 185 with one or mor het calls (all het calls considered mistakes as samples previously deemed single genotype)
 
-# Format data for hmmIBD (uncomment sample to make data completely unrelated)
+# Format data for HMM 
 X[X == 'AA'] <- '1' #sample(c('0','1'), sum(X == 'AA'), replace = TRUE)
 X[X == 'BB'] <- '0' #sample(c('0','1'), sum(X == 'BB'), replace = TRUE)
 X[X == 'AB'] <- NA # Treat mixed signals as missing (since all these sample have previously been deemed single-genotype)
 X[X == '--'] <- NA # Treat '--' as missing 
 SNPData[,6:255] <- t(apply(X, 1, as.numeric))
-SNPData[,6:255][SNPData[,6:255] == '-1'] <- NA # Encode missing as NA for RData
 SNPData$het_count <- het_count
 
-# Recode as major(1), minor(0)
+# Recode as major(1), minor(0) - not strictly necessary
 frequencies <- colMeans(SNPData[,6:255], na.rm = TRUE)
 MAF_ind <- frequencies < 0.5
 To_recode <- SNPData[,6:255][,MAF_ind] # Single out data where 0 currently encodes the minor allele
@@ -73,7 +72,7 @@ unique(SNPData$STATE)
 SNPData$COLLECTION.DATE <- as.Date(as.character(SNPData$COLLECTION.DATE), format = "%m/%d/%Y")
 SNPData$Year <- do.call(rbind, strsplit(as.character(SNPData$COLLECTION.DATE), split = "-"))[,1]
 
-# Format for hmmIBD (replace missing with -1)
+# Format for HMM 
 pos <- SNPPos$V5
 chrom <- as.numeric(do.call(rbind, strsplit(as.character(SNPPos$V2), split = '_'))[,2])
 HMMData <- cbind(chrom, pos, t(SNPData[,6:255]))

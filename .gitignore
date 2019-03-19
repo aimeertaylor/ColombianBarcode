@@ -3,13 +3,19 @@
 
 .DS_Store
 
-RData/**
+
+
 GISData/**
 Slides/**
 LiteratureSearch/**
 Notes/**
 OriginalData/**
+
 TxtData/**
+!TxtData/hmmInput.txt # Data 
+
+RData/**
+!RData/SNPData.RData
 ###################################################################
 
 

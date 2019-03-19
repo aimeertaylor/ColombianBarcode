@@ -1,17 +1,13 @@
 ############################################################
 # Script to calculate distances between sites 
-#
-# To-do list
-# Put gcd.hf.R into my own library
-# Check lat and long on the map
 ############################################################
 
 rm(list = ls())
-source('/Users/aimeet/Documents/BroadLaptop/RFunctions/gcd.hf.R') 
+source('./gcd.hf.R') 
 require(gtools)
-library(measurements)
+library(measurements) # for conv_unit
 
-# Import data
+# Import coordinatesl data
 LonLat <- read.table('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/TxtData/Geo_coordinates.txt', 
                    skip = 21, header = TRUE, sep = ' ')
 

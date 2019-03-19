@@ -1,0 +1,27 @@
+#=======================================================
+Email from Diego received May 30 
+#=======================================================
+
+Choco state (samples were colected from Quibdó and Tadó)
+City of Quibdó: 5°41’19”N-76°39’33”W
+City of Tadó: 5°16’03”N-76°33’57”W
+
+Valle state (samples were colected from Buanaventura)
+Buenaventura city: 3°25’52”N-77°03’17” W
+
+Cauca state (samples were colected from Guapi)
+Guapi city: 2°34’17”N-77°53’15”W
+
+Nariño state (samples were colected from Tumaco)
+Tumaco city: 1°48’34”N-78°45’46”W
+
+
+#=======================================================
+# Summarize for reading into R
+#=======================================================
+City Latitude Longitude
+Quibdo 5°41’19”N -76°39’33”W
+Tado 5°16’03”N -76°33’57”W
+Buenaventura 3°52’48”N -77°01’52”W
+Guapi 2°34’17”N -77°53’15”W
+Tumaco 1°48’34”N -78°45’46”W

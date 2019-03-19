@@ -12,7 +12,7 @@ Notes/**
 OriginalData/**
 
 TxtData/**
-!TxtData/hmmInput.txt # Data 
+!TxtData/hmmInput.txt 
 
 RData/**
 !RData/SNPData.RData

@@ -1,15 +1,15 @@
 ############################################################
 # Script to calculate distances between sites 
 ############################################################
-
 rm(list = ls())
-source('./gcd.hf.R') 
-require(gtools)
-library(measurements) # for conv_unit
+source('./gcd.hf.R') # For calculating great circle distance
+require(gtools) # For combinations
+library(measurements) # For conv_unit
+Write_LonLat = F # Write LonLat to text file 
 
 # Import coordinatesl data
 LonLat <- read.table('/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/TxtData/Geo_coordinates.txt', 
-                   skip = 21, header = TRUE, sep = ' ')
+                     skip = 21, header = TRUE, sep = ' ')
 
 # Convert Longitude Latitude format from degrees, minutes and seconds to decimal degrees:
 LonLat$Latitude = gsub('°', ' ', LonLat$Latitude)
@@ -21,8 +21,9 @@ LonLat$Longitude = gsub('”W', '', LonLat$Longitude)
 LonLat$Latitude = as.numeric(conv_unit(LonLat$Latitude, from = 'deg_min_sec', to = 'dec_deg'))
 LonLat$Longitude = as.numeric(conv_unit(LonLat$Longitude, from = 'deg_min_sec', to = 'dec_deg'))
 
-write.table(LonLat, file = '/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/TxtData/LonLat_dec_deg.txt', 
-            row.names = FALSE, col.names = TRUE, quote = FALSE)
+if(Write_LonLat){
+  write.table(LonLat, file = '/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/TxtData/LonLat_dec_deg.txt', 
+              row.names = FALSE, col.names = TRUE, quote = FALSE)}
 
 # Calculate distances
 sites <- LonLat$City

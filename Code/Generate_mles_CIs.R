@@ -12,7 +12,7 @@ library(doParallel)
 library(doRNG)
 source("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/simulate_data.R") # Download this script from https://github.com/artaylor85/PlasmodiumRelatedness
 sourceCpp("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/hmmloglikelihood.cpp") # Download this script from https://github.com/artaylor85/PlasmodiumRelatedness
-registerDoParallel(cores = detectCores()-2)
+registerDoParallel(cores = detectCores()-1)
 epsilon <- 0.001 # Fix epsilon throughout
 nboot <- 500 # For CIs
 set.seed(1) # For reproducibility
@@ -56,7 +56,7 @@ data_set$dt <- c(diff(data_set$pos), Inf)
 pos_change_chrom <- 1 + which(diff(data_set$chrom) != 0) # find places where chromosome changes
 data_set$dt[pos_change_chrom-1] <- Inf
 
-
+system.time(
 # For each pair...  
 mle_df <- foreach(icombination = 1:nrow(name_combinations),.combine = rbind) %dorng% {
   
@@ -85,7 +85,7 @@ mle_df <- foreach(icombination = 1:nrow(name_combinations),.combine = rbind) %do
   X$khats_boot = list(krhats_hmm_boot[,1])
   X$rhats_boot = list(krhats_hmm_boot[,2])
   X
-}
+})
 
 # CIs <- apply(krhats_hmm_boot, 2, quantile, probs = c(0.025, 0.975))
 save(mle_df, file = paste0("../RData/mles.RData"))

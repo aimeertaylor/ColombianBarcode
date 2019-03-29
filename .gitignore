@@ -16,6 +16,7 @@ TxtData/**
 RData/**
 !RData/SNPData.RData
 !RData/geo_dist_info.RData
+!RData/mles.RData
 ###################################################################
 
 

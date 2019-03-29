@@ -2,6 +2,7 @@
 # This script is adapted from PlasmodiumRelatedness/Generate_mles.R
 # s.t. all mles and parametric bootstrap mles for Colombia only
 # are calculated in one script.
+# 134690 seconds on my Pro with nrepeat = 500. 
 ##########################################################
 rm(list = ls())
 set.seed(1)
@@ -88,5 +89,5 @@ mle_df <- foreach(icombination = 1:nrow(name_combinations),.combine = rbind) %do
 })
 
 # CIs <- apply(krhats_hmm_boot, 2, quantile, probs = c(0.025, 0.975))
-save(mle_df, file = paste0("../RData/mles.RData"))
+#save(mle_df, file = paste0("../RData/mles.RData"))
 

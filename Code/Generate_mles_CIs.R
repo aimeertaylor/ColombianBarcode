@@ -3,6 +3,7 @@
 # s.t. all mles and parametric bootstrap mles for Colombia only
 # are calculated in one script.
 # 134690 seconds on my Pro with nrepeat = 500. 
+# consider changing nboot to 100 and dropping those for k
 ##########################################################
 rm(list = ls())
 set.seed(1)
@@ -15,7 +16,7 @@ source("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/simulate_data.R") # Downloa
 sourceCpp("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/hmmloglikelihood.cpp") # Download this script from https://github.com/artaylor85/PlasmodiumRelatedness
 registerDoParallel(cores = detectCores()-1)
 epsilon <- 0.001 # Fix epsilon throughout
-nboot <- 500 # For CIs
+nboot <- 500 # For CIs 
 set.seed(1) # For reproducibility
 
 ## Mechanism to compute MLE given fs, distances, Ys, epsilon

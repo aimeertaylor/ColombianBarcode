@@ -11,7 +11,7 @@
 # remoteness vs transmission: confounding. 
 # I think this is the "way forward"
 # clear up plots, show to Dan and Caroline
-# wasserstein
+# bootstap by sample rather than sample comp
 ##############################################################
 rm(list = ls())
 require(igraph) # To make graph, construct components etc.
@@ -40,6 +40,7 @@ cols = colorRampPalette(brewer.pal(12, "Paired"))
 # Function to create an adjacency matrix
 #=========================================================
 construct_adj_matrix = function(Result, Entry){
+  
   sample_names = unique(c(as.character(Result$individual1), as.character(Result$individual2)))
   sample_count = length(sample_names)
   adj_matrix = array(data = NA, dim = c(sample_count, sample_count), 
@@ -162,6 +163,8 @@ names(All_results) = c('Filter by vertex', 'Filter by edge', 'Unfiltered')
 # Extract summaries
 sapply(All_results, function(x){c('Edge count' = nrow(x), 
                                   'Vertex count' = length(unique(c(x$individual1,x$individual2))))})
+
+
 
 #===========================================================
 # Analyses 2) Visualise result of filtering

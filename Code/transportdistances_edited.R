@@ -1,12 +1,11 @@
 ##############################################################
 # To-do
-# Add CIs
 # Try with Pierre's different measures
 ##############################################################
 
-
 #rm(list = ls())
 library(transport) # transport package
+library(snowboot)
 load('../RData/mle_CIs.RData')
 load('../RData/SNPData.RData')
 load('../RData/geo_dist_info.RData')
@@ -16,11 +15,15 @@ load('../RData/geo_dist_info.RData')
 #=========================================================
 construct_adj_matrix = function(Result, Entry = 'rhat', dm){
   
+  # Cities 
   cities = unique(c(Result$City1,Result$City2))
+  
+  # Samples per city
   samples_c1 = unique(c(Result$individual1[Result$City1 %in% cities[1]], 
                         Result$individual2[Result$City2 %in% cities[1]]))
   samples_c2 = unique(c(Result$individual1[Result$City1 %in% cities[2]], 
                         Result$individual2[Result$City2 %in% cities[2]]))
+  
   sample_names = c(samples_c1, samples_c2) # City 1 then city 2
   sample_count = length(sample_names)
   
@@ -84,55 +87,58 @@ for(j in 1:length(All_results)){
 }
 
 
+#================================================================
+# Calculate the "1-Wasserstein" distance between population 1 and population 2
+#================================================================
 
+nrepeats = 100 # Number of bootstrap repeats
 
-
-
-
-#==========================================================
-# Function to create an distance matrix old
-#=========================================================
-# construct_ns_adj_matrix = function(Result, Entry = 'rhat'){
-#   cities = unique(c(Result$City1,Result$City2))
-#   samples_c1 = unique(c(Result$individual1[Result$City1 %in% cities[1]], 
-#                         Result$individual2[Result$City2 %in% cities[1]]))
-#   samples_c2 = unique(c(Result$individual1[Result$City1 %in% cities[2]], 
-#                         Result$individual2[Result$City2 %in% cities[2]]))
-#   adj_matrix = array(data = NA, dim = c(length(samples_c1), length(samples_c2)), 
-#                      dimnames = list(samples_c1, samples_c2))
-#   for(i in samples_c1){
-#     for(j in samples_c2){
-#       ind = (Result$individual1 == i & Result$individual2 == j) | (Result$individual1 == j & Result$individual2 == i) 
-#       adj_matrix[i, j] = 1-Result[ind, Entry]
-#     }}
-#   if(any(is.na(adj_matrix))){stop('NA entries')}
-#   return(adj_matrix)
-# }
-
-vertboot(m1 = matrix(sample(100, 100, replace = T),10,10), boot_rep = 10) # Seems not to work 
-
-
-
-## Calculate the "1-Wasserstein" distance between population 1 and population 2
 CIs = sapply(geo_dist_info$geo_order, function(city_comp){
   
+  mle_CIs = All_results[[j]]
+  if(class(mle_CIs$individual1) == 'factor'){mle_CIs$individual1 = as.character(mle_CIs$individual1)}
+  if(class(mle_CIs$individual2) == 'factor'){mle_CIs$individual2 = as.character(mle_CIs$individual2)}
+  
+  # Add site comps
+  mle_CIs$City1 = as.character(SNPData[mle_CIs$individual1, 'City'])
+  mle_CIs$City2 = as.character(SNPData[mle_CIs$individual2, 'City'])
+  mle_CIs$City12 = apply(mle_CIs[,c('City1','City2')], 1, function(x)paste(sort(x),collapse="_"))
+  
   cities = strsplit(city_comp, split = '_')[[1]]
-  
-  inds == (mle_CIs$City1 %in% cities) & (mle_CIs$City2 %in% cities) # indices for cities
+  inds = (mle_CIs$City1 %in% cities) & (mle_CIs$City2 %in% cities) # indices for cities
 
-  # Return adj matrix
-  adj_matrix_list = construct_adj_matrix(Result = mle_CIs[inds, ], dm = F)
-  no_c1 = length(adj_matrix_list$samples_c1) # sumarise sample count
-  no_c2 = length(adj_matrix_list$samples_c2) # sumarise sample count
-
-  # Bootstrap adj matrix
-  adj_matrix_boot = vertboot(m1 = adj_matrix_list[[1]], boot_rep = 10)
+  #--------------------------------------------------------
+  # Using vertboot - I don't understand exactly what vertboot is doing seems to only work
+  # with integers: e.g. vertboot(m1 = matrix(rnorm(10,10),10,10), boot_rep = 10) 
+  # Scale to map adj_matrix onto integer values for vertboot (see example above),
+  # Scale = 10^8
+  #
+  # # Return adj matrix
+  # adj_matrix_list = construct_adj_matrix(Result = mle_CIs[inds, ], dm = F)
+  # no_c1 = length(adj_matrix_list$samples_c1) # sumarise sample count
+  # no_c2 = length(adj_matrix_list$samples_c2) # sumarise sample count
+  # 
+  # # Bootstrap adj matrix
+  # adj_matrix_boot = vertboot(m1 = adj_matrix_list[[1]]*Scale, boot_rep = nrepeats)
+  # 
+  # # Extract distance matrices
+  # dis_matrix_boot = lapply(adj_matrix_boot, function(m)m[1:no_c1,no_c1+1:no_c2]/Scale)
+  #--------------------------------------------------------
   
-  # Extract distance matrices
-  dis_matrix_boot = lapply(adj_matrix_boot, function(a)a[1:no_c1,no_c1+1:no_c2])
+  #--------------------------------------------------------
+  # Simply bootstrapping contents  
+  dist_matrix = construct_adj_matrix(Result = mle_CIs[inds, ], dm = T)
+  dist_matrix_boot = lapply(1:nrepeats, function(b){
+    row_boot = sample(nrow(dist_matrix), nrow(dist_matrix), replace = T)
+    col_boot = sample(ncol(dist_matrix), ncol(dist_matrix), replace = T)
+    dm_boot = rbind(dist_matrix[row_boot,])
+    dm_boot = cbind(dm_boot[row_boot,])
+    return(dm_boot)
+  })
+  #--------------------------------------------------------
   
   # Need to boostrap the distance matrix somehow
-  costs_boot = sapply(dis_matrix_boot, function(dist_matrix){
+  costs_boot = sapply(dist_matrix_boot, function(dist_matrix){
     w1 <- rep(1/nrow(dist_matrix), nrow(dist_matrix))
     w2 <- rep(1/ncol(dist_matrix), ncol(dist_matrix))
     a <- transport(w1, w2, costm = dist_matrix, method = "shortsimplex")
@@ -146,6 +152,8 @@ CIs = sapply(geo_dist_info$geo_order, function(city_comp){
   # Return quantiles
   quantile(costs_boot, probs = c(0.025,0.975))
 })
+
+segments(x0 = X[,1], x1 = X[,1], y0 = CIs['2.5%',], y1 = CIs['97.5%',])
 
 
 
@@ -167,3 +175,5 @@ CIs = sapply(geo_dist_info$geo_order, function(city_comp){
 
 
 
+
+       

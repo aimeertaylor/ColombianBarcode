@@ -21,15 +21,17 @@ load('../RData/mle_CIs.RData')
 load('../RData/SNPData.RData')
 load('../RData/geo_dist_info.RData')
 PDF = T # Set to TRUE to plot graphs to pdf
-PLOT_GRAPHS = F # Set to TRUE to plot graphs 
+PLOT_GRAPHS = T # Set to TRUE to plot graphs 
 eps = 0.01
 Thresholds = c(eps, 0.25, 0.5)
 
-# Add site comps
-mle_CIs$site_comp = apply(cbind(SNPData$City[mle_CIs$individual1], SNPData$City[mle_CIs$individual2]), 1, function(x){
-  paste(sort(x), collapse = "_")
-})
-
+#++++++++++++++++++++++++++
+# mle_CIs = mle_CIs[(mle_CIs$City1 == "Tado" | mle_CIs$City2 == "Tado"), ] 
+# mle_CIs[mle_CIs$City2 == "Tado", 'City2'] = 'Quibdo'
+# mle_CIs$City12 = apply(mle_CIs[,c('City1','City2')], 1, function(x)paste(sort(x),collapse="_"))
+# geo_dist_info$pairwise_site_distance <- geo_dist_info$pairwise_site_distance[-c(1,3,7,9),]
+#++++++++++++++++++++++++++
+mle_CIs$site_comp = apply(mle_CIs[,c('City1','City2')], 1, function(x)paste(sort(x),collapse="_"))
 
 #==========================================================
 # Function to create colours
@@ -85,9 +87,10 @@ rm_highly_related_within = function(Result, Cities, Edge){
         rep_samples = sample_names[samples_ids] # If only one sample per component, keep
       } else { # Keep one per city
         cities = Cities[sample_names[samples_ids]]
+        # Pick sample with earliest data (deterministically for comparison across plots)
         rep_samples = sapply(unique(cities), function(city){
-          # Pick sample (deterministically for comparison across plots)
-          rep_sample = paste0('sid',max(as.numeric(gsub('sid','',names(cities)[cities == city])))) 
+          samples_to_choose_from = names(cities)[cities == city]
+          rep_sample = samples_to_choose_from[which.min(SNPData[samples_to_choose_from, 'COLLECTION.DATE'])]
         })
       }
       return(rep_samples)
@@ -106,18 +109,20 @@ rm_highly_related_within = function(Result, Cities, Edge){
 extract_city_graph = function(x, city1, city2){
   inds = V(x)$site == city1|V(x)$site == city2 # indices for cities
   z = induced_subgraph(x, vids = which(inds)) # extract subgraph
-  Y = as.numeric(V(z)$site == city1) + Jitter[V(z)$name] # vertical layout
+  Jitter_sign = rep(1, length(V(z)$site ))
+  Jitter_sign[V(z)$site == city2] = -1
+  # vertical layout
+  Y = as.numeric(V(z)$site == city1) + (Jitter[V(z)$name] * Jitter_sign)
   attr(z, 'layout') = cbind(X = V(z)$date, Y) # Full layout
   V(z)$color = M_cols[V(z)$name] # Colour by clonal component
   E(z)$weight[is.na(E(z)$weight)] = 0 # NAs introduced when filter edges 
+  E(z)$width <- E(z)$weight
   E(z)$color = sapply(E(z)$weight, adjustcolor, col = 'white') 
-  E(z)$color = 'white' # First assign all to be white
   v_names = do.call(rbind, strsplit(attributes(E(z))$vnames, split = "\\|"))
   edge_col_ind = which(M_cols[v_names[,1]] == M_cols[v_names[,2]] & M_cols[v_names[,1]] != "#FFFFFF")
   if(any(edge_col_ind)){
     E(z)$color[edge_col_ind] = M_cols[v_names[,1]][edge_col_ind]
   }
-  E(z)$width <- E(z)$weight
   return(z)}
 
 #===========================================================
@@ -159,6 +164,7 @@ Cities = SNPData$City; names(Cities) = row.names(SNPData)
 All_results = lapply(c(F,T), rm_highly_related_within, Result = mle_CIs, Cities = Cities)
 All_results[[3]] = mle_CIs
 names(All_results) = c('Filter by vertex', 'Filter by edge', 'Unfiltered')
+save(All_results, file = '../RData/All_results.RData')
 
 # Extract summaries
 sapply(All_results, function(x){c('Edge count' = nrow(x), 
@@ -169,48 +175,94 @@ sapply(All_results, function(x){c('Edge count' = nrow(x),
 #===========================================================
 # Analyses 2) Visualise result of filtering
 #===========================================================
+# Create adjacency matrices 
+All_adj_matrix = lapply(All_results, construct_adj_matrix, Entry = 'rhat')
+
+# Create graphs 
+All_G = lapply(All_adj_matrix, graph_from_adjacency_matrix, mode='upper', diag=F, weighted=T)
+
+# Add meta data
+All_G = lapply(All_G, function(x){
+  V(x)$site = SNPData[V(x)$name, 'City']
+  V(x)$date = SNPData[V(x)$name, 'COLLECTION.DATE']
+  return(x)
+})
+
+#---------------------------------------------------------------------
+# Based on unfiltered results, jitter, clonal component membership
+#--------------------------------------------------------------------- 
+# Adjency matrix unfiltered (same as All_adj_matrix_v[[1]] and All_adj_matrix_e[[1]]
+A_high = construct_adj_matrix(mle_CIs, Entry = '97.5%')
+A_high[A_high < 1-eps] = 0 # Edit s.t. only not stat diff from clonal have weight
+G_high = graph_from_adjacency_matrix(A_high, mode='upper', diag=F, weighted=T) # Construct graph 
+C_high = components(G_high) # Extract components from graph
+M_high = C_high$membership # Extract membership of vertices
+
+# Layout within sites
+Jitter = M_high*10^-3 # For graph layout (function on M)
+Jitter[M_high %in% which(C_high$csize < 2)] = -0.15 
+Jitter = Jitter + rnorm(length(Jitter), 0 , 0.05)
+  
+# Create clonal component colours
+Cols = cols(sum(C_high$csize > 1)) # Enumerate colours
+names(Cols) = unique((1:C_high$no)[C_high$csize > 1])
+
+# Creat a vector of vertex colours
+M_cols = sapply(M_high, function(x){ # Return white for singleton 
+  ifelse(C_high$csize[x]==1,'#FFFFFF80',Cols[as.character(x)])})
+names(M_cols) = names(M_high)
+
+# Extract colours of comparisons for histogram
+v_names = do.call(rbind, strsplit(attributes(E(G_high))$vnames, split = "\\|")) # Extract vertices per edge
+edge_col_ind = M_cols[v_names[,1]] == M_cols[v_names[,2]] & M_cols[v_names[,1]] != "#FFFFFF"
+edge_cols = array(M_cols[v_names[,1]][edge_col_ind], dim = sum(edge_col_ind), # Creat a vector grays
+                  dimnames = list(apply(v_names[edge_col_ind, ], 1, function(x)paste(sort(x), collapse = '_'))))
+save(edge_cols, file = '../RData/edge_cols.RData')
+
+#-----------------------------------------------------
+# Plot the relatedness between components
+#-----------------------------------------------------
+R_comp = rm_highly_related_within(Result = mle_CIs, Edge = F,
+                         Cities = sapply(row.names(SNPData), function(x)return("City")))
+A_comp = construct_adj_matrix(R_comp, Entry = 'rhat')
+G_comp = graph_from_adjacency_matrix(A_comp, mode='upper', diag=F, weighted=T)
+V(G_comp)$color = M_cols[V(G_comp)$name]
+Comp_G = induced_subgraph(G_comp, vids = which(V(G_comp)$color!="#FFFFFF80"))
+E(Comp_G)$width <- E(Comp_G)$weight
+E(Comp_G)$colour <- 'black'
+V(Comp_G)$date <- SNPData[V(Comp_G)$name, 'COLLECTION.DATE']
+set.seed(150)
+
+# Work out where each clone is seen
+cites_per_clone = lapply(V(Comp_G)$color, function(COL){
+  inds = mle_CIs$sample_comp %in% names(edge_cols)[edge_cols == COL]
+  unique(c(mle_CIs$City1[inds], mle_CIs$City1[inds]))
+})
+
+clone_site_no = sapply(cites_per_clone, length) # Number of sites observed
+V(Comp_G)$label = sapply(cites_per_clone, function(x){
+  paste(sapply(strsplit(x, split = ''), function(y) paste(y[1:2], collapse = '')), collapse = '+')})
+attr(Comp_G, 'layout') = cbind(X = V(Comp_G)$date, 
+                               Y = clone_site_no + rnorm(length(V(Comp_G)), 0, 0.2)) # Full layout
+plot(Comp_G, vertex.size = 10, layout = attributes(Comp_G)$layout, vertex.label.cex = 0.7)
+unique_yrs = as.numeric(unique(SNPData[V(Comp_G)$name, "Year"]))
+min_yr = min(unique_yrs)
+max_yr = max(unique_yrs)
+yr01 = (unique_yrs-min_yr)/(max_yr - min_yr)
+axis(side = 1, labels = unique_yrs, las = 1, cex.axis = 0.7, 
+     at = -1 + yr01 * 2, line = -1, tick = F)
+
+
+
+#-----------------------------------------------------
+# For each site comparison vizualise effect of filter
+# This does not take into account undercertainty in rhat
+#-----------------------------------------------------
 if(PLOT_GRAPHS){
-  
-  # Create adjacency matrices 
-  All_adj_matrix = lapply(All_results, construct_adj_matrix, Entry = 'rhat')
-  
-  # Create graphs 
-  All_G = lapply(All_adj_matrix, graph_from_adjacency_matrix, mode='upper', diag=F, weighted=T)
-  
-  # Add meta data
-  All_G = lapply(All_G, function(x){
-    V(x)$site = SNPData[V(x)$name, 'City']
-    V(x)$date = SNPData[V(x)$name, 'COLLECTION.DATE']
-    return(x)
-  })
-  
-  #---------------------------------------------------------------------
-  # Based on unfiltered results, jitter, clonal component membership
-  #--------------------------------------------------------------------- 
-  # Adjency matrix unfiltered (same as All_adj_matrix_v[[1]] and All_adj_matrix_e[[1]]
-  A_high = construct_adj_matrix(mle_CIs, Entry = '97.5%')
-  A_high[A_high < 1-eps] = 0 # Edit s.t. only not stat diff from clonal have weight
-  G_high = graph_from_adjacency_matrix(A_high, mode='upper', diag=F, weighted=T) # Construct graph 
-  C_high = components(G_high) # Extract components from graph
-  M_high = C_high$membership # Extract membership of vertices
-  Jitter = sapply(rownames(A_high), function(x)rnorm(1,0,0.05)) # For graph layout
-  
-  # Create clonal component colours
-  Cols = cols(sum(C_high$csize > 1)) # Enumerate colours
-  names(Cols) = unique((1:C_high$no)[C_high$csize > 1])
-  M_cols = sapply(M_high, function(x){ # Return white for singleton 
-    ifelse(C_high$csize[x]==1,'#FFFFFF',Cols[as.character(x)])})
-  names(M_cols) = names(M_high)
-  
-  #-----------------------------------------------------
-  # For each site comparison vizualise effect of filter
-  # This does not take into account undercertainty in rhat
-  #-----------------------------------------------------
-  if(PDF){pdf('./Graphs_CIs.pdf', height = 10, width = 9)}
-  par(mfrow = c(3,3), mar = c(0.5,1,1.5,1), family = 'serif', bg = 'white')
+  if(PDF){pdf('../Plots/Graphs_CIs.pdf', height = 10, width = 8)}
+  par(mfrow = c(2,1), mar = c(3,2,3,2), family = 'serif', bg = 'white')
   for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
-    
-    for(l in length(All_G):1){
+    for(l in c(3,1)){
       
       X = All_G[[l]] # For each strategy
       
@@ -222,17 +274,29 @@ if(PLOT_GRAPHS){
       G = extract_city_graph(x = X, city1 = s1, city2 = s2)
       
       # Plot graph
-      plot.igraph(G, layout = attributes(G)$layout, vertex.size = 3, vertex.label = NA)
+      plot.igraph(G, layout = attributes(G)$layout, vertex.size = 3, vertex.label = NA, asp=0) # For layout
       rect(xleft = par("usr")[1], ybottom = par("usr")[3], xright = par("usr")[2], ytop = par("usr")[4], col = "lightgray")
+      plot.igraph(G, layout = attributes(G)$layout, vertex.size = 3, vertex.label = NA, add = T)
+      
+      # Overlay coloured only
+      E(G)$color[grepl("#FFFFFF", E(G)$color)] = NA
       plot.igraph(G, layout = attributes(G)$layout, vertex.size = 3, vertex.label = NA, add = T)
       
       # Annotate
       legend('bottomleft', pch = 21, bty = 'n', 
-             pt.bg = unique(V(G)$color[V(G)$color!="#FFFFFF"]), cex = 0.75, y.intersp = 0.5,
+             pt.bg = sort(unique(V(G)$color[V(G)$color!="#FFFFFF80"])), cex = 1, y.intersp = 0.5,
              legend = rep('', length(unique(V(G)$color))-1))
-      mtext(side = 3, line = 0.2, adj = 0, sprintf('%s', names(All_G)[l]))
-      mtext(side = 1, sprintf('%s', s2), line = -1.2)
-      mtext(side = 3, sprintf('%s', s1), line = -1.2)
+      mtext(side = 3, line = 0.2, adj = 0, sprintf('%s', names(All_G)[l]), cex = 1.5)
+      mtext(side = 1, sprintf('%s', s2), line = 1.5, cex = 1.5)
+      mtext(side = 3, sprintf('%s', s1), line = 0.5, cex = 1.5)
+      
+      # Add years 
+      unique_yrs = as.numeric(unique(SNPData[V(G)$name, "Year"]))
+      min_yr = min(unique_yrs)
+      max_yr = max(unique_yrs)
+      yr01 = (unique_yrs-min_yr)/(max_yr - min_yr)
+      axis(side = 1, labels = unique_yrs, las = 1, cex.axis = 0.7, at = -1 + yr01 * 2, 
+           line = -1, tick = F)
     }
   }
   if(PDF){dev.off()}
@@ -244,7 +308,7 @@ if(PLOT_GRAPHS){
 # Fractions highly related - to finish
 #-----------------------------------------------
 par(mfrow = c(3,3), bg = 'white', pty = 's', mar = c(4,4,1,1))
-sorted_site_comp = names(sort(geo_dist_info$pairwise_site_distance_all[unique(mle_CIs$site_comp)]))
+sorted_site_comp = names(sort(geo_dist_info$pairwise_site_distance_all[unique(mle_CIs$City12)]))
 set.seed(1) # For reproducibility
 
 for(j in length(All_results):1){
@@ -252,31 +316,32 @@ for(j in length(All_results):1){
   X = All_results[[j]]
   
   for(i in 1:length(Thresholds)){
-  # Calculate proportion based on mle
-  prop_highly_related = sapply(sorted_site_comp, function(x){
-    inds = X$site_comp == x
-    mean(X$`2.5%`[inds] >= Thresholds[i])
-  })
-  
-  # Bootstrap to get CIs due to different sample counts per site 
-  CIs_site_comp = sapply(sorted_site_comp, function(x){
-    No_site_comp = sum(X$site_comp == x) # No. of samples to re-draw 
-    prop_bootstrapped = sapply(1:100, function(b){
-      booti_ind = sample(which(X$site_comp == x), No_site_comp, replace = T)
-      mean(X$`2.5%`[booti_ind] >= Thresholds[i])})
-    CIs = quantile(prop_bootstrapped, probs = c(0.025, 0.975))
-    return(CIs)
-  })
-  
-  # Barplot
-  Midpoints = barplot(prop_highly_related, names.arg = sorted_site_comp, cex.names = 0.5,
-                      las = 2, density = rep(c(100,25), c(5, 10)), 
-                      ylim = c(0,max(CIs_site_comp, prop_highly_related)), 
-                      main = paste0(names(All_results)[j], Thresholds[i]))
-  # CIs
-  segments(x0 = Midpoints[,1], x1 = Midpoints[,1],
-           y0 = CIs_site_comp[1, ],
-           y1 = CIs_site_comp[2, ], lty = 1)}
+    
+    # Calculate proportion based on mle
+    prop_highly_related = sapply(sorted_site_comp, function(x){
+      inds = X$site_comp == x
+      mean(X$`2.5%`[inds] >= Thresholds[i])
+    })
+    
+    # Bootstrap to get CIs due to different sample counts per site 
+    CIs_site_comp = sapply(sorted_site_comp, function(x){
+      No_site_comp = sum(X$site_comp == x) # No. of samples to re-draw 
+      prop_bootstrapped = sapply(1:100, function(b){
+        booti_ind = sample(which(X$site_comp == x), No_site_comp, replace = T)
+        mean(X$`2.5%`[booti_ind] >= Thresholds[i])})
+      CIs = quantile(prop_bootstrapped, probs = c(0.025, 0.975))
+      return(CIs)
+    })
+    
+    # Barplot
+    Midpoints = barplot(prop_highly_related, names.arg = sorted_site_comp, cex.names = 0.5,
+                        las = 2, density = rep(c(100,25), c(5, 10)), 
+                        ylim = c(0,max(CIs_site_comp, prop_highly_related)), 
+                        main = paste0(names(All_results)[j], Thresholds[i]))
+    # CIs
+    segments(x0 = Midpoints[,1], x1 = Midpoints[,1],
+             y0 = CIs_site_comp[1, ],
+             y1 = CIs_site_comp[2, ], lty = 1)}
 }
 
 

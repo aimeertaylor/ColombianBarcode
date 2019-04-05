@@ -1,17 +1,25 @@
 ##############################################################
-# To-do
-# Try with Pierre's different measures
+# In this script we generate and plot transport distances between 
+# parasite populations sampled from different cities on the 
+# Colombian Pacific coast
 ##############################################################
 
-#rm(list = ls())
+rm(list = ls())
 library(transport) # transport package
-library(snowboot)
-load('../RData/mle_CIs.RData')
+load('../RData/All_results.RData')
 load('../RData/SNPData.RData')
 load('../RData/geo_dist_info.RData')
+attach(geo_dist_info)
+nrepeats = 500 # Number of bootstrap repeats (79 seconds)
+Gen_dist = T # Set to true to regenerate distances, otherwise just plot
+
+
+
 
 #==========================================================
 # Function to create an adjacency matrix
+# No-longer need adjacency matrix (distance only)
+# but keep in case I combine with other code
 #=========================================================
 construct_adj_matrix = function(Result, Entry = 'rhat', dm){
   
@@ -47,116 +55,70 @@ construct_adj_matrix = function(Result, Entry = 'rhat', dm){
 }
 
 
-
-par(mfrow = c(2,2), family = 'serif', mar = c(6,4,3,1))
-for(j in 1:length(All_results)){
-  
-  mle_CIs = All_results[[j]]
-  if(class(mle_CIs$individual1) == 'factor'){mle_CIs$individual1 = as.character(mle_CIs$individual1)}
-  if(class(mle_CIs$individual2) == 'factor'){mle_CIs$individual2 = as.character(mle_CIs$individual2)}
-  
-  # Add site comps
-  mle_CIs$City1 = as.character(SNPData[mle_CIs$individual1, 'City'])
-  mle_CIs$City2 = as.character(SNPData[mle_CIs$individual2, 'City'])
-  mle_CIs$City12 = apply(mle_CIs[,c('City1','City2')], 1, function(x)paste(sort(x),collapse="_"))
-  
-  # Create adjacency matrix for each combination of cities
-  costs = array(NA, length(geo_dist_info$geo_order), dimnames = list(geo_dist_info$geo_order))
-  
-  ## Calculate the "1-Wasserstein" distance between population 1 and population 2
-  for(city_comp in geo_dist_info$geo_order){
-    cities = strsplit(city_comp, split = '_')[[1]]
-    inds = (mle_CIs$City1 %in% cities) & (mle_CIs$City2 %in% cities) # indices for cities
-    #inds = mle_CIs$City12 == city_comp
-    dist_matrix = construct_adj_matrix(Result = mle_CIs[inds, ], dm = T)
-    w1 <- rep(1/nrow(dist_matrix), nrow(dist_matrix))
-    w2 <- rep(1/ncol(dist_matrix), ncol(dist_matrix))
-    a <- transport(w1, w2, costm = dist_matrix, method = "shortsimplex")
-    cost <- 0 
-    for (i in 1:nrow(a)){
-      cost <- cost + dist_matrix[a$from[i], a$to[i]] * a$mass[i]
-    }
-    costs[city_comp] = cost
-  }
-  
-  # Plot 
-  X = barplot(costs, las = 2, xaxt = 'n', ylab = "1-Wasserstein distance", 
-              main = names(All_results)[j])
-  text(x = X, y = -0.02, srt = 40, adj= 1, xpd = TRUE,
-       labels =  gsub('_', ' & ', names(costs)), cex = 0.7)
-}
-
-
-#================================================================
-# Calculate the "1-Wasserstein" distance between population 1 and population 2
-#================================================================
-
-nrepeats = 100 # Number of bootstrap repeats
-
-CIs = sapply(geo_dist_info$geo_order, function(city_comp){
-  
-  mle_CIs = All_results[[j]]
-  if(class(mle_CIs$individual1) == 'factor'){mle_CIs$individual1 = as.character(mle_CIs$individual1)}
-  if(class(mle_CIs$individual2) == 'factor'){mle_CIs$individual2 = as.character(mle_CIs$individual2)}
-  
-  # Add site comps
-  mle_CIs$City1 = as.character(SNPData[mle_CIs$individual1, 'City'])
-  mle_CIs$City2 = as.character(SNPData[mle_CIs$individual2, 'City'])
-  mle_CIs$City12 = apply(mle_CIs[,c('City1','City2')], 1, function(x)paste(sort(x),collapse="_"))
-  
-  cities = strsplit(city_comp, split = '_')[[1]]
-  inds = (mle_CIs$City1 %in% cities) & (mle_CIs$City2 %in% cities) # indices for cities
-
-  #--------------------------------------------------------
-  # Using vertboot - I don't understand exactly what vertboot is doing seems to only work
-  # with integers: e.g. vertboot(m1 = matrix(rnorm(10,10),10,10), boot_rep = 10) 
-  # Scale to map adj_matrix onto integer values for vertboot (see example above),
-  # Scale = 10^8
-  #
-  # # Return adj matrix
-  # adj_matrix_list = construct_adj_matrix(Result = mle_CIs[inds, ], dm = F)
-  # no_c1 = length(adj_matrix_list$samples_c1) # sumarise sample count
-  # no_c2 = length(adj_matrix_list$samples_c2) # sumarise sample count
-  # 
-  # # Bootstrap adj matrix
-  # adj_matrix_boot = vertboot(m1 = adj_matrix_list[[1]]*Scale, boot_rep = nrepeats)
-  # 
-  # # Extract distance matrices
-  # dis_matrix_boot = lapply(adj_matrix_boot, function(m)m[1:no_c1,no_c1+1:no_c2]/Scale)
-  #--------------------------------------------------------
-  
-  #--------------------------------------------------------
-  # Simply bootstrapping contents  
-  dist_matrix = construct_adj_matrix(Result = mle_CIs[inds, ], dm = T)
-  dist_matrix_boot = lapply(1:nrepeats, function(b){
-    row_boot = sample(nrow(dist_matrix), nrow(dist_matrix), replace = T)
-    col_boot = sample(ncol(dist_matrix), ncol(dist_matrix), replace = T)
-    dm_boot = rbind(dist_matrix[row_boot,])
-    dm_boot = cbind(dm_boot[row_boot,])
-    return(dm_boot)
+system.time(if(Gen_dist){
+  All_W_results = lapply(All_results, function(mle_CIs){
+    
+    if(class(mle_CIs$individual1) == 'factor'){mle_CIs$individual1 = as.character(mle_CIs$individual1)}
+    if(class(mle_CIs$individual2) == 'factor'){mle_CIs$individual2 = as.character(mle_CIs$individual2)}
+    
+    #++++++++++++++++++++++++++
+    mle_CIs[mle_CIs$City1 == "Tado", 'City1'] = 'Quibdo' 
+    mle_CIs[mle_CIs$City2 == "Tado", 'City2'] = 'Quibdo' 
+    mle_CIs$City12 = apply(mle_CIs[,c('City1','City2')], 1, function(x)paste(sort(x),collapse="_"))
+    #++++++++++++++++++++++++++
+    
+    # Add site comps
+    mle_CIs$City1 = as.character(SNPData[mle_CIs$individual1, 'City'])
+    mle_CIs$City2 = as.character(SNPData[mle_CIs$individual2, 'City'])
+    mle_CIs$City12 = apply(mle_CIs[,c('City1','City2')], 1, function(x)paste(sort(x),collapse="_"))
+    
+    #=============================================================================
+    # Calculate the "1-Wasserstein" distance between population 1 and population 2
+    #=============================================================================
+    W_results = sapply(geo_order[!grepl('Tado', geo_order)], function(city_comp){
+      
+      cities = strsplit(city_comp, split = '_')[[1]]
+      inds = (mle_CIs$City1 %in% cities) & (mle_CIs$City2 %in% cities) # indices for cities
+      
+      # Actual distance matrix
+      dist_matrix = construct_adj_matrix(Result = mle_CIs[inds, ], dm = T)
+      
+      # Bootstrapping rows then columns (samples from citites 1 and 2) 
+      dist_matrix_boot = lapply(1:nrepeats, function(b){
+        row_boot = sample(nrow(dist_matrix), nrow(dist_matrix), replace = T)
+        col_boot = sample(ncol(dist_matrix), ncol(dist_matrix), replace = T)
+        dm_boot = rbind(dist_matrix[row_boot,])
+        dm_boot = cbind(dm_boot[row_boot,])
+        return(dm_boot)
+      })
+      
+      # Weights (could adapted to propogate uncertainity)
+      w1 <- rep(1/nrow(dist_matrix), nrow(dist_matrix))
+      w2 <- rep(1/ncol(dist_matrix), ncol(dist_matrix))
+      
+      # Caclulate 1-W
+      a <- transport(w1, w2, costm = dist_matrix, method = "shortsimplex")
+      cost <- 0 
+      for (i in 1:nrow(a)){
+        cost <- cost + dist_matrix[a$from[i], a$to[i]] * a$mass[i]}
+      
+      # Calculate boostrapped 1-W
+      costs_boot = sapply(dist_matrix_boot, function(dist_matrix){
+        a <- transport(w1, w2, costm = dist_matrix, method = "shortsimplex")
+        cost <- 0
+        for (i in 1:nrow(a)){
+          cost <- cost + dist_matrix[a$from[i], a$to[i]] * a$mass[i]}
+        return(cost)})
+      
+      # Return value and CIs
+      c('cost' = cost, quantile(costs_boot, probs = c(0.025,0.975)))
+    })
+    
+    colnames(W_results) = geo_order[!grepl('Tado', geo_order)]
+    return(W_results)
   })
-  #--------------------------------------------------------
-  
-  # Need to boostrap the distance matrix somehow
-  costs_boot = sapply(dist_matrix_boot, function(dist_matrix){
-    w1 <- rep(1/nrow(dist_matrix), nrow(dist_matrix))
-    w2 <- rep(1/ncol(dist_matrix), ncol(dist_matrix))
-    a <- transport(w1, w2, costm = dist_matrix, method = "shortsimplex")
-    cost <- 0
-    for (i in 1:nrow(a)){
-      cost <- cost + dist_matrix[a$from[i], a$to[i]] * a$mass[i]
-    }
-    return(cost)
-  })
-  
-  # Return quantiles
-  quantile(costs_boot, probs = c(0.025,0.975))
+  save(All_W_results, file = '../RData/All_W_results.RData')
 })
-
-segments(x0 = X[,1], x1 = X[,1], y0 = CIs['2.5%',], y1 = CIs['97.5%',])
-
-
-
 
 
 # ### now Sinkhorn distance implemented in the winference package
@@ -176,4 +138,3 @@ segments(x0 = X[,1], x1 = X[,1], y0 = CIs['2.5%',], y1 = CIs['97.5%',])
 
 
 
-       

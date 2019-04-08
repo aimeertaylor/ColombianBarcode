@@ -59,12 +59,6 @@ system.time(if(Gen_dist){
     if(class(mle_CIs$individual1) == 'factor'){mle_CIs$individual1 = as.character(mle_CIs$individual1)}
     if(class(mle_CIs$individual2) == 'factor'){mle_CIs$individual2 = as.character(mle_CIs$individual2)}
     
-    #++++++++++++++++++++++++++
-    mle_CIs[mle_CIs$City1 == "Tado", 'City1'] = 'Quibdo' 
-    mle_CIs[mle_CIs$City2 == "Tado", 'City2'] = 'Quibdo' 
-    mle_CIs$City12 = apply(mle_CIs[,c('City1','City2')], 1, function(x)paste(sort(x),collapse="_"))
-    #++++++++++++++++++++++++++
-    
     # Add site comps
     mle_CIs$City1 = as.character(SNPData[mle_CIs$individual1, 'City'])
     mle_CIs$City2 = as.character(SNPData[mle_CIs$individual2, 'City'])
@@ -112,7 +106,6 @@ system.time(if(Gen_dist){
       c('cost' = cost, quantile(costs_boot, probs = c(0.025,0.975)))
     })
     
-    colnames(W_results) = geo_order[!grepl('Tado', geo_order)]
     return(W_results)
   })
   save(All_W_results, file = '../RData/All_W_results.RData')

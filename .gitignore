@@ -17,6 +17,8 @@ RData/**
 !RData/SNPData.RData
 !RData/geo_dist_info.RData
 !RData/mle_CIs.RData
+!RData/populations_cities.RData
+!RData/populations_states.RData
 ###################################################################
 
 

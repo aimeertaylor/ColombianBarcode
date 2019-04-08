@@ -166,6 +166,7 @@ All_results[[3]] = mle_CIs
 names(All_results) = c('Filter by vertex', 'Filter by edge', 'Unfiltered')
 save(All_results, file = '../RData/All_results.RData')
 
+
 # Extract summaries
 sapply(All_results, function(x){c('Edge count' = nrow(x), 
                                   'Vertex count' = length(unique(c(x$individual1,x$individual2))))})
@@ -301,49 +302,6 @@ if(PLOT_GRAPHS){
   }
   if(PDF){dev.off()}
 }
-
-
-
-#-----------------------------------------------
-# Fractions highly related - to finish
-#-----------------------------------------------
-par(mfrow = c(3,3), bg = 'white', pty = 's', mar = c(4,4,1,1))
-sorted_site_comp = names(sort(geo_dist_info$pairwise_site_distance_all[unique(mle_CIs$City12)]))
-set.seed(1) # For reproducibility
-
-for(j in length(All_results):1){
-  
-  X = All_results[[j]]
-  
-  for(i in 1:length(Thresholds)){
-    
-    # Calculate proportion based on mle
-    prop_highly_related = sapply(sorted_site_comp, function(x){
-      inds = X$site_comp == x
-      mean(X$`2.5%`[inds] >= Thresholds[i])
-    })
-    
-    # Bootstrap to get CIs due to different sample counts per site 
-    CIs_site_comp = sapply(sorted_site_comp, function(x){
-      No_site_comp = sum(X$site_comp == x) # No. of samples to re-draw 
-      prop_bootstrapped = sapply(1:100, function(b){
-        booti_ind = sample(which(X$site_comp == x), No_site_comp, replace = T)
-        mean(X$`2.5%`[booti_ind] >= Thresholds[i])})
-      CIs = quantile(prop_bootstrapped, probs = c(0.025, 0.975))
-      return(CIs)
-    })
-    
-    # Barplot
-    Midpoints = barplot(prop_highly_related, names.arg = sorted_site_comp, cex.names = 0.5,
-                        las = 2, density = rep(c(100,25), c(5, 10)), 
-                        ylim = c(0,max(CIs_site_comp, prop_highly_related)), 
-                        main = paste0(names(All_results)[j], Thresholds[i]))
-    # CIs
-    segments(x0 = Midpoints[,1], x1 = Midpoints[,1],
-             y0 = CIs_site_comp[1, ],
-             y1 = CIs_site_comp[2, ], lty = 1)}
-}
-
 
 
 

@@ -3,6 +3,7 @@
 # 1) Map based on fraction of IBD proportions > 0.5 (2 plots, combined in manuscript)
 # This map was created using QGIS (QGIS Development Team 2017) and the raster (Hijmans 2016),
 # maptools (Bivand and Lewin-Koh 2017) and igraph (Csardi and Nepusz 2006) packages
+# Update for state possibility 
 ############################################################################################
 rm(list = ls())
 

@@ -11,14 +11,12 @@
 rm(list = ls())
 library(plotrix) # For gap.barplot
 library(RColorBrewer)
-# source('./simtests.R')
-# source('~/Dropbox/IBD_IBS/plotting_functions.R')
 par(family = 'serif')
 
 # Load geo_dist info and raw data 
 load('../RData/geo_dist_info.RData')
 attach(geo_dist_info)
-intra = c('Guapi_Guapi','Buenaventura_Buenaventura','Tumaco_Tumaco','Quibdo_Quibdo') # 'Tado_Tado'
+intra = c('Guapi_Guapi','Buenaventura_Buenaventura','Tumaco_Tumaco','Quibdo_Quibdo', 'Tado_Tado')
 intra_inter = c(intra, geo_order[!grepl('Tado', geo_order)])
 
 # Load and summarise raw data 

@@ -2,19 +2,17 @@
 # In this script we generate and plot transport distances between 
 # parasite populations sampled from different cities on the 
 # Colombian Pacific coast
+# Rename
 ##############################################################
 
 rm(list = ls())
 library(transport) # transport package
 load('../RData/All_results.RData')
 load('../RData/SNPData.RData')
-load('../RData/geo_dist_info.RData')
+load('../RData/geo_dist_info_cities.RData')
 attach(geo_dist_info)
-nrepeats = 500 # Number of bootstrap repeats (79 seconds)
+nrepeats = 100 # Number of bootstrap repeats (79 seconds)
 Gen_dist = T # Set to true to regenerate distances, otherwise just plot
-
-
-
 
 #==========================================================
 # Function to create an adjacency matrix

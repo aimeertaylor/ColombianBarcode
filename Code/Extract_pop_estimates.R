@@ -28,6 +28,9 @@ if(PLOT){
 # Convert adm2 name to character
 gtmMunis$NAME_2 = as.character(gtmMunis$NAME_2)
 
+#===============================================
+# At the city level 
+#===============================================
 # Look for city names
 gtmMunis$NAME_2[grepl('Guap', gtmMunis$NAME_2)] # "Guapí"
 gtmMunis$NAME_2[grepl('Tumac', gtmMunis$NAME_2)] # "Tumaco"
@@ -45,6 +48,26 @@ populations = sapply(sites, function(site){
 
 # Name without accents
 names(populations) = c("Guapi", "Tumaco", "Buenaventura", "Quibdo", "Tado")
-save(populations, file = '~/Documents/Colombia_data/populations.RData')
+save(populations, file = '~/Documents/ColombianBarcode/RData/populations_cities.RData')
 
-  
+
+#===============================================
+# At the state level 
+#===============================================
+# Look for city names
+gtmMunis$NAME_1[grepl('Nari', gtmMunis$NAME_1)] # Nariño 
+gtmMunis$NAME_1[grepl('Cauca', gtmMunis$NAME_1)] # Cauca and Valle del Cauca (latter is) 
+gtmMunis$NAME_1[grepl('Valle', gtmMunis$NAME_1)] # Valle del Cauca
+gtmMunis$NAME_1[grepl('Choc', gtmMunis$NAME_1)] # Chocó
+
+# City names
+sites = c("Nariño", "Cauca", "Valle del Cauca", "Chocó")
+
+# Population per site  
+populations = sapply(sites, function(site){
+  sum(extract(WorldPopCol, gtmMunis[gtmMunis$NAME_1 ==site,], fun = sum, na.rm = TRUE))
+})
+
+# Name without accents
+names(populations) = c("Narino", "Cauca", "Valle", "Choco")
+save(populations, file = '~/Documents/ColombianBarcode/RData/populations_states.RData')

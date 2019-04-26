@@ -31,9 +31,9 @@ inter_s = geo_dist_info$geo_order
 intra_s = c('Cauca_Cauca', 'Narino_Narino', 'Valle_Valle', 'Choco_Choco')
 intra_inter_s = c(intra_s, inter_s)
 
-# Colours for different thresholds
+# Colours for different thresholds 
 cols = brewer.pal(length(Thresholds)+1, "GnBu")
-names(cols) = c('unrelated',Thresholds)
+names(cols) = c(Thresholds, C_Threshold)
 
 # Function to add labels and CIs
 Add_text_CIs = function(){
@@ -66,7 +66,7 @@ for(fs in c("Unfiltered",  "Filter by vertex")){
   # Barplot
   Midpoints = barplot(X['mean',], names.arg = '', 
                       las = 2, ylim = c(0,max(X)),
-                      col = cols[length(Thresholds)+1], 
+                      col = cols[as.character(C_Threshold)], 
                       density = rep(c(100,25), c(5, 10)), 
                       main = sprintf('%s', fs), 
                       ylab = bquote('Proportion with UCI of'~hat(italic(r))>.(C_Threshold)))
@@ -80,7 +80,7 @@ for(fs in c("Unfiltered",  "Filter by vertex")){
   # Barplot
   Midpoints = barplot(X['mean',], names.arg = '', 
                       las = 2, ylim = c(0,max(X)), 
-                      col = cols[length(Thresholds)+1], 
+                      col = cols[as.character(C_Threshold)], 
                       density = rep(c(100,25), c(4, 6)), 
                       main = sprintf('%s', fs), 
                       ylab = bquote('Proportion with UCI of'~hat(italic(r))>.(C_Threshold)))
@@ -95,7 +95,7 @@ for(fs in c("Unfiltered",  "Filter by vertex")){
   # Barplot
   Midpoints = barplot(X['mean',times_sorted], names.arg = '', 
                       las = 1, ylim = c(0,max(X)), 
-                      col = cols[length(Thresholds)+1], 
+                      col = cols[as.character(C_Threshold)], 
                       main = sprintf('%s', fs), 
                       ylab = bquote('Proportion with UCI of'~hat(italic(r))>.(C_Threshold)))
   

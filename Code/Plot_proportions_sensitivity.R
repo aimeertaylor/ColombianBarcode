@@ -6,7 +6,8 @@
 #############################################
 
 rm(list = ls())
-load('../RData/proportions_sensitivities')
+require(RColorBrewer)
+load('../RData/proportions_sensitivities.RData')
 Thresholds = dimnames(proportions_cities)[[3]]
 Filter_status = dimnames(proportions_cities)[[4]]
 PDF = TRUE
@@ -20,6 +21,9 @@ intra = c('Guapi_Guapi', 'Tado_Tado', 'Tumaco_Tumaco', 'Buenaventura_Buenaventur
           'Quibdo_Quibdo')
 intra_inter = c(intra, inter)
 
+cols_thresholds = brewer.pal(length(Thresholds)+1, "GnBu")
+names(cols_thresholds) = c('unrelated',Thresholds)
+ 
 par(mfrow = c(3,3), family = 'serif')
 for(fs in Filter_status){
   for(threshold in Thresholds){
@@ -28,14 +32,15 @@ for(fs in Filter_status){
     
     # Barplot
     Midpoints = barplot(X['mean',], names.arg = '', 
-                        las = 2, ylim = c(0,max(X)), density = rep(c(100,25), c(5, 10)), 
+                        las = 2, ylim = c(0,max(X)),
+                        col = cols_thresholds[threshold], 
+                        density = rep(c(100,25), c(5, 10)), 
                         main = sprintf('%s', fs), 
-                        ylab = bquote('Proportion with'~hat(italic(r))>.(threshold)))
-    title(xlab = 'Cities')
+                        ylab = bquote('Proportion with LCI of'~hat(italic(r))>.(threshold)))
     
     # x labels rotate 60 degrees, srt=60
     text(x = Midpoints, y = -max(X)/20, srt = 40, adj= 1, xpd = TRUE, 
-         labels = gsub('_', ' & ',colnames(X)), cex = 0.4)
+         labels = gsub('_', ' & ',colnames(X)), cex = 0.65)
     
     # CIs
     segments(x0 = Midpoints[,1], x1 = Midpoints[,1], 
@@ -57,14 +62,15 @@ for(fs in Filter_status){
     
     # Barplot
     Midpoints = barplot(X['mean',], names.arg = '', 
-                        las = 2, ylim = c(0,max(X)), density = rep(c(100,25), c(4, 6)), 
+                        las = 2, ylim = c(0,max(X)), 
+                        col = cols_thresholds[threshold], 
+                        density = rep(c(100,25), c(4, 6)), 
                         main = sprintf('%s', fs), 
-                        ylab = bquote('Proportion with'~hat(italic(r))>.(threshold)))
-    title(xlab = 'States')
+                        ylab = bquote('Proportion with LCI of'~hat(italic(r))>.(threshold)))
     
     # x labels rotate 60 degrees, srt=60
     text(x = Midpoints, y = -max(X)/20, srt = 40, adj= 1, xpd = TRUE, 
-         labels = gsub('_', ' & ',colnames(X)), cex = 0.5)
+         labels = gsub('_', ' & ',colnames(X)), cex = 0.65)
     
     # CIs
     segments(x0 = Midpoints[,1], x1 = Midpoints[,1], 
@@ -82,11 +88,13 @@ for(fs in Filter_status){
     times_sorted = as.character(sort(as.numeric(colnames(X))))
     
     # Barplot
-    Midpoints = barplot(X['mean',times_sorted], names.arg = times_sorted, cex.names = 0.5,
-                        las = 2, ylim = c(0,max(X)), 
+    Midpoints = barplot(X['mean',times_sorted], names.arg = '', 
+                        las = 1, ylim = c(0,max(X)), 
+                        col = cols_thresholds[threshold], 
                         main = sprintf('%s', fs), 
-                        ylab = bquote('Proportion with'~hat(italic(r))>.(threshold)))
-    title(xlab = expression(Delta~'Time (weeks)'))
+                        ylab = bquote('Proportion with LCI of'~hat(italic(r))>.(threshold)))
+    axis(side = 1, at = Midpoints, labels = times_sorted, tick = F, line = -0.5, cex.axis = 0.5)
+    title(xlab = expression(Delta~'Time (weeks)'), line = 2)
     
     # CIs
     segments(x0 = Midpoints[,1], x1 = Midpoints[,1], 

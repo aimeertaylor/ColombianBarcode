@@ -11,63 +11,84 @@ library(maptools)
 library(raster)
 library(igraph)
 library(sf) # For st_read instead of readShapeLines (returns warning: "use rgdal::readOGR or sf::st_read" )
-PDF = F # Set to true to generate pdfs
-DWN = T # Set to true to download country files
-ZM = T # Set to true to zoomed out plot surrounding countries 
+PDF = T # Set to true to generate pdfs
+DWN = F # Set to true to download country files
+ZM = F # Set to true to zoomed out plot surrounding countries 
 NET = T # Set to true to include network on coast
+Threshold = '0.25' # on edges
+Filter = 'Unfiltered' # on graph
 
 # Colombian Pacific Coast shape file
 CP_coast <- readShapeLines("../GISData/CP_coast.shp")
 
 # Load data to weight edges of the network
-load('../RData/mles.RData') # load relatedness estimates
-load('../RData/geo_dist_info.RData') # Load distances
+load('../RData/proportions_sensitivities.RData') # load relatedness estimates
+load('../RData/LonLat.RData') # Coordinates for graph layout
 
-# Creat a data.frame to covert into a graph
-mylinks <- data.frame(site1 = as.character(geo_dist_info$pairwise_site_distance[,1]),
-                      site2 = as.character(geo_dist_info$pairwise_site_distance[,2]), 
-                      stringsAsFactors = F)
-
-# ******* This bit will change depending on plot *******
-X = geo_dist_info$pairwise_site_distance[,'gravity_estimate']
-mylinks$edge_weight <- (X - min(X))/(max(X) - min(X))
-
-# Generate net, remove loops
-net <- graph.data.frame(mylinks[mylinks$site1 != mylinks$site2,], directed = FALSE)
-
-# Coordinates for graph layout
-lonlat <- read.table('../TxtData/LonLat_dec_deg.txt', header = TRUE)
-rownames(lonlat) <- lonlat[,'City']
-layout_lonlat <- as.matrix(lonlat[rownames(as.matrix(V(net))), c('Longitude','Latitude')])
-colnames(layout_lonlat) = c('lon','lat')
-
-# IBD barcode
-E(net)$width <- E(net)$edge_weight * 10
-E(net)$curved <- 0.69*c(1,-1.3,1.2,1.4,-1,-0.9,-1,0,0,0)
-E(net)$loop.angle <- pi*c(1.68, 2, rep(1,8))
-E(net)$color <- adjustcolor('blue', alpha.f = 0.75)
-
-# Change labels, text colour etc.
-print(V(net)) # Print order
-V(net)$label <- c('Quibdó','Guapí','Buenaventura','Tadó','Tumaco')
-V(net)$label.color <- "black"
-V(net)$label.dist <- c(3, 3, 7, 3, 3)
-V(net)$label.degree <- c(1.5*pi, pi, 2*pi, 2*pi, 0.5*pi)
-V(net)$label.cex <- 1.2
-V(net)$color <- "black"
-V(net)$size <- 8 
-V(net)$frame.color <- "white"
-
-# Plot Net
-if(PDF){pdf(file = '../Plots/Colombia_networ.pdf', height = 7, width = 6)}
-if(!NET){E(net)$color <- adjustcolor('blue', alpha.f = 0)} # Plot coast only
-par(mfrow = c(1,1), family = "serif", mar = c(0,0,0,0))
-plot(CP_coast, col = 'black', lwd = 2, xlim =  c(-78.5, -76.7))
-plot(net, layout=layout_lonlat, add = TRUE, rescale = FALSE)
-compassRose(x = -78.5, y = 5.74)
-text(x = -78.52596, y = 3.72, labels = '50 km', cex = 1.2, pos = 3)
-segments(y0 = 3.7, y1 = 3.7, x0 = -78.75928, x1 = -78.29265, lwd = 2, col = 'black')
+if(PDF){png(file = '../Plots/Colombia_network%d.png', width = 1500, height = 2100, res = 300)}
+for(Gravity in c(T,F)){ # Set to true to plot gravity vs genetic
+  for(Cities in c(T,F)){ # Set to true to plot cities rather than states
+    if(Cities){
+      load('../RData/geo_dist_info_cities.RData')
+      attach(geo_dist_info)
+      layout_lonlat <- LonLat_city[,2:1]
+      intra = sapply(rownames(layout_lonlat), function(x)paste(x,x,sep= "_"))
+      proportions = proportions_cities['mean',geo_order,Threshold,Filter]
+      Labels = array(c('Quibdó','Tadó','Buenaventura','Guapí','Tumaco'), 
+                     dimnames = list(rownames(layout_lonlat)))
+    } else {
+      load('../RData/geo_dist_info_states.RData')  
+      attach(geo_dist_info)
+      layout_lonlat <- LonLat_state[,2:1]
+      intra = sapply(rownames(layout_lonlat), function(x)paste(x,x,sep= "_"))
+      proportions = proportions_states['mean',geo_order,Threshold,Filter]
+      Labels = array(c('Nariño','Cauca','Valle del Cauca','Chocó'), 
+                     dimnames = list(rownames(layout_lonlat)))
+    } 
+    
+    if(Gravity){
+      X = geo_dist_info$pairwise_site_distance[,'gravity_estimate']
+    } else {
+      X = proportions
+    }
+    
+    # Creat a data.frame to covert into a graph
+    mylinks <- data.frame(site1 = as.character(geo_dist_info$pairwise_site_distance[,1]),
+                          site2 = as.character(geo_dist_info$pairwise_site_distance[,2]), 
+                          stringsAsFactors = F)
+    mylinks$edge_weight <- (X - min(X))/(max(X) - min(X))
+    
+    # Generate net, remove loops
+    net <- graph.data.frame(mylinks[mylinks$site1 != mylinks$site2,], directed = FALSE)
+    
+    # IBD barcode
+    E(net)$width <- E(net)$edge_weight * 10
+    E(net)$curved <- 0.69*c(1,-1,-0.3,1,0.3,-1,-1,1,1,1) # Designed for cities
+    E(net)$color <- adjustcolor('blue', alpha.f = 0.75)
+    
+    # Change labels, text colour etc.
+    print(V(net)) # Print order
+    V(net)$label <- Labels[attributes(V(net))$names]
+    V(net)$label.color <- "black"
+    V(net)$label.dist <- c(5,5,7,3,7)
+    V(net)$label.degree <- rep(2*pi, length(Labels)) 
+    V(net)$label.cex <- 1.2
+    V(net)$color <- "black"
+    V(net)$size <- 8 
+    V(net)$frame.color <- "white"
+    
+    # Plot Net
+    if(!NET){E(net)$color <- adjustcolor('blue', alpha.f = 0)} # Plot coast only
+    par(mfrow = c(1,1), family = "serif", mar = c(0,0,1,0))
+    plot(CP_coast, col = 'black', lwd = 2, xlim =  c(-78.5, -76.7), main = ifelse(Gravity, 'Gravity', 'Genetic'))
+    plot(net, layout=layout_lonlat[attributes(V(net))$names,], add = TRUE, rescale = FALSE)
+    compassRose(x = -78.5, y = 5.74)
+    text(x = -78.52596, y = 3.72, labels = '50 km', cex = 1.2, pos = 3)
+    segments(y0 = 3.7, y1 = 3.7, x0 = -78.75928, x1 = -78.29265, lwd = 2, col = 'black')
+  }  
+} 
 if(PDF){dev.off()}
+
 
 
 #================================================
@@ -76,7 +97,7 @@ if(PDF){dev.off()}
 if(ZM){
   
   if(PDF){png(file = '../Plots/Colombia_Map.png', height=7, width=6, units='in', res=300)}
-
+  
   # Load or download country shape files from http://gadm.org/  
   PATH = '../GISData/'
   Colombia <- getData("GADM",download = DWN,country="Colombia",level=0,path = PATH)

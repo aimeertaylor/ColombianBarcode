@@ -385,7 +385,7 @@ par(mfrow = c(2,2), family = 'serif', mar = c(6,4,3,1))
 for(j in 3:1){
   X = All_W_results[[j]]
   mpts = barplot(X['cost',], las = 2, xaxt = 'n', ylab = "1-Wasserstein distance", 
-                 main = names(All_W_results)[j], ylim = c(0,1))
+                 main = names(All_W_results)[j], ylim = c(0,1), col = cols[1])
   text(x = mpts[,1], y = -0.02, srt = 40, adj= 1, xpd = TRUE,
        labels =  gsub('_', ' & ', colnames(X)), cex = 0.7)
   segments(x0 = mpts[,1], x1 = mpts[,1], y0 = X['2.5%',], y1 = X['97.5%',])

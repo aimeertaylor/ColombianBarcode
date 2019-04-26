@@ -1,6 +1,8 @@
 ##############################################
 # This script simply loads a very large file 
 # and saves more manageable versions
+# 
+# remove the bootstrap from mle_CIs and had k 95% CIs
 ##############################################
 rm(list = ls())
 load('../RData/mles.RData') # Few mins

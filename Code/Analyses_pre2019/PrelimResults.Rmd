@@ -4,9 +4,6 @@ header-includes:
 output: pdf_document
 ---
 
-# Notes to self
-Read semi-aquatic mammal paper
-
 ### To reproduce all, run 
 1. DataFormat.R
 2. Geo_dist_sites_colombia.R
@@ -15,16 +12,9 @@ Read semi-aquatic mammal paper
 3. child scripts for separate analyses
 4. this script for all analyses combined
 
-# To-do list
-
-- Incorporate maps here
 - Consider modelling as a mixture distribution Beta distributions (one for each of the n choose 2 site comparisons). The number of parameters would be 
     - Beta distributions: 2 shape parameters * choose(number sites,2)
     - Mixing: 1 vector length choose(number sites,2)
-- Usefuly phrase: "Adequate isolation to prevent" repopulation [Blanton2018]"
-- use std devidation of distance measures as did Ollie watson: 
-- check out Lee 2003 (cited in Waples2019) very simple but elegant test of relatedness under null that they are not.  
-
 
 ## Association of genetic signal to human mobility
   - GIS analysis (cost surface creation)
@@ -52,10 +42,6 @@ Could use an epi explanation to refute the null. For example, how big would the 
 On Friday 1st of Dec, I  realised the lack of correlation between IBS and IBD was mainly due to not transposing the results of apply() and then also due to re-ordering SNPs for hmmIBD but not in the SNP data used to calculate FST and IBS. This resulted in meaningless FST and IBS estimates, which did not agree with previously FST published results nor correlate with IBD. The IBD analyses were unchanged. With a well chosen cut-off, IBS now performs as well as IBD in the Colombian setting. 
 
 ### For skype with Diego: 
-- Why "As expected, the lowest differentiation between the provinces was found between Valle-Nariño (FST = 0.023) while the highest was for Cauca–Chocó (FST = 0.117) (Additional file 4)."
-- Confirm missing '--'
-- Apologise for not seeing the lon/lat
-- How to consolidate story if reporting FST?
 - What is the probability of being asymptomatic and therefore missing nodes? 
 
 \pagebreak

@@ -1,5 +1,6 @@
 #################################
 # To-do: could change to state
+# Get colombian vivax
 #################################
 rm(list = ls())
 
@@ -19,7 +20,7 @@ intra_inter = c(intra, inter)
 # Calculate proportions by time and site comp
 #=================================================================
 nrep <- 100 # For bootstrap confidence intervals
-r_threshold = 0.5
+r_threshold = 0.25
 set.seed(1) # For reproducibility
 
 # Add membership by colour
@@ -110,7 +111,7 @@ for(i in site_comps){
 
 # CIs for intra clonal proportion
 intra = c('Guapi_Guapi', 'Tado_Tado', 'Buenaventura_Buenaventura','Tumaco_Tumaco','Quibdo_Quibdo')
-CIs_clonal_intra = sapply(intra, function(i){
+CIs_clonal_intra = sapply(intra_inter, function(i){
   
   # Extract data
   ind <- mle_CIs$City12 == i 
@@ -121,6 +122,7 @@ CIs_clonal_intra = sapply(intra, function(i){
   prob_b <- sapply(1:nrep, function(b)mean(sample(clones, size = n_city12, replace = TRUE) != "#D3D3D3FF"))
   quantile(prob_b, probs = c(0.025, 0.975))
 })
+colnames(CIs_clonal_intra) = intra_inter
 
 
 # Save 

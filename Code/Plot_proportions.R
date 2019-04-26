@@ -10,8 +10,8 @@ rm(list = ls())
 library(plotrix) # For gap.barplot
 library(RColorBrewer)
 cols = brewer.pal(8, 'Dark2') # Color Scheme
-r_threshold = 0.5 # This is the threshold used in Generate_proportions.R
-PDF = T  
+r_threshold = 0.25 # This is the threshold used in Generate_proportions.R
+PDF = T
 
 if(PDF){pdf('../Plots/Proportions_and_W_distance.pdf')}
 par(family = 'serif')
@@ -43,6 +43,9 @@ gapfunction_counts <- function(x){
   return(gap_temp)
 }
 
+
+
+
 #================================================================
 # Histogram of mles 
 #================================================================
@@ -58,7 +61,7 @@ Y = gap.barplot(y = X$counts,
                 ylab = expression('Number of'~italic('P. falciparum')~'sample pairs'), 
                 xlab = '',
                 las = 2, col = rep(cols[1], length(X$mids)))
-title(xlab = expression('Estimate of genetic relatedness,'~italic(widehat(r))), 
+title(xlab = expression('Estimate of genetic relatedness'~italic(widehat(r))), 
       line = 1.5, cex.lab = 1)
 axis(side = 1, line = -1, at = seq(0,length(Y),length.out = 5), 
      labels = seq(0,1,length.out = 5), cex.axis = 1, tick = FALSE)
@@ -71,8 +74,8 @@ Ordered_r = sort.int(mle_CIs$rhat, index.return = T) # Order estimates
 
 # NULL plot
 plot(NULL, ylim = c(0,1), xlim = c(1,length(mle_CIs$rhat)), 
-     ylab = expression('Relatedness estimate,'~hat(italic(r))), 
-     xlab = expression("Comparison index ranked by"~hat(italic(r))), 
+     ylab = expression('Relatedness estimate'~hat(italic(r))), 
+     xlab = expression("Sample comparison ranked by"~hat(italic(r))), 
      bty = 'n', las = 1, panel.first = grid())
 
 # CIs by segment
@@ -83,6 +86,39 @@ segments(x0 = 1:length(mle_CIs$rhat), x1 = 1:length(mle_CIs$rhat),
 
 lines(Ordered_r$x) # Add mles
 
+
+#===========================================================
+# Plot of CIs by threshold
+#===========================================================
+Ordered_r = sort.int(mle_CIs$rhat, index.return = T) # Order estimates
+
+# NULL plot
+plot(NULL, ylim = c(0,1), xlim = c(1,length(mle_CIs$rhat)), 
+     ylab = 'Relatedness estimate', #expression('Relatedness estimate'~hat(italic(r))), 
+     xlab = "Ranked by relatedness", #expression("Sample comparison ranked by"~hat(italic(r))), 
+     bty = 'n', las = 1, panel.first = grid(), cex.axis = 1.2, cex.lab = 1.5)
+
+# Make transparency a function of lower CI
+Thresholds = c(0.01, 0.25, 0.99)
+cols_inds = apply(sapply(1:length(Thresholds), function(i){
+  a = rep(1, nrow(mle_CIs))
+  ind = mle_CIs$`2.5%` > Thresholds[i] & mle_CIs$`97.5%` < 0.99
+  if(Thresholds[i] > 0.9){
+    ind = mle_CIs$`97.5%` > Thresholds[i] & mle_CIs$`2.5%` > 0.01
+  }
+  a[ind] <- (i+1)
+  return(a)}), 1, max)
+
+# Calculate "colour"
+cols_CIs = brewer.pal(4, "GnBu")[cols_inds]
+
+# CIs by segment
+segments(x0 = 1:length(mle_CIs$rhat), x1 = 1:length(mle_CIs$rhat),
+         y0 = mle_CIs$`2.5%`[Ordered_r$ix], y1 = mle_CIs$`97.5%`[Ordered_r$ix],
+         col = cols_CIs[Ordered_r$ix])
+
+lines(Ordered_r$x) # Add mles
+
 #===========================================================
 # Travel_time instead of distance
 # Guapi Buenaventura: c(4, 12)/2 = 8
@@ -90,6 +126,7 @@ lines(Ordered_r$x) # Add mles
 # Buenaventura Tumaco: (17.5, 7, 15)/3 = 13
 # 1 = road; 2 = sea; 3 = both
 #===========================================================
+
 pairwise_site_distance$travel_time = c(1.5, 4.75, 8.5, 8, 10, 13, 8+8.5, 8+10, 19.5, 21)
 pairwise_site_distance$travel_type = c(1,2,1,2,1,3,3,3,1,1)
 
@@ -101,38 +138,27 @@ plot(x = pairwise_site_distance$distance,
 X = cor.test(pairwise_site_distance$distance, pairwise_site_distance$travel_time)
 text(x = 400, y = 5, labels = sprintf('correlation = %s', round(X$estimate, 3)))
 legend('topleft', legend = c('Road (Google maps)', 
-                             '† Sea (averaged over cargo ship and boat)', 
+                             'Sea (averaged over cargo ship and boat)', 
                              'Combination of road and sea'), 
        bty = 'n', pch = c(16), col = cols[1:3])
-text(y = 15, x = 30, labels = '† All info. is directly from the sites', pos = 4)
 
 
 #===========================================================
 # Histogram of site comparison partioned by clone
 #===========================================================
-par(mfrow = c(1,1), family = 'serif', mar = c(4,5,2,2))
-X <- barplot(1-proportions_geo_cloned['#D3D3D3FF',intra,'all'], las = 2, xlab = '', 
+par(mfrow = c(1,1), family = 'serif', mar = c(6,5,4,2))
+X <- barplot(1-proportions_geo_cloned['#D3D3D3FF',c(intra, inter),'all'], las = 2, xlab = '', 
              ylab = 'Proportion of clonal sample comparisons', 
-             cex.names = 0.5, ylim = c(0, max(CIs_clonal_intra)),  
-             col = cols[1], 
+             cex.names = 0.7, ylim = c(0, max(CIs_clonal_intra)),  
+             col = brewer.pal(4, "GnBu")[4], 
+             density = rep(c(100,25), c(5, 10)), 
              xaxt = 'n')
-text(x = X, y = -0.002, srt = 30, adj= 1, xpd = TRUE, 
-     labels = do.call(rbind, strsplit(intra, split = '_'))[,1], cex=1)
-segments(y0 = CIs_clonal_intra['2.5%',intra], y1 = CIs_clonal_intra['97.5%',intra],
-         x0 = X, x1 = X, lwd = 1.5)
+text(x = X, y = -max(CIs_clonal_intra)/50, srt = 30, adj= 1, xpd = TRUE, 
+     labels = gsub('_', "&", colnames(CIs_clonal_intra)), cex=1)
+segments(y0 = CIs_clonal_intra['2.5%',], y1 = CIs_clonal_intra['97.5%',],
+         x0 = X, x1 = X, lwd = 1)
 
 
-#===========================================================
-# Histogram of time (not partioned by site comp)
-#===========================================================
-par(mfrow = c(2,1), family = 'serif', mar = c(4,5,1,1))
-X <- barplot(proportions_time['mean',], las = 2, col = cols[1], 
-             xaxt = 'n', xlab = '',
-             ylab = bquote('Proportion with LCI of'~~italic(widehat(r))>.(r_threshold)), 
-             cex.names = 0.75, ylim = c(0,max(proportions_time)))
-segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
-axis(side = 1, at = X, labels = colnames(proportions_time), tick = F, line = -0.5, las = 2)
-title(xlab = expression(Delta~'Time (weeks)'), line = 2)
 
 
 #===========================================================
@@ -157,14 +183,14 @@ X <- barplot(proportions_time_grouped[, ,'all'], las = 2, xaxt = 'n',
              xlab = expression(Delta~'Time (weeks)'), 
              ylab = 'Proportion of sample comparisons', 
              cex.names = 1, col = rainbow(no_site_comps))
-axis(side = 1, at = X, labels = colnames(proportions_time), tick = F, line = -0.5)
+axis(side = 1, at = X, labels = colnames(proportions_time), tick = F, line = -0.5, las = 2)
 
 X <- barplot(proportions_time_grouped[, ,'r_threshold'], 
              las = 2, xlab = expression(Delta~'Time (weeks)'), 
              xaxt = 'n',
              ylab = bquote('Proportion with LCI of'~italic(widehat(r))>.(r_threshold)), 
              cex.names = 1, ylim = c(0,max(proportions_time)), col = rainbow(no_site_comps))
-axis(side = 1, at = X, labels = colnames(proportions_time), tick = F, line = -0.5)
+axis(side = 1, at = X, labels = colnames(proportions_time), tick = F, line = -0.5, las = 2)
 segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
 legend('topright', fill = rainbow(no_site_comps), bty = 'n',legend = gsub('_', ' & ', site_comps), 
        cex = 0.5)
@@ -174,22 +200,21 @@ legend('topright', fill = rainbow(no_site_comps), bty = 'n',legend = gsub('_', '
 # Histogram of site comparison
 #===========================================================
 # For addition of distance line in [0,0.25]
-normalised_geo_dist = (pairwise_site_distance_all[site_comps]/max(pairwise_site_distance_all))/4
-
-par(mfrow = c(2,1), family = 'serif', mar = c(8,5,1,1))
+normalised_geo_dist = (pairwise_site_distance_all[site_comps]/max(pairwise_site_distance_all))/6
+par(mfrow = c(2,1), family = 'serif', mar = c(4,5,1,1))
 
 # Bar plot 
 X <- barplot(proportions_geo['mean',site_comps], 
              las = 2, col = cols[1], 
              density = rep(c(100,25), c(length(intra), length(site_comps)-length(intra))),
              xlab = '', xaxt = 'n',
-             ylab = bquote('Proportion of'~hat(italic(r))>.(r_threshold)), 
-             cex.names = 0.5, ylim = c(0,max(proportions_geo)))
+             ylab = bquote('Proportion with LCI of'~hat(italic(r))>.(r_threshold)), 
+             cex.names = 0.7, ylim = c(0,max(proportions_geo)))
 segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
          x0 = X, x1 = X)
 
 # x labels rotate 60 degrees, srt=60
-text(x = X, y = -0.01, srt = 40, adj= 1, xpd = TRUE, labels = gsub('_', ' & ',site_comps), cex=0.5)
+text(x = X, y = -max(proportions_geo)/50, srt = 40, adj= 1, xpd = TRUE, labels = gsub('_', ' & ',site_comps), cex=0.5)
 
 # Add distance 
 # note that par(new = T) resulted in expansion of plotting space for which I couldn't find any
@@ -212,12 +237,12 @@ legend('top', lty = 1, pch = 20, legend = expression(Delta~'distance'),
 # Break down partitioned by clone
 X <- barplot(proportions_geo_cloned[,site_comps,'r_threshold'], las = 2, xlab = '', 
              ylab = bquote('Proportion with LCI of'~italic(widehat(r))>.(r_threshold)), 
-             cex.names = 0.5, ylim = c(0,max(proportions_geo)), 
+             cex.names = 0.7, ylim = c(0,max(proportions_geo)), 
              col = rownames(proportions_geo_cloned[,site_comps,'all']), 
              xaxt = 'n')
 segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
          x0 = X, x1 = X)
-text(x = X, y = -0.01, srt = 30, adj= 1, xpd = TRUE, labels = gsub('_', ' & ',site_comps), cex=0.5)
+text(x = X, y = -max(proportions_geo)/50, srt = 30, adj= 1, xpd = TRUE, labels = gsub('_', ' & ',site_comps), cex=0.5)
 
 
 
@@ -225,25 +250,25 @@ text(x = X, y = -0.01, srt = 30, adj= 1, xpd = TRUE, labels = gsub('_', ' & ',si
 #===========================================================
 # Histogram of site comparison partioned by time
 #===========================================================
-par(mfrow = c(2,1), family = 'serif', mar = c(7,5,1,1))
+par(mfrow = c(2,1), family = 'serif')
 
 # Grouped version
 X <- barplot(proportions_geo_grouped[,site_comps,'all'], las = 2, xaxt = 'n',
              ylab = 'Proportion of sample comparisons',
-             cex.names = 0.5, col = rainbow(no_site_comps), xlab = ' ')
+             cex.names = 0.7, col = rainbow(no_site_comps), xlab = ' ')
 text(x = X, y = -0.05, srt = 30, adj= 1, xpd = TRUE, labels = gsub('_', ' ',site_comps), cex=0.5)
 
 # Break down it to site comparsion contributions 
 X <- barplot(proportions_geo_grouped[,site_comps,'r_threshold'], las = 2, xlab = '', 
              ylab = bquote('Proportion with LCI of'~~italic(widehat(r))>.(r_threshold)), 
-             cex.names = 0.5, ylim = c(0,max(proportions_geo)), col = rainbow(no_time_bins), 
+             cex.names = 0.7, ylim = c(0,max(proportions_geo)), col = rainbow(no_time_bins), 
              xaxt = 'n')
 segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
          x0 = X, x1 = X)
 legend('topright', fill = rainbow(no_time_bins), bty = 'n', cex = 0.5, 
        legend = rownames(proportions_geo_grouped), title = expression(Delta~'Time (weeks)'))
 # x labels 
-text(x = X, y = -0.05, srt = 30, adj= 1, xpd = TRUE, labels = gsub('_', ' ',site_comps), cex=0.5)
+text(x = X, y = -0.01, srt = 30, adj= 1, xpd = TRUE, labels = gsub('_', ' ',site_comps), cex=0.5)
 
 
 
@@ -257,7 +282,7 @@ intra = site_comps[1:5]
 for(j in 3:1){
   X = All_W_results[[j]]
   mpts = barplot(X['cost',], las = 2, xaxt = 'n', ylab = "1-Wasserstein distance", 
-                 main = names(All_W_results)[j], ylim = c(0,1))
+                 main = names(All_W_results)[j], ylim = c(0,1), col = cols[1])
   text(x = mpts[,1], y = -0.02, srt = 40, adj= 1, xpd = TRUE,
        labels =  gsub('_', ' & ', colnames(X)), cex = 0.7)
   segments(x0 = mpts[,1], x1 = mpts[,1], y0 = X['2.5%',], y1 = X['97.5%',])

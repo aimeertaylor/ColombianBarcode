@@ -59,15 +59,10 @@ system.time(if(Gen_dist){
     if(class(mle_CIs$individual1) == 'factor'){mle_CIs$individual1 = as.character(mle_CIs$individual1)}
     if(class(mle_CIs$individual2) == 'factor'){mle_CIs$individual2 = as.character(mle_CIs$individual2)}
     
-    # Add site comps
-    mle_CIs$City1 = as.character(SNPData[mle_CIs$individual1, 'City'])
-    mle_CIs$City2 = as.character(SNPData[mle_CIs$individual2, 'City'])
-    mle_CIs$City12 = apply(mle_CIs[,c('City1','City2')], 1, function(x)paste(sort(x),collapse="_"))
-    
     #=============================================================================
     # Calculate the "1-Wasserstein" distance between population 1 and population 2
     #=============================================================================
-    W_results = sapply(geo_order[!grepl('Tado', geo_order)], function(city_comp){
+    W_results = sapply(geo_order, function(city_comp){
       
       cities = strsplit(city_comp, split = '_')[[1]]
       inds = (mle_CIs$City1 %in% cities) & (mle_CIs$City2 %in% cities) # indices for cities
@@ -105,11 +100,12 @@ system.time(if(Gen_dist){
       # Return value and CIs
       c('cost' = cost, quantile(costs_boot, probs = c(0.025,0.975)))
     })
-    
+    colnames(W_results) = geo_order
     return(W_results)
   })
   save(All_W_results, file = '../RData/All_W_results.RData')
 })
+
 
 
 # ### now Sinkhorn distance implemented in the winference package

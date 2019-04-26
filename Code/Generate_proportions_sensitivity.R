@@ -64,6 +64,6 @@ for(l in names(All_results)){
 }}
 
 save(proportions_cities, proportions_states, proportions_times, 
-     file = '../RData/proportions_sensitivities')
+     file = '../RData/proportions_sensitivities.RData')
 
 

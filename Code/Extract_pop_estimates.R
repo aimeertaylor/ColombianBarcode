@@ -52,7 +52,7 @@ save(populations, file = '~/Documents/ColombianBarcode/RData/populations_cities.
 
 
 #===============================================
-# At the state level 
+# At the state level (takes a long time!)
 #===============================================
 # Look for city names
 gtmMunis$NAME_1[grepl('Nari', gtmMunis$NAME_1)] # Nariño 

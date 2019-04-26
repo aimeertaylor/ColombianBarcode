@@ -2,18 +2,13 @@
 # This script simply loads a very large file 
 # and saves more manageable versions
 # 
-# remove the bootstrap from mle_CIs and had k 95% CIs
+# To-do
+# remove the bootstrap from mle_CIs and readd k 95% CI
+# Adapt this script
 ##############################################
 rm(list = ls())
 load('../RData/mles.RData') # Few mins
 mle_core = mle_df[,1:4] # Extract core
-
-# Save a more manageable version withs only 
-# 100 rhat bootstrapped quantities 
-rhats_boot_100 = lapply(mle_df$rhats_boot, function(x) x[1:100])
-mle_core$rhats_boot = rhats_boot_100
-mle_boot = mle_core
-save(mle_boot, file = '../RData/mle_boot.RData')
 
 #---------------------------------------------
 # Save a version withs rhat CIs 

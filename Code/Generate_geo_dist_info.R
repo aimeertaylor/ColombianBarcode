@@ -1,5 +1,6 @@
 ############################################################
-# Script to calculate distances between sites 
+# Script to calculate distances between sites and add gravity 
+# estimates
 ############################################################
 rm(list = ls())
 source('./gcd.hf.R') # For calculating great circle distance
@@ -81,7 +82,7 @@ for(l in names(LonLat_list)){
   for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
     x1 = as.character(geo_dist_info$pairwise_site_distance[i,'X1'])
     x2 = as.character(geo_dist_info$pairwise_site_distance[i,'X2'])
-    g = populations[x1] * populations[x2] / (geo_dist_info$pairwise_site_distance[i,'distance'])^2
+    g = populations[x1] * populations[x2] / (geo_dist_info$pairwise_site_distance[i,'distance'])
     geo_dist_info$pairwise_site_distance[i, 'gravity_estimate'] = g
   }
   

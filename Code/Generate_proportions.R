@@ -1,7 +1,9 @@
-#################################
-# To-do: could change to state
-# Get colombian vivax
-#################################
+#######################################################
+# This script generates proportions 
+# given a single example threshold (e.g. 0.25), 
+# using cities and time as the partion
+# and with and without clonal breakdown
+#######################################################
 rm(list = ls())
 
 # Load and summarise raw data 
@@ -9,10 +11,12 @@ load('../RData/mle_CIs.RData')
 load('../RData/edge_cols.RData') # for histograms partioned by clone
 load('../RData/geo_dist_info_cities.RData')
 
-
 # Extract sites in ascending order distance-wise
 inter = geo_dist_info$geo_order  
-intra = c('Guapi_Guapi', 'Tado_Tado', 'Tumaco_Tumaco', 'Buenaventura_Buenaventura', 
+intra = c('Guapi_Guapi', 
+          'Tado_Tado', 
+          'Tumaco_Tumaco', 
+          'Buenaventura_Buenaventura', 
           'Quibdo_Quibdo')
 intra_inter = c(intra, inter)
 
@@ -109,26 +113,9 @@ for(i in site_comps){
 # # Check proptions wrt time the same if grouped or not: Yes 
 # cbind(colSums(proportions_geo_grouped[,,'r_threshold'], na.rm = TRUE), proportions_geo['mean',])
 
-# CIs for intra clonal proportion
-intra = c('Guapi_Guapi', 'Tado_Tado', 'Buenaventura_Buenaventura','Tumaco_Tumaco','Quibdo_Quibdo')
-CIs_clonal_intra = sapply(intra_inter, function(i){
-  
-  # Extract data
-  ind <- mle_CIs$City12 == i 
-  n_city12 = sum(ind)
-  clones <- mle_CIs$comp_col[ind]
-  
-  # Boostrap proportions not "#D3D3D3FF" (i.e. not singlton)
-  prob_b <- sapply(1:nrep, function(b)mean(sample(clones, size = n_city12, replace = TRUE) != "#D3D3D3FF"))
-  quantile(prob_b, probs = c(0.025, 0.975))
-})
-colnames(CIs_clonal_intra) = intra_inter
-
-
 # Save 
 save(proportions_time, proportions_time_grouped, proportions_time_cloned, file = '../RData/proportions_time.RData')
 save(proportions_geo, proportions_geo_grouped, proportions_geo_cloned, file = '../RData/proportions_geo.RData')
-save(CIs_clonal_intra, file = '../RData/CIs_clonal_intra.RData' )
 
 
 

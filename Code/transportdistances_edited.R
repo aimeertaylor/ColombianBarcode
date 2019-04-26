@@ -16,8 +16,6 @@ Gen_dist = T # Set to true to regenerate distances, otherwise just plot
 
 #==========================================================
 # Function to create an adjacency matrix
-# No-longer need adjacency matrix (distance only)
-# but keep in case I combine with other code
 #=========================================================
 construct_adj_matrix = function(Result, Entry = 'rhat', dm){
   
@@ -100,7 +98,7 @@ system.time(if(Gen_dist){
       # Return value and CIs
       c('cost' = cost, quantile(costs_boot, probs = c(0.025,0.975)))
     })
-    colnames(W_results) = geo_order
+    colnames(W_results) = as.character(geo_order)
     return(W_results)
   })
   save(All_W_results, file = '../RData/All_W_results.RData')

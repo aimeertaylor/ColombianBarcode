@@ -99,7 +99,7 @@ save(edge_cols, file = '../RData/edge_cols.RData')
 ############################################################
 # 2) In this section we plot the various graphs and components
 ############################################################
-if(PDF){pdf('../Plots/Graphs_CIs.pdf', height = 10, width = 8)}
+if(PDF){pdf('../Plots/Graphs.pdf', height = 10, width = 8)}
 par(mfrow = c(1,1), family = 'serif')
 
 #===========================================================

@@ -11,7 +11,7 @@ library(maptools)
 library(raster)
 library(igraph)
 library(sf) # For st_read instead of readShapeLines (returns warning: "use rgdal::readOGR or sf::st_read" )
-PDF = F # Set to true to generate pdfs
+PDF = T # Set to true to generate pdfs
 DWN = F # Set to true to download country files
 ZM = F # Set to true to zoomed out plot surrounding countries 
 NET = T # Set to true to include network on coast

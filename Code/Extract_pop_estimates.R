@@ -14,10 +14,10 @@ library(ggplot2)
 PLOT = F
 
 # Load Colombia data (data collected 1993 to 2007)
-WorldPopCol <- raster("~/Documents/Colombia_data/Colombia_100m_Population/COL_pph_v2b_2010.tif")
+WorldPopCol <- raster("../PopData/Colombia_100m_Population/COL_pph_v2b_2010.tif")
 
 # Shape file
-gtmMunis = readOGR("~/Documents/Colombia_data/COL_adm/COL_adm2.shp", encoding = "utf-8")
+gtmMunis = readOGR("../GISData/COL_adm_shp/COL_adm2.shp", encoding = "utf-8")
 
 # Plot world pop data  (takes a few seconds)
 if(PLOT){

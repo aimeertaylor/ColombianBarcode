@@ -2,7 +2,6 @@
 # In this script we generate and plot transport distances between 
 # parasite populations sampled from different cities on the 
 # Colombian Pacific coast
-# Rename
 ##############################################################
 
 rm(list = ls())

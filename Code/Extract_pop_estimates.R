@@ -48,7 +48,7 @@ populations = sapply(sites, function(site){
 
 # Name without accents
 names(populations) = c("Guapi", "Tumaco", "Buenaventura", "Quibdo", "Tado")
-save(populations, file = '~/Documents/ColombianBarcode/RData/populations_cities.RData')
+save(populations, file = '../RData/populations_cities.RData')
 
 
 #===============================================
@@ -70,4 +70,4 @@ populations = sapply(sites, function(site){
 
 # Name without accents
 names(populations) = c("Narino", "Cauca", "Valle", "Choco")
-save(populations, file = '~/Documents/ColombianBarcode/RData/populations_states.RData')
+save(populations, file = '../RData/populations_states.RData')

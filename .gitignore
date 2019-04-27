@@ -3,12 +3,13 @@
 
 .DS_Store
 
-GISData/**
+
 Slides/**
-LiteratureSearch/**
 Notes/**
 OriginalData/**
 
+PopData/**
+GISData/**
 TxtData/**
 !TxtData/hmmInput.txt 
 !TxtData/Geo_coordinates.txt

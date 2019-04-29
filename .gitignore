@@ -16,6 +16,8 @@ TxtData/**
 !TxtData/Geo_coordinates.txt
 
 RData/**
+!RData/mles_frequencies_true.RData
+!RData/mles_frequencies_unif.RData
 !RData/SNPData.RData
 !RData/geo_dist_info.RData
 !RData/mle_CIs.RData

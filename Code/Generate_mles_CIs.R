@@ -16,7 +16,7 @@ source("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/simulate_data.R") # Downloa
 sourceCpp("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/hmmloglikelihood.cpp") # Download this script from https://github.com/artaylor85/PlasmodiumRelatedness
 registerDoParallel(cores = detectCores()-1)
 epsilon <- 0.001 # Fix epsilon throughout
-nboot <- 2 # For CIs 
+nboot <- 100 # For CIs 
 set.seed(1) # For reproducibility
 Ps = c(0.025, 0.975) # CI quantiles
 
@@ -64,7 +64,7 @@ frequencies_unif <- cbind(funif, 1-funif)
 frequencies_true <- cbind(1-data_set$fs, data_set$fs)
 f_list = list(frequencies_true = frequencies_true, frequencies_unif = frequencies_unif)
 
-for(f in 1:2){
+for(f in 2){
   
   frequencies = f_list[[f]]
   system.time(

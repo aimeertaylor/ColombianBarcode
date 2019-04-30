@@ -13,7 +13,7 @@ Thresholds = dimnames(proportions_cities)[[3]]
 C_Threshold = Thresholds[4] # Clonal threshold
 Thresholds = Thresholds[1:3] # Remove the clonal threshold (plot separately)
 Filter_status = dimnames(proportions_cities)[[4]]
-PDF = F
+PDF = T
 
 # Cities (intra ordered by expectation based on transmission and isolation)
 load('../RData/geo_dist_info_cities.RData')

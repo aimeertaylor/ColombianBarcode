@@ -11,9 +11,9 @@
 rm(list = ls())
 library(plotrix) # For gap.barplot
 library(RColorBrewer)
-cols = brewer.pal(8, 'Dark2') # Color Scheme
+cols = brewer.pal(8, 'Dark2') # Codlor Scheme
 r_threshold = 0.25 # This is the threshold used in Generate_proportions.R
-PDF = F
+PDF = T
 
 if(PDF){pdf('../Plots/Proportions_and_W_distance.pdf')}
 par(family = 'serif')

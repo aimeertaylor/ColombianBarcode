@@ -77,7 +77,7 @@ Jitter = Jitter + rnorm(length(Jitter), 0 , 0.05)
 # Create clonal component colours
 Cols = cols(sum(C_high$csize > 1)) # Enumerate colours
 names(Cols) = unique((1:C_high$no)[C_high$csize > 1])
-C_names = paste0('cc',1:length(Cols))
+C_names = paste0('CC',1:length(Cols))
 names(C_names) = names(Cols)
 
 # Create a vector of vertex colours
@@ -99,7 +99,7 @@ save(edge_cols, file = '../RData/edge_cols.RData')
 ############################################################
 # 2) In this section we plot the various graphs and components
 ############################################################
-if(PDF){pdf('../Plots/Graphs.pdf', height = 10, width = 8)}
+if(PDF){pdf('../Plots/All_CCs.pdf', height = 8, width = 8)}
 par(mfrow = c(1,1), family = 'serif')
 
 #===========================================================
@@ -155,21 +155,31 @@ if(PYRIMID){
   plot(Comp_G, 
        vertex.size = table(M_cols)[V(Comp_G)$color]+5, 
        vertex.label.cex = 0.5, 
-       vertex.label = paste0(C_names[as.character(M_high[V(Comp_G)$name])], '\n', SNPData[V(Comp_G)$name, 'City'], '\n', SNPData[V(Comp_G)$name, 'COLLECTION.DATE']), 
+       vertex.label = paste0(C_names[as.character(M_high[V(Comp_G)$name])], 
+                             '\n', SNPData[V(Comp_G)$name, 'City'], 
+                             '\n', SNPData[V(Comp_G)$name, 'COLLECTION.DATE']), 
        vertex.label.color = 'black',
        vertex.frame.color = 'white',#V(Comp_G)$color,
        edge.color = sapply(E(Comp_G)$weight, adjustcolor, col = 'black'))
 }
+range(E(Comp_G)$weight)
 
 # Add names of clonal components
-legend('bottomleft', pch = 21, bty = 'n', cex = 0.5, pt.cex = 1, pt.bg = Cols, y.intersp = 0.7, col = 'white', 
+legend('left', pch = 16, bty = 'n', cex = 0.7, pt.cex = 1.5, col = Cols, 
        legend = C_names[names(Cols)], inset = -0.1)
+
+if(PDF){dev.off()}
+
+
+
 
 #===========================================================
 # For each site comparison vizualise effect of filter with
 # Dates and edges proportional to rhats (regardless if statistically significant or not)
 #===========================================================
+if(PDF){pdf('../Plots/Graphs_timespace.pdf', height = 8, width = 8)}
 par(mfrow = c(2,1), mar = c(3,2,3,2), family = 'serif', bg = 'white')
+filter_name = c("Unfiltered" = "Unfiltered", "Filter by vertex" = "Filter CCs")
 for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
   for(l in c("Unfiltered","Filter by vertex")){
     
@@ -195,8 +205,9 @@ for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
     # Annotate
     legend('bottomleft', pch = 21, bty = 'n', cex = 0.5, 
            pt.bg = Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])], y.intersp = 0.7,
-           legend = C_names[names(Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])])])
-    mtext(side = 3, line = 0.2, adj = 0, sprintf('%s', l), cex = 1.5)
+           col = Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])], 
+           legend = C_names[as.character(names(Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])]))])
+    mtext(side = 3, line = 0.2, adj = 0, sprintf('%s', filter_name[l]), cex = 1.5)
     mtext(side = 1, sprintf('%s', s2), line = 1.5, cex = 1.5)
     mtext(side = 3, sprintf('%s', s1), line = 0.5, cex = 1.5)
     
@@ -210,13 +221,15 @@ for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
   }
 }
 
-
+if(PDF){dev.off()}
 
 #===============================================
 # Plot without dates and with edges only if
 # statistically distinguishable from zero with transparency
 # proportional to rhat
 #===============================================
+if(PDF){pdf('../Plots/Graphs.pdf', height = 8, width = 8)}
+par(mfrow = c(1,1), mar = c(0,3,0,0), family = 'serif', bg = 'white')
 # Create matrixA_related = construct_adj_matrix(Result = mle_CIs, Entry = '2.5%')
 A_related = construct_adj_matrix(Result = mle_CIs, Entry = 'rhat')
 A_related_lci = construct_adj_matrix(Result = mle_CIs, Entry = '2.5%')
@@ -229,7 +242,6 @@ V(G_related)$site = SNPData[V(G_related)$name, 'City']
 set.seed(1)
 SHAPES = c('circle', 'square') # Different shapes distinguish different sites 
 
-par(mfrow = c(1,1), mar = c(3,2,3,2), family = 'serif', bg = 'gray')
 for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
   
   # Extract cities
@@ -237,17 +249,16 @@ for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
   s2 = as.character(geo_dist_info$pairwise_site_distance[i,'X2'])
   
   # Filter graph by city
-  G = extract_city_graph(x = G_related, city1 = s1, city2 = s2)
-  #E(G)$color[grepl("#FFFFFF", E(G)$color)] = "#FFFFFF" # make opaque
+  G = extract_city_graph(x = G_related, city1 = s1, city2 = s2, 'black')
   
   # Plot with legend
+  set.seed(1)
   plot.igraph(G, vertex.size = 3, vertex.label = NA, 
               vertex.shape = SHAPES[as.numeric(V(G)$site == s1)+1])
-  legend('bottomleft', pch = 23, bty = 'n', inset = -0.05, 
-         pt.bg = Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])], cex = 0.75, y.intersp = 0.7,
-         legend = C_names[names(Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])])])
-  legend('top', pch = c(0,1), pt.bg = 'white', legend = c(s1,s2), bty = 'n')
-  
+  legend('left', pch = 23, bty = 'n', inset = -0.07, 
+         pt.bg = Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])], cex = 0.7, pt.cex = 1, 
+         legend = C_names[as.character(names(Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])]))])
+  legend('bottom', pch = c(0,1), pt.bg = 'white', legend = c(s1,s2), bty = 'n')
 }
 
 
@@ -277,9 +288,9 @@ EV_names = do.call(rbind, strsplit(attributes(E(G_clonal_comp_BT))$vname, split 
 
 # Extract average relatedness between clonal components (includes some guapi)
 Mean_sd_matrix = array(NA, dim = c(length(unique_M_BT), length(unique_M_BT), 4), 
-                       dimnames = list(unique_M_BT, unique_M_BT, c('mu','k','2.5%','97.5%')))
-for(i in 1:(length(unique_M_BT)-1)){
-  for(j in (i+1):length(unique_M_BT)){
+                       dimnames = list(C_names[as.character(unique_M_BT)], C_names[as.character(unique_M_BT)], c('mu','k','2.5%','97.5%')))
+for(j in 1:(length(unique_M_BT)-1)){
+  for(i in (j+1):length(unique_M_BT)){
     members_i = names(which(M_high == unique_M_BT[i])) 
     members_j = names(which(M_high == unique_M_BT[j])) 
     inds = (EV_names[,1] %in% members_i & EV_names[,2] %in% members_j) | EV_names[,1] %in% members_j & EV_names[,2] %in% members_i 
@@ -319,7 +330,7 @@ plot(y = pcaIBD$rotation[,1], x = -pcaIBD$rotation[,2],
      ylab = sprintf('PCA 1 (%s)', round(pcaIBD$sdev[1]/sum(pcaIBD$sdev),3)), 
      xlab = sprintf('-PCA 2 (%s)', round(pcaIBD$sdev[2]/sum(pcaIBD$sdev),3)), 
      pch = 20, col = site_cols[SNPData[rownames(pcaIBD$x), 'City']])
-legend('bottomleft', pch = 20, col = site_cols, legend = names(site_cols), inset = 0.01, cex = 0.7)
+legend('bottomleft', pch = 20, col = site_cols, legend = names(site_cols), inset = 0.01)
 
 # PCA appears to be similar to the gravity network 
 net <- graph.data.frame(geo_dist_info$pairwise_site_distance[,1:2], directed = FALSE)

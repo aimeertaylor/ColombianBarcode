@@ -25,6 +25,8 @@ cols = colorRampPalette(brewer.pal(12, "Paired")) # Functn to create colours
 # and memberships etc. 
 ############################################################
 Cities = SNPData$City; names(Cities) = row.names(SNPData) 
+cols_cities = brewer.pal(length(unique(Cities)), 'Spectral')
+names(cols_cities) = rev(unique(Cities))
 
 #===========================================================
 # Filter 
@@ -120,6 +122,7 @@ Comp_G = induced_subgraph(G_comp, vids = which(V(G_comp)$color!="#FFFFFF"))
 E(Comp_G)$width <- E(Comp_G)$weight
 E(Comp_G)$colour <- 'black'
 V(Comp_G)$date <- SNPData[V(Comp_G)$name, 'COLLECTION.DATE']
+V(Comp_G)$site <- SNPData[V(Comp_G)$name, 'City']
 set.seed(150)
 
 if(PYRIMID){
@@ -159,16 +162,23 @@ if(PYRIMID){
                              '\n', SNPData[V(Comp_G)$name, 'City'], 
                              '\n', SNPData[V(Comp_G)$name, 'COLLECTION.DATE']), 
        vertex.label.color = 'black',
-       vertex.frame.color = 'white',#V(Comp_G)$color,
+       vertex.frame.color = 'white',
+       vertex.color = cols_cities[V(Comp_G)$site], 
        edge.color = sapply(E(Comp_G)$weight, adjustcolor, col = 'black'))
 }
 range(E(Comp_G)$weight)
 
-# Add names of clonal components
-legend('left', pch = 16, bty = 'n', cex = 0.7, pt.cex = 1.5, col = Cols, 
-       legend = C_names[names(Cols)], inset = -0.1)
+# # Legend of names of clonal components
+# legend('left', pch = 16, bty = 'n', cex = 0.7, pt.cex = 1.5, col = Cols, 
+#        legend = C_names[names(Cols)], inset = -0.1)
+
+# Legend of cities
+legend('left', pch = 16, bty = 'n', cex = 0.7, pt.cex = 1.5, col = cols_cities, 
+       legend = names(cols_cities), inset = -0.1)
+
 
 if(PDF){dev.off()}
+
 
 
 

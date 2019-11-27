@@ -1,22 +1,23 @@
 ##############################################################
-# In this script we generate and plot transport distances between 
+# In this script we generate transport distances between 
 # parasite populations sampled from different cities on the 
 # Colombian Pacific coast
 ##############################################################
 
 rm(list = ls())
 library(transport) # transport package
-load('../RData/All_results.RData')
+# load('../RData/All_results.RData') +++++++ Is this needed? 
+load('../RData/mle_CIs.RData')
 load('../RData/SNPData.RData')
-load('../RData/geo_dist_info_cities.RData')
+load('../RData/geo_dist_info.RData')
 attach(geo_dist_info)
 nrepeats = 100 # Number of bootstrap repeats (79 seconds)
-Gen_dist = T # Set to true to regenerate distances, otherwise just plot
+Gen_dist = T # Set to true to regenerate distances
 
 #==========================================================
 # Function to create an adjacency matrix
 #=========================================================
-construct_adj_matrix = function(Result, Entry = 'rhat', dm){
+construct_adj_matrix = function(Result, Entry = 'rhat'){
   
   # Cities 
   cities = unique(c(Result$City1,Result$City2))
@@ -39,13 +40,8 @@ construct_adj_matrix = function(Result, Entry = 'rhat', dm){
     adj_matrix[indi, indj] = adj_matrix[indj, indi] = 1-Result[i, Entry]
   }
   
-  if(dm == T){ # If distance matrix true
     to_return = adj_matrix[samples_c1, samples_c2]
-  } else {
-    to_return = list(adj_matrix = adj_matrix, 
-                     samples_c1 = samples_c1,  
-                     samples_c2 = samples_c2)
-  }
+    
   return(to_return)
 }
 
@@ -65,7 +61,7 @@ system.time(if(Gen_dist){
       inds = (mle_CIs$City1 %in% cities) & (mle_CIs$City2 %in% cities) # indices for cities
       
       # Actual distance matrix
-      dist_matrix = construct_adj_matrix(Result = mle_CIs[inds, ], dm = T)
+      dist_matrix = construct_adj_matrix(Result = mle_CIs[inds, ])
       
       # Bootstrapping rows then columns (samples from citites 1 and 2) 
       dist_matrix_boot = lapply(1:nrepeats, function(b){

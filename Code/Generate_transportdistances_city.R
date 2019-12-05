@@ -1,7 +1,18 @@
 ##############################################################
-# In this script we generate transport distances between 
-# parasite populations sampled in different cities at
-# different times
+# In this script we generate transport ("1-Wasserstein") distances 
+# between parasite populations sampled in different cities.
+#
+# The transport approach is directly applicable to our between-city
+# spatial analysis: it is trivial to construct a fully populated 
+# adjacency matrix of comparisons across samples that fall into two 
+# discrete populations (e.g. samples collected in Tumaco vesus 
+# Buenaventura). 
+#
+# The transport approach is not directly applicable to our within-city
+# spatial analysis: to construct an adjacency matrix of comparisons 
+# across samples from a single city, we randomly split the set of 
+# samples from that city into two. Since within city results are based 
+# on a random split they are random and included as a sanity check only. 
 ##############################################################
 rm(list = ls())
 library(transport) # transport package

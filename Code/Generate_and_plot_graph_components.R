@@ -5,13 +5,13 @@
 #   - remove edges and see if trend remains (almost all samples remain)
 #   - remove vertices and see if trend remains (samples deplete)
 # 2) plot igraph results (not width < 1 does not show on pdfs so map r to transpancy)
-# 3) Generate and plot PCA and compare with gravity network
+# 3) Generate and plot PCA and compare with gravity network (maybe remove)
 ##############################################################
 
 rm(list = ls())
-require(igraph) # To make graph, construct components etc.
-require(RColorBrewer)
-load('../RData/mle_CIs.RData')
+library(igraph) # To make graph, construct components etc.
+library(RColorBrewer)
+load('../RData/mles_true.RData')
 load('../RData/SNPData.RData') # Load SNP data for cities
 load('../RData/geo_dist_info.RData')
 source('./igraph_functions.R')
@@ -64,13 +64,12 @@ All_G = lapply(All_G, function(x){
 # and clonal component membership and colour 
 #===========================================================
 # Adjency matrix unfiltered (same as All_adj_matrix_v[[1]] and All_adj_matrix_e[[1]]
-A_high = construct_adj_matrix(mle_CIs, Entry = '97.5%')
+A_high = construct_adj_matrix(mle_CIs, Entry = 'r97.5.')
 A_high[A_high < 1-eps] = 0 # Edit s.t. only not stat diff from clonal have weight
 G_high = graph_from_adjacency_matrix(A_high, mode='upper', diag=F, weighted=T) # Construct graph 
 C_high = components(G_high) # Extract components from graph
 M_high = C_high$membership # Extract membership of vertices
 
-  
 # Layout within sites
 Jitter = M_high*10^-3 # For graph layout (function on M)
 Jitter[M_high %in% which(C_high$csize < 2)] = -0.15 
@@ -113,7 +112,7 @@ PYRIMID = F # For pyrimid layout where clones seen in multiple sites are on top
 R_comp = rm_highly_related_within(Result = mle_CIs, Edge = F,
                                   Cities = sapply(row.names(SNPData), function(x)return("City")))
 A_comp = construct_adj_matrix(R_comp, Entry = 'rhat')
-A_comp_related = A_comp = construct_adj_matrix(R_comp, Entry = '2.5%')
+A_comp_related = A_comp = construct_adj_matrix(R_comp, Entry = 'r2.5.')
 A_comp[A_comp_related < eps] = 0
 
 G_comp = graph_from_adjacency_matrix(A_comp, mode='upper', diag=F, weighted=T)
@@ -240,9 +239,9 @@ if(PDF){dev.off()}
 #===============================================
 if(PDF){pdf('../Plots/Graphs.pdf', height = 8, width = 8)}
 par(mfrow = c(1,1), mar = c(0,3,0,0), family = 'serif', bg = 'white')
-# Create matrixA_related = construct_adj_matrix(Result = mle_CIs, Entry = '2.5%')
+# Create matrixA_related = construct_adj_matrix(Result = mle_CIs, Entry = 'r2.5.')
 A_related = construct_adj_matrix(Result = mle_CIs, Entry = 'rhat')
-A_related_lci = construct_adj_matrix(Result = mle_CIs, Entry = '2.5%')
+A_related_lci = construct_adj_matrix(Result = mle_CIs, Entry = 'r2.5.')
 A_related[A_related_lci < eps] = 0 # Edit s.t. only not stat diff from related have weight
 
 # Create graphs 
@@ -298,7 +297,7 @@ EV_names = do.call(rbind, strsplit(attributes(E(G_clonal_comp_BT))$vname, split 
 
 # Extract average relatedness between clonal components (includes some guapi)
 Mean_sd_matrix = array(NA, dim = c(length(unique_M_BT), length(unique_M_BT), 4), 
-                       dimnames = list(C_names[as.character(unique_M_BT)], C_names[as.character(unique_M_BT)], c('mu','k','2.5%','97.5%')))
+                       dimnames = list(C_names[as.character(unique_M_BT)], C_names[as.character(unique_M_BT)], c('mu','k','r2.5.','r97.5.')))
 for(j in 1:(length(unique_M_BT)-1)){
   for(i in (j+1):length(unique_M_BT)){
     members_i = names(which(M_high == unique_M_BT[i])) 
@@ -309,8 +308,8 @@ for(j in 1:(length(unique_M_BT)-1)){
     # Extract the mean lower confidence interval 
     inds_mle = mle_CIs$sample_comp %in% apply(EV_names[inds,], 1, function(x)paste(x[1],x[2],sep='_')) | mle_CIs$sample_comp %in% apply(EV_names[inds,], 1, function(x)paste(x[2],x[1],sep='_'))
     if(Mean_sd_matrix[i,j,'mu'] == mean(mle_CIs$rhat[inds_mle])){ # check
-      Mean_sd_matrix[i,j,'2.5%'] = max(mle_CIs$`2.5%`[inds_mle]) # To see highest lower bound
-      Mean_sd_matrix[i,j,'97.5%'] = max(mle_CIs$`97.5%`[inds_mle]) # To see highest lower bound
+      Mean_sd_matrix[i,j,'r2.5.'] = max(mle_CIs$`r2.5.`[inds_mle]) # To see highest lower bound
+      Mean_sd_matrix[i,j,'r97.5.'] = max(mle_CIs$`r97.5.`[inds_mle]) # To see highest lower bound
       Mean_sd_matrix[i,j,'k'] = max(mle_CIs$khat[inds_mle])
     } 
   }

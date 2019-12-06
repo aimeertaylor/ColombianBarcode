@@ -1,6 +1,5 @@
 #==========================================================
 # Function to create an adjacency matrix
-# Different from that used in Generate_transportdistances.R
 #=========================================================
 construct_adj_matrix = function(Result, Entry){
   
@@ -24,10 +23,10 @@ rm_highly_related_within = function(Result, Cities, Edge){
   
   if(Edge){
     # Keep edges statistically diff. from one
-    Result_filtered = Result[Result$`97.5%` < 1-eps,] 
+    Result_filtered = Result[Result$`r97.5.` < 1-eps,] 
   } else {
     # First construct an adjaceny matrix of 97.5% CI IBD
-    adj_matrix = construct_adj_matrix(Result, Entry = '97.5%')
+    adj_matrix = construct_adj_matrix(Result, Entry = 'r97.5.')
     sample_names = rownames(adj_matrix)
     
     # Second, modify s.t. only edges NOT statistically diff. from one

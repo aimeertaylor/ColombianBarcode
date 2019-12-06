@@ -48,7 +48,7 @@ for(l in names(All_results)){
     
     # If interested in clones, consider upper bound (i.e. is r-estimate statistically indistinguishable from 1), 
     # otherwise consider lower bound (i.e. is r-estimate statistically distinguishable from threshold)
-    Bound = ifelse(threshold >= 1-eps, '97.5%', '2.5%') 
+    Bound = ifelse(threshold >= 1-eps, 'r97.5.', 'r2.5.') 
     
     # Calculate proportions over city comparisons 
     prop_cities = sapply(cities, function(x){

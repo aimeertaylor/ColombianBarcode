@@ -16,11 +16,12 @@
 ##############################################################
 rm(list = ls())
 library(transport) # transport package
-load('../RData/mle_CIs.RData')
+load('../RData/mles_true.RData')
 load('../RData/geo_dist_info.RData')
 attach(geo_dist_info)
 source('./transport_functions.R')
 nrepeats = 100 # Number of bootstrap repeats (79 seconds)
+set.seed(1) # For reproduciblity within sites
 
 # Change characters to factors
 for(j in 1:ncol(mle_CIs)){

@@ -1,13 +1,13 @@
 ############################################################
-# Script to calculate distances between sites and add gravity 
-# estimates
+# Script to calculate distances between sites and to add
+# gravity estimates
 ############################################################
 rm(list = ls())
 source('./gcd.hf.R') # For calculating great circle distance
-require(gtools) # For combinations
+library(gtools) # For combinations
 library(measurements) # For conv_unit
 
-# Import coordinatesl data
+# Import coordinate data
 LonLat_city <- read.table('../TxtData/Geo_coordinates.txt', skip = 21, header = TRUE, sep = ' ', row.names = )
 rownames(LonLat_city) = LonLat_city$City
 
@@ -21,8 +21,7 @@ LonLat_city$Longitude = gsub('”W', '', LonLat_city$Longitude)
 LonLat_city$Latitude = as.numeric(conv_unit(LonLat_city$Latitude, from = 'deg_min_sec', to = 'dec_deg'))
 LonLat_city$Longitude = as.numeric(conv_unit(LonLat_city$Longitude, from = 'deg_min_sec', to = 'dec_deg'))
 
-# Make a state level version (where simply take midpoint between Tado and Quidbo)
-# "Narino" "Cauca"  "Valle"  "Choco" 
+# Make a state level version (simply take midpoint between Tado and Quidbo)
 LonLat_state = list("Narino" = LonLat_city[LonLat_city$City == 'Tumaco', c('Latitude', 'Longitude')], 
                    "Cauca" = LonLat_city[LonLat_city$City == 'Guapi', c('Latitude', 'Longitude')], 
                    "Valle" = LonLat_city[LonLat_city$City == 'Buenaventura', c('Latitude', 'Longitude')], 
@@ -30,7 +29,7 @@ LonLat_state = list("Narino" = LonLat_city[LonLat_city$City == 'Tumaco', c('Lati
 
 # Match formats
 LonLat_city = LonLat_city[,c('Latitude', 'Longitude')]
-LonLat_state = do.call(rbind,LonLat_state)
+LonLat_state = do.call(rbind, LonLat_state)
 
 # Needed for network plot 
 save(LonLat_city, LonLat_state, file = '../RData/LonLat.RData')

@@ -15,10 +15,10 @@ load('../RData/mles_true.RData')
 load('../RData/SNPData.RData') # Load SNP data for cities
 load('../RData/geo_dist_info.RData')
 source('./igraph_functions.R')
-PDF = T # Set to TRUE to plot graphs to pdf
+PDF = F # Set to TRUE to plot graphs to pdf
 eps = 0.01 # Below which LCI considered close to zero
 cols = colorRampPalette(brewer.pal(12, "Paired")) # Functn to create colours
-
+FILTER = F
 
 ############################################################
 # 1) In this section we filter results, create graphs 
@@ -29,18 +29,22 @@ cols_cities = brewer.pal(length(unique(Cities)), 'Spectral')
 names(cols_cities) = rev(unique(Cities))
 
 #===========================================================
-# Filter 
+# Filter and save
 #===========================================================
-All_results = lapply(c(F,T), rm_highly_related_within, Result = mle_CIs, Cities = Cities)
-All_results[[3]] = mle_CIs
-names(All_results) = c('Filter by vertex', 'Filter by edge', 'Unfiltered')
-
-# Extract summaries
-sapply(All_results, function(x){c('Edge count' = nrow(x), 
-                                  'Vertex count' = length(unique(c(x$individual1,x$individual2))))})
-
-# Save list of results filtered and not 
-save(All_results, file = '../RData/All_results.RData')
+if (FILTER) {
+  All_results = lapply(c(F,T), rm_highly_related_within, Result = mle_CIs, Cities = Cities)
+  All_results[[3]] = mle_CIs
+  names(All_results) = c('Filter by vertex', 'Filter by edge', 'Unfiltered')
+  
+  # Extract summaries
+  sapply(All_results, function(x){c('Edge count' = nrow(x), 
+                                    'Vertex count' = length(unique(c(x$individual1,x$individual2))))})
+  
+  # Save list of results filtered and not 
+  save(All_results, file = '../RData/All_results.RData')
+} else {
+  load('../RData/All_results.RData')
+}
 
 
 #===========================================================
@@ -158,7 +162,6 @@ if(PYRIMID){
        vertex.size = table(M_cols)[V(Comp_G)$color]+5, 
        vertex.label.cex = 0.5, 
        vertex.label = paste0(C_names[as.character(M_high[V(Comp_G)$name])], 
-                             '\n', SNPData[V(Comp_G)$name, 'City'], 
                              '\n', SNPData[V(Comp_G)$name, 'COLLECTION.DATE']), 
        vertex.label.color = 'black',
        vertex.frame.color = 'white',
@@ -204,7 +207,6 @@ for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
     
     # Plot graph
     plot.igraph(G, layout = attributes(G)$layout, vertex.size = 3, vertex.label = NA, asp=0) # For layout
-    rect(xleft = par("usr")[1], ybottom = par("usr")[3], xright = par("usr")[2], ytop = par("usr")[4], col = "lightgray")
     plot.igraph(G, layout = attributes(G)$layout, vertex.size = 3, vertex.label = NA, add = T)
     
     # Overlay coloured only

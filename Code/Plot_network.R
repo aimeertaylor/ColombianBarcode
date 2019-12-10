@@ -1,4 +1,8 @@
 ############################################################################################
+# !!!!!!!!!README!!!!!!!!!
+# I know longer have the shape file CP_coast - try to retrieve from broad back up, 
+# otherwise re-make
+
 # This script is adapted from Maps_MORU.R
 # 1) Map based on fraction of IBD proportions > 0.5 (2 plots, combined in manuscript)
 # This map was created using QGIS (QGIS Development Team 2017) and the raster (Hijmans 2016),
@@ -64,7 +68,7 @@ for(Gravity in c(T,F)){ # Set to true to plot gravity vs genetic
     # IBD barcode
     E(net)$width <- E(net)$edge_weight * 10
     E(net)$curved <- 0.69*c(1,-1,-0.3,1,0.3,-1,-1,1,1,1) # Designed for cities
-    E(net)$color <- adjustcolor('blue', alpha.f = 0.75)
+    E(net)$color <- brewer.pal(5, "GnBu")[3] #adjustcolor(brewer.pal(5, "GnBu")[3], alpha.f = 0.75)
     
     # Change labels, text colour etc.
     print(V(net)) # Print order

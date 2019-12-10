@@ -206,8 +206,8 @@ for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
     G = extract_city_graph(x = X, city1 = s1, city2 = s2)
     
     # Plot graph
-    plot.igraph(G, layout = attributes(G)$layout, vertex.size = 3, vertex.label = NA, asp=0) # For layout
-    plot.igraph(G, layout = attributes(G)$layout, vertex.size = 3, vertex.label = NA, add = T)
+    plot.igraph(G, layout = attributes(G)$layout, vertex.size = 3, vertex.label = NA, asp = 0) # For layout
+    #plot.igraph(G, layout = attributes(G)$layout, vertex.size = 3, vertex.label = NA, add = T)
     
     # Overlay coloured only
     E(G)$color[grepl("#FFFFFF", E(G)$color)] = NA

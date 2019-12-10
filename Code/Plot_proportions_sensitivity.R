@@ -3,7 +3,8 @@
 # highly related parasite sample comparisons
 # using various 
 # partitions (cities, states, times)
-# thresholds for high relatedness (e.g. 0.01, 0.25, 0.5, 0.99)
+# thresholds for high relatedness 
+# (e.g. 0.01, 0.25, 0.5, 0.99)
 # filters (unfiltered, filter by vertex, filter by edge)
 #############################################
 rm(list = ls())
@@ -13,7 +14,7 @@ Thresholds = dimnames(proportions_cities)[[3]]
 C_Threshold = Thresholds[4] # Clonal threshold
 Thresholds = Thresholds[1:3] # Remove the clonal threshold (plot separately)
 Filter_status =  dimnames(proportions_cities)[[4]][c(3,1,2)]
-PDF = T
+PDF = F
 
 # Cities (intra ordered by expectation based on transmission and isolation)
 load('../RData/geo_dist_info_cities.RData')
@@ -32,8 +33,9 @@ intra_s = c('Cauca_Cauca', 'Narino_Narino', 'Valle_Valle', 'Choco_Choco')
 intra_inter_s = c(intra_s, inter_s)
 
 # Colours for different thresholds 
-cols = brewer.pal(length(Thresholds)+1, "GnBu")
-names(cols) = c(Thresholds, C_Threshold)
+cols = brewer.pal(length(Thresholds)+2, "GnBu")
+names(cols) = c("Unrelated", Thresholds, C_Threshold)
+save(cols, file = "../RData/threshold_cols.RData")
 
 # Function to add labels and CIs
 Add_text_CIs = function(){
@@ -179,9 +181,5 @@ for(fs in Filter_status){
        labels = gsub('_', ' & ',colnames(X)), cex = 0.5)
   title(xlab = expression(Delta~'Time (weeks)'), line = 2)
 }
-
-
-
-
 
 if(PDF){dev.off()}

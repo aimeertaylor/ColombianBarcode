@@ -11,15 +11,18 @@
 rm(list = ls())
 library(plotrix) # For gap.barplot
 library(RColorBrewer)
-cols = brewer.pal(8, 'Dark2') # Codlor Scheme
+cols = brewer.pal(8, 'Dark2') # Colour Scheme
 r_threshold = 0.25 # This is the threshold used in Generate_proportions.R
+par(family = 'serif', mfrow = c(1,1))
+default_par = par() # Record default plotting parameters before changing
 PDF = T
 
 if(PDF){pdf('../Plots/Proportions_and_W_distance.pdf')}
 par(family = 'serif')
 load('../RData/proportions_time.RData')
 load('../RData/proportions_geo.RData')
-load('../RData/mle_CIs.RData')
+load('../RData/All_results.RData')
+mle_CIs = All_results$Unfiltered
 
 # Load geography
 load('../RData/geo_dist_info_cities.RData')
@@ -48,7 +51,6 @@ gapfunction_counts <- function(x){
 #================================================================
 # Histogram of mles 
 #================================================================
-par(family = 'serif', mfrow = c(1,1))
 X = hist(mle_CIs$rhat, breaks = seq(0,1,0.025), plot = F)
 Gap = gapfunction_counts(x = X$counts)
 Yticks = round(c(max(X$counts), seq(0, floor(Gap[1]), length.out = 4)),0)
@@ -60,7 +62,7 @@ Y = gap.barplot(y = X$counts,
                 ylab = expression('Number of'~italic('P. falciparum')~'sample pairs'), 
                 xlab = 'Estimate of genetic relatedness',
                 cex.lab = 1.25, 
-                las = 2, col = rep(cols[1], length(X$mids)))
+                las = 2, col = rep('gray', length(X$mids)))
 
 axis(side = 1, at = seq(0,length(Y),length.out = 5), 
      labels = seq(0,1,length.out = 5), cex.axis = 1)
@@ -78,8 +80,8 @@ plot(NULL, ylim = c(0,1), xlim = c(1,length(mle_CIs$rhat)),
      las = 1, panel.first = grid())
 
 segments(x0 = 1:length(mle_CIs$rhat), x1 = 1:length(mle_CIs$rhat),
-         y0 = mle_CIs$`2.5%`[Ordered_r$ix], y1 = mle_CIs$`97.5%`[Ordered_r$ix],
-         col = adjustcolor(cols[1], alpha.f = 0.5), lwd = 0.1)
+         y0 = mle_CIs$`r2.5.`[Ordered_r$ix], y1 = mle_CIs$`r97.5.`[Ordered_r$ix],
+         col = adjustcolor('gray', alpha.f = 0.5), lwd = 0.1)
 
 lines(Ordered_r$x, lwd = 2) # Add mles
 
@@ -88,6 +90,8 @@ lines(Ordered_r$x, lwd = 2) # Add mles
 # Plot of CIs by threshold (this is for sensitivity results)
 #===========================================================
 Ordered_r = sort.int(mle_CIs$rhat, index.return = T) # Order estimates
+
+#par(pin = c(default_par$pin[1], 0.9244889))
 
 # NULL plot
 plot(NULL, ylim = c(0,1), xlim = c(1,length(mle_CIs$rhat)), 
@@ -101,32 +105,34 @@ cols_inds = apply(sapply(1:length(Thresholds), function(i){
   a = rep(1, nrow(mle_CIs))
   
   # When theshold is 0.01, 0.25 or 0.5
-  ind = mle_CIs$`2.5%` > Thresholds[i] 
+  ind = mle_CIs$`r2.5.` > Thresholds[i] 
 
   if(Thresholds[i] == 0.99){ # Overwrite
-    ind = mle_CIs$`97.5%` > Thresholds[i] & mle_CIs$`2.5%` > 0.01}
+    ind = mle_CIs$`r97.5.` > Thresholds[i] & mle_CIs$`r2.5.` > 0.01}
   
   a[ind] <- (i+1)
   return(a)}), 1, max)
 
 # Calculate "colour"
-cols_CIs = c(adjustcolor('lightgray'),brewer.pal(4, "GnBu"))[cols_inds]
+cols_CIs = brewer.pal(5, "GnBu")[cols_inds]
 
 # CIs by segment
 segments(x0 = 1:length(mle_CIs$rhat), x1 = 1:length(mle_CIs$rhat),
-         y0 = mle_CIs$`2.5%`[Ordered_r$ix], y1 = mle_CIs$`97.5%`[Ordered_r$ix],
+         y0 = mle_CIs$`r2.5.`[Ordered_r$ix], y1 = mle_CIs$`r97.5.`[Ordered_r$ix],
          col = cols_CIs[Ordered_r$ix])
 
 lines(Ordered_r$x, lwd = 2) # Add mles
 
 # Add legend
-legend('topleft', fill = c(adjustcolor('lightgray'),brewer.pal(4, "GnBu")), 
+legend('topleft', fill = brewer.pal(5, "GnBu"), 
        inset = 0.01, 
-       legend = c('Statistically indistinguishable from 0', 
-                  'Statistically distinguishable from 0', 
+       legend = c('Statistically indistinguishable from 0.01', 
+                  'Statistically distinguishable from 0.01', 
                   'Statistically distinguishable from 0.25', 
                   'Statistically distinguishable from 0.5', 
-                  'Statistically indistingishable from 1'))
+                  'Statistically indistingishable from 0.99'))
+
+#par(pin = default_par$pin)
 
 #===========================================================
 # Travel_time instead of distance
@@ -160,7 +166,7 @@ X <- barplot(proportions_time['mean',],
              xaxt = 'n', cex.lab = 1.25,  
              ylab = expression('Fraction of highly related'~italic('P. falciparum')~'sample pairs'), 
              cex.names = 1, ylim = c(0,max(proportions_time)), 
-             col = cols[1])
+             col = brewer.pal(5, "GnBu")[3])
 segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
 text(x = X, y = -max(proportions_time)/20, srt = 40, adj= 1, xpd = TRUE, 
      labels = colnames(proportions_time), cex = 0.75)
@@ -214,7 +220,7 @@ par(mfrow = c(1,1), family = 'serif', mar = c(6,5,2,2))
 
 # Bar plot 
 X <- barplot(proportions_geo['mean',site_comps], 
-             las = 2, col = cols[1], 
+             las = 2, col = brewer.pal(5, "GnBu")[3], 
              density = rep(c(100,25), c(length(intra), length(site_comps)-length(intra))),
              xlab = '', xaxt = 'n', cex.lab = 1.25, 
              ylab = expression('Fraction of highly related'~italic('P. falciparum')~'sample pairs'), 
@@ -240,7 +246,7 @@ text(x = X[11], pos = 2, cex = 0.75, bg = 'white',
      labels = bquote(.(round(pairwise_site_distance_all['Buenaventura_Tumaco'], 0))~'(km)'))
 
 # Legend
-legend('top',density = c(100,35), fill = cols[1], bty = 'n', 
+legend('top',density = c(100,35), fill = brewer.pal(5, "GnBu")[3], bty = 'n', 
        legend = c(expression('within sites ('~Delta~'distance = 0 km )'),
                   expression('across sites ('~Delta~'distance > 0 km )')))
 legend('top', lty = 1, pch = 20, legend = expression(Delta~'distance'), 
@@ -289,27 +295,29 @@ text(x = X, y = -0.01, srt = 30, adj= 1, xpd = TRUE, labels = gsub('_', ' ',site
 #==================================================
 # Plot transport distance results 
 #==================================================
-load('../RData/All_W_results.RData')
+load('../RData/All_W_results_c.RData')
 par(mfrow = c(2,2), family = 'serif', mar = c(6,4,3,1))
 
 # Barplot
 for(j in 3:1){
   
-  X = All_W_results[[j]]
-  mpts = barplot(X['cost',], las = 2, xaxt = 'n', ylab = "1-Wasserstein distance", 
-                 main = names(All_W_results)[j], ylim = c(0,1), col = cols[1])
-  text(x = mpts[,1], y = -0.02, srt = 40, adj= 1, xpd = TRUE,
-       labels =  gsub('_', ' & ', colnames(X)), cex = 0.7)
-  segments(x0 = mpts[,1], x1 = mpts[,1], y0 = X['2.5%',], y1 = X['97.5%',])
+  inter_c = geo_dist_info$geo_order  
   
-  plot(y = X['cost',], x = pairwise_site_distance_all[colnames(X)], 
+  X = All_W_results_c[[j]]
+  mpts = barplot(X['W',inter_c], las = 2, xaxt = 'n', ylab = "1-Wasserstein distance", 
+                 main = names(All_W_results_c)[j], ylim = c(0,1), col = 'gray')
+  text(x = mpts[,1], y = -0.02, srt = 40, adj= 1, xpd = TRUE,
+       labels =  gsub('_', ' & ', inter_c), cex = 0.7)
+  segments(x0 = mpts[,1], x1 = mpts[,1], y0 = X['2.5%',inter_c], y1 = X['97.5%',inter_c])
+  
+  plot(y = X['W',inter_c], x = pairwise_site_distance_all[inter_c], 
        ylim = range(X)+c(-0.1, 0.1), pch = 16, bty = 'n', 
        ylab = "1-Wasserstein distance", xlab = expression(Delta~'distance (km)'))
-  text(y = min(X['cost',]), x = pairwise_site_distance_all[names(which.min(X['cost',]))],
-       labels =  gsub('_', ' & ', names(which.min(X['cost',]))), cex = 0.7, pos = 4)
-  segments(x0 = pairwise_site_distance_all[colnames(X)], 
-           x1 = pairwise_site_distance_all[colnames(X)], 
-           y0 = X['2.5%',], y1 = X['97.5%',])
+  text(y = min(X['W',inter_c]), x = pairwise_site_distance_all[names(which.min(X['W',inter_c]))],
+       labels =  gsub('_', ' & ', names(which.min(X['W',inter_c]))), cex = 0.7, pos = 4)
+  segments(x0 = pairwise_site_distance_all[inter_c], 
+           x1 = pairwise_site_distance_all[inter_c], 
+           y0 = X['2.5%',inter_c], y1 = X['97.5%',inter_c])
 }
 
 

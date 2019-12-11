@@ -15,7 +15,7 @@ load('../RData/mles_true.RData')
 load('../RData/SNPData.RData') # Load SNP data for cities
 load('../RData/geo_dist_info.RData')
 source('./igraph_functions.R')
-PDF = F # Set to TRUE to plot graphs to pdf
+PDF = T # Set to TRUE to plot graphs to pdf
 eps = 0.01 # Below which LCI considered close to zero
 cols = colorRampPalette(brewer.pal(12, "Paired")) # Functn to create colours
 FILTER = F
@@ -92,7 +92,7 @@ names(M_cols) = names(M_high)
 
 # Extract colours of comparisons for histogram
 v_names = do.call(rbind, strsplit(attributes(E(G_high))$vnames, split = "\\|")) # Extract vertices per edge
-edge_col_ind = M_cols[v_names[,1]] == M_cols[v_names[,2]] & M_cols[v_names[,1]] != "#FFFFFF"
+edge_col_ind = M_cols[v_names[,1]] == M_cols[v_names[,2]] & M_cols[v_names[,1]] != "#000000"
 edge_cols = array(M_cols[v_names[,1]][edge_col_ind], dim = sum(edge_col_ind), # Creat a vector grays
                   dimnames = list(apply(v_names[edge_col_ind, ], 1, function(x)paste(sort(x), collapse = '_'))))
 
@@ -142,7 +142,7 @@ if(PYRIMID){
     paste(sapply(strsplit(x, split = ''), function(y) paste(y[1:2], collapse = '')), collapse = '+')})
   attr(Comp_G, 'layout') = cbind(X = V(Comp_G)$date, 
                                  Y = clone_site_no + rnorm(length(V(Comp_G)), 0, 0.2)) # Full layout
-  plot(Comp_G, vertex.size = 10, 
+  plot.igraph(Comp_G, vertex.size = 10, 
        vertex.label.cex = 0.5, 
        layout = attributes(Comp_G)$layout, # uncomment for pyrimid layout 
        vertex.label.color = 'black',
@@ -158,7 +158,7 @@ if(PYRIMID){
 } else {
   
   set.seed(1)
-  plot(Comp_G, 
+  plot(Comp_G, layout = layout_with_fr, 
        vertex.size = table(M_cols)[V(Comp_G)$color]+5, 
        vertex.label.cex = 0.5, 
        vertex.label = paste0(C_names[as.character(M_high[V(Comp_G)$name])], 
@@ -187,60 +187,75 @@ if(PDF){dev.off()}
 
 #===========================================================
 # For each site comparison vizualise effect of filter with
-# Dates and edges proportional to rhats (regardless if statistically significant or not)
+# Dates and edges proportional to rhats 
 #===========================================================
-if(PDF){pdf('../Plots/Graphs_timespace.pdf', height = 8, width = 8)}
-par(mfrow = c(2,1), mar = c(3,2,3,2), family = 'serif', bg = 'white')
+if(PDF){pdf('../Plots/Graphs_timespace.pdf', height = 5, width = 10)}
+par(mfrow = c(1,1), mar = c(3,4,3,0.1), family = 'serif', bg = 'white')
 filter_name = c("Unfiltered" = "Unfiltered", "Filter by vertex" = "Filter CCs")
-for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
-  for(l in c("Unfiltered","Filter by vertex")){
-    
-    # Extract graph
-    X = All_G[[l]] 
+SHAPES = c('circle', 'square') # Different shapes distinguish different sites 
+for(l in c("Unfiltered","Filter by vertex")){
+  
+  # Extract adjacency
+  X = All_results[[l]]
+  A_related_lci = construct_adj_matrix(Result = X, Entry = 'r2.5.')
+  A_related = construct_adj_matrix(Result = X, Entry = 'rhat')
+  A_related[A_related_lci < eps] = 0 # Edit s.t. only not stat diff from related have weight
+  G_related = graph_from_adjacency_matrix(A_related, mode='upper', diag=F, weighted=T)
+  # Add meta data
+  V(G_related)$site = SNPData[V(G_related)$name, 'City']
+  V(G_related)$date = SNPData[V(G_related)$name, 'COLLECTION.DATE']
+  
+  
+  for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
     
     # Extract cities
     s1 = as.character(geo_dist_info$pairwise_site_distance[i,'X1'])
     s2 = as.character(geo_dist_info$pairwise_site_distance[i,'X2'])
     
     # Filter graph by city
-    G = extract_city_graph(x = X, city1 = s1, city2 = s2)
+    G = extract_city_graph(x = G_related, city1 = s1, city2 = s2, 'black')
+    
+    # Calculate years
+    colldates = SNPData[V(G)$name, "COLLECTION.DATE"]
+    min_dt = min(colldates)
+    max_dt = max(colldates)
+    years1stjan = seq(as.Date(round.POSIXt(min_dt, units = "years")), max_dt, by = 'year') 
+    yr01 = as.numeric(years1stjan-min_dt)/as.numeric(max_dt - min_dt)
     
     # Plot graph
-    plot.igraph(G, layout = attributes(G)$layout, vertex.size = 3, vertex.label = NA, asp = 0) # For layout
-    #plot.igraph(G, layout = attributes(G)$layout, vertex.size = 3, vertex.label = NA, add = T)
+    plot.igraph(G, layout = attributes(G)$layout, vertex.size = 0, edge.color = NA,
+                vertex.label = NA, asp = 0) # For layout
+    abline(v = -1 + yr01 * 2, lty = 'dotted', col = 'lightgray') # Add grid line
+    plot.igraph(G, layout = attributes(G)$layout, vertex.shape = SHAPES[as.numeric(V(G)$site == s1)+1], 
+                vertex.size = 3, vertex.label = NA, add = T) # For layout
     
     # Overlay coloured only
-    E(G)$color[grepl("#FFFFFF", E(G)$color)] = NA
-    plot.igraph(G, layout = attributes(G)$layout, vertex.size = 3, vertex.label = NA, add = T)
+    E(G)$color[grepl("#000000", E(G)$color)] = NA
+    plot.igraph(G, layout = attributes(G)$layout, vertex.shape = SHAPES[as.numeric(V(G)$site == s1)+1], 
+                vertex.size = 3, vertex.label = NA, add = T)
     
     # Annotate
-    legend('bottomleft', pch = 21, bty = 'n', cex = 0.5, 
-           pt.bg = Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])], y.intersp = 0.7,
-           col = Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])], 
-           legend = C_names[as.character(names(Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])]))])
-    mtext(side = 3, line = 0.2, adj = 0, sprintf('%s', filter_name[l]), cex = 1.5)
-    mtext(side = 1, sprintf('%s', s2), line = 1.5, cex = 1.5)
-    mtext(side = 3, sprintf('%s', s1), line = 0.5, cex = 1.5)
-    
-    # Add years
-    unique_yrs = as.numeric(unique(SNPData[V(G)$name, "Year"]))
-    min_yr = min(unique_yrs)
-    max_yr = max(unique_yrs)
-    yr01 = (unique_yrs-min_yr)/(max_yr - min_yr)
-    axis(side = 1, labels = unique_yrs, las = 1, cex.axis = 0.7, at = -1 + yr01 * 2,
-         line = -1, tick = F)
+    mtext(side = 3, line = 2, adj = 0, sprintf('%s', filter_name[l]), cex = 1)
+    # legend('left', pch = 23, bty = 'n', inset = -0.07, 
+    #        pt.bg = Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])], 
+    #        cex = 0.7, pt.cex = 1,
+    #        legend = C_names[as.character(names(Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])]))])
+    # legend('topleft', pch = c(0,1), pt.bg = 'white', legend = c(s1,s2), 
+    #        bty = 'n', inset = -0.07)
+    axis(side = 1, labels = years1stjan, las = 2, cex.axis = 0.7, at = yr01 * 2 - 1,
+         line = -1.2, tick = F) # Years
   }
 }
 
 if(PDF){dev.off()}
 
 #===============================================
-# Plot without dates and with edges only if
+# Plot without dates and with edges if
 # statistically distinguishable from zero with transparency
 # proportional to rhat
 #===============================================
-if(PDF){pdf('../Plots/Graphs.pdf', height = 8, width = 8)}
-par(mfrow = c(1,1), mar = c(0,3,0,0), family = 'serif', bg = 'white')
+if(PDF){pdf('../Plots/Graphs.pdf', height = 5, width = 10)}
+par(mfrow = c(1,1), mar = c(0,4,0,0), family = 'serif', bg = 'white', pty = 'm')
 # Create matrixA_related = construct_adj_matrix(Result = mle_CIs, Entry = 'r2.5.')
 A_related = construct_adj_matrix(Result = mle_CIs, Entry = 'rhat')
 A_related_lci = construct_adj_matrix(Result = mle_CIs, Entry = 'r2.5.')
@@ -264,13 +279,18 @@ for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
   
   # Plot with legend
   set.seed(1)
-  plot.igraph(G, vertex.size = 3, vertex.label = NA, 
+  # To do the igraph equivalent of pty = "m" (looks ugly, prefer square)
+  #l = layout_(G, with_fr()) # set layout using Fruchterman-Reingold
+  #l = norm_coords(l, par()$usr[1], par()$usr[2], par()$usr[3], par()$usr[4]) # normalise to devise coordinates not square
+  plot.igraph(G, vertex.size = 3, vertex.label = NA, layout = layout_with_fr, 
               vertex.shape = SHAPES[as.numeric(V(G)$site == s1)+1])
-  legend('left', pch = 23, bty = 'n', inset = -0.07, 
-         pt.bg = Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])], cex = 0.7, pt.cex = 1, 
+  legend('left', pch = 23, bty = 'n', inset = 0.1, y.intersp = 0.7,
+         pt.bg = Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])], cex = 0.8, pt.cex = 1, 
          legend = C_names[as.character(names(Cols[Cols %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])]))])
-  legend('bottom', pch = c(0,1), pt.bg = 'white', legend = c(s1,s2), bty = 'n')
+  legend('topleft', pch = c(0,1), pt.bg = 'white', legend = c(s1,s2), bty = 'n', inset = 0.7)
 }
+
+if(PDF){dev.off()}
 
 
 #===========================================================
@@ -319,7 +339,6 @@ for(j in 1:(length(unique_M_BT)-1)){
 round(Mean_sd_matrix, 3)
 
 
-
 #########################################################
 # 3) In this section we generate and plot PCA and 
 # compare with gravity network
@@ -352,4 +371,3 @@ plot(net, edge.width = E(net)$weight, vertex.frame.color = site_cols[V(net)$name
      vertex.color = site_cols[V(net)$name], vertex.size = 15, vertex.label = NA)
 
 
-if(PDF){dev.off()}

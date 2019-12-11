@@ -15,10 +15,11 @@ load('../RData/mles_true.RData')
 load('../RData/SNPData.RData') # Load SNP data for cities
 load('../RData/geo_dist_info.RData')
 source('./igraph_functions.R')
-PDF = T # Set to TRUE to plot graphs to pdf
 eps = 0.01 # Below which LCI considered close to zero
-cols = colorRampPalette(brewer.pal(12, "Paired")) # Functn to create colours
-FILTER = F
+cols = colorRampPalette(brewer.pal(12, "Paired")) # Function to create colours
+
+FILTER = F # To re-generate filtered results
+PDF = T # Set to TRUE to plot graphs to pdf
 
 ############################################################
 # 1) In this section we filter results, create graphs 
@@ -67,19 +68,19 @@ All_G = lapply(All_G, function(x){
 # Based on unfiltered results, generate jitter 
 # and clonal component membership and colour 
 #===========================================================
-# Adjency matrix unfiltered (same as All_adj_matrix_v[[1]] and All_adj_matrix_e[[1]]
+# Adjaceny matrix unfiltered (same as All_adj_matrix_v[[1]] and All_adj_matrix_e[[1]]
 A_high = construct_adj_matrix(mle_CIs, Entry = 'r97.5.')
 A_high[A_high < 1-eps] = 0 # Edit s.t. only not stat diff from clonal have weight
 G_high = graph_from_adjacency_matrix(A_high, mode='upper', diag=F, weighted=T) # Construct graph 
 C_high = components(G_high) # Extract components from graph
-M_high = C_high$membership # Extract membership of vertices
+M_high = C_high$membership # Extract membership of vertices==
 
 # Layout within sites
 Jitter = M_high*10^-3 # For graph layout (function on M)
 Jitter[M_high %in% which(C_high$csize < 2)] = -0.15 
 Jitter = Jitter + rnorm(length(Jitter), 0 , 0.05)
 
-# Create clonal component colours
+# Create clonal component colours and names
 Cols = cols(sum(C_high$csize > 1)) # Enumerate colours
 names(Cols) = unique((1:C_high$no)[C_high$csize > 1])
 C_names = paste0('CC',1:length(Cols))
@@ -127,6 +128,23 @@ E(Comp_G)$colour <- 'black'
 V(Comp_G)$date <- SNPData[V(Comp_G)$name, 'COLLECTION.DATE']
 V(Comp_G)$site <- SNPData[V(Comp_G)$name, 'City']
 set.seed(150)
+
+writeLines(sprintf("Among the clonal components, there are %s related components size %s", 
+                   components(Comp_G)$no, 
+                   paste(components(Comp_G)$csize, collapse = " and ")))
+
+# -----------------------------------------
+# Aside: find and inspect parasite members of the anamolous CC
+anomaly_CC_sID1 = names(which(components(Comp_G)$membership != 1)) # The sample ID retained in Comp_G
+anomaly_CC_sIDs = which(M_high == M_high[anomaly_CC_sID1]) # All sample IDs
+# Extract and print to screen their data (check with Diego )
+anomaly_CC_SNPData = SNPData[anomaly_CC_sIDs,]
+writeLines(sprintf("The anomalous CC (unrelated to the other CCs) contains %s samples:", 
+                   length(anomaly_CC_sIDs)))
+print(anomaly_CC_SNPData[,1:5])
+save(anomaly_CC_SNPData, file = '../RData/anomaly_CC_SNPData.RData')
+# -----------------------------------------
+
 
 if(PYRIMID){
   
@@ -339,35 +357,5 @@ for(j in 1:(length(unique_M_BT)-1)){
 round(Mean_sd_matrix, 3)
 
 
-#########################################################
-# 3) In this section we generate and plot PCA and 
-# compare with gravity network
-#########################################################
-par(bg = 'white', mar = c(5,4,1,1), mfrow = c(2,1))
-A_pca = A_related
-diag(A_pca) = 1
-A_pca[lower.tri(A_pca)] = A_pca[upper.tri(A_pca)]
-pcaIBD = prcomp(A_pca, center = TRUE, scale. = TRUE)
-
-# Plot PCA
-site_cols = brewer.pal(5, 'Dark2')
-names(site_cols) = unique(SNPData[,'City'])
-# barplot(pcaIBD$sdev[1:10]/sum(pcaIBD$sdev)*100,
-#         ylab = expression('Percent'~sigma),
-#         names.arg = paste('PC', 1:10), las = 2)
-
-plot(y = pcaIBD$rotation[,1], x = -pcaIBD$rotation[,2], 
-     ylab = sprintf('PCA 1 (%s)', round(pcaIBD$sdev[1]/sum(pcaIBD$sdev),3)), 
-     xlab = sprintf('-PCA 2 (%s)', round(pcaIBD$sdev[2]/sum(pcaIBD$sdev),3)), 
-     pch = 20, col = site_cols[SNPData[rownames(pcaIBD$x), 'City']])
-legend('bottomleft', pch = 20, col = site_cols, legend = names(site_cols), inset = 0.01)
-
-# PCA appears to be similar to the gravity network 
-net <- graph.data.frame(geo_dist_info$pairwise_site_distance[,1:2], directed = FALSE)
-E(net)$weight = geo_dist_info$pairwise_site_distance$gravity_estimate/100000
-as_adjacency_matrix(net, attr = 'weight')
-set.seed(5)
-plot(net, edge.width = E(net)$weight, vertex.frame.color = site_cols[V(net)$name],
-     vertex.color = site_cols[V(net)$name], vertex.size = 15, vertex.label = NA)
 
 

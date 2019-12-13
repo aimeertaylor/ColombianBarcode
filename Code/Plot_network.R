@@ -21,6 +21,7 @@ ZM = F # Set to true to zoomed out plot surrounding countries
 NET = T # Set to true to include network on coast
 Threshold = '0.25' # on edges
 Filter = 'Unfiltered' # on graph
+blue_col_0.25 = brewer.pal(5, "GnBu")[3]
 
 # Colombian Pacific Coast shape file
 CP_coast <- readShapeLines("../GISData/CP_coast.shp")
@@ -38,7 +39,7 @@ for(Gravity in c(T,F)){ # Set to true to plot gravity vs genetic
       layout_lonlat <- LonLat_city[,2:1]
       intra = sapply(rownames(layout_lonlat), function(x)paste(x,x,sep= "_"))
       proportions = proportions_cities['mean',geo_order,Threshold,Filter]
-      Labels = array(c('Quibdó','Tadó','Buenaventura','Guapí','Tumaco'), 
+      Labels = array(c('Quibdó','Tadó','Buenaventura','Guapi','Tumaco'), 
                      dimnames = list(rownames(layout_lonlat)))
     } else {
       load('../RData/geo_dist_info_states.RData')  
@@ -68,7 +69,7 @@ for(Gravity in c(T,F)){ # Set to true to plot gravity vs genetic
     # IBD barcode
     E(net)$width <- E(net)$edge_weight * 10
     E(net)$curved <- 0.69*c(1,-1,-0.3,1,0.3,-1,-1,1,1,1) # Designed for cities
-    E(net)$color <- brewer.pal(5, "GnBu")[3] #adjustcolor(brewer.pal(5, "GnBu")[3], alpha.f = 0.75)
+    E(net)$color <- brewer.pal(5, "GnBu")[3] #adjustcolor(brewer.pal(5, "GnBu")[3], alpha.f = 0.80)
     
     # Change labels, text colour etc.
     print(V(net)) # Print order
@@ -82,7 +83,7 @@ for(Gravity in c(T,F)){ # Set to true to plot gravity vs genetic
     V(net)$frame.color <- "white"
     
     # Plot Net
-    if(!NET){E(net)$color <- adjustcolor('blue', alpha.f = 0)} # Plot coast only
+    if(!NET){E(net)$color <- adjustcolor(blue_col_0.25, alpha.f = 0)} # Plot coast only
     par(mfrow = c(1,1), family = "serif", mar = c(0,0,1,0))
     plot(CP_coast, col = 'black', lwd = 2, xlim =  c(-78.5, -76.7), main = ifelse(Gravity, 'Gravity', 'Genetic'))
     plot(net, layout=layout_lonlat[attributes(V(net))$names,], add = TRUE, rescale = FALSE)

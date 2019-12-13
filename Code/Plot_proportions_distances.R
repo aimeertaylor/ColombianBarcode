@@ -13,9 +13,10 @@ library(plotrix) # For gap.barplot
 library(RColorBrewer)
 cols = brewer.pal(8, 'Dark2') # Colour Scheme
 r_threshold = 0.25 # This is the threshold used in Generate_proportions.R
+eps = 0.01
 par(family = 'serif', mfrow = c(1,1))
 default_par = par() # Record default plotting parameters before changing
-PDF = T
+PDF = F
 
 if(PDF){pdf('../Plots/Proportions_and_W_distance.pdf')}
 par(family = 'serif')
@@ -96,7 +97,7 @@ Ordered_r = sort.int(mle_CIs$rhat, index.return = T) # Order estimates
 # NULL plot
 plot(NULL, ylim = c(0,1), xlim = c(1,length(mle_CIs$rhat)), 
      ylab = 'Relatedness estimate', #expression('Relatedness estimate'~hat(italic(r))), 
-     xlab = "Sample comparison ranked by relatedness estimate", #expression("Sample comparison ranked by"~hat(italic(r))), 
+     xlab = "Sample comparison index", #expression("Sample comparison ranked by"~hat(italic(r))), 
      las = 1, panel.first = grid(), cex.axis = 1.2, cex.lab = 1.25)
 
 # Make transparency a function of lower CI
@@ -126,11 +127,11 @@ lines(Ordered_r$x, lwd = 2) # Add mles
 # Add legend
 legend('topleft', fill = brewer.pal(5, "GnBu"), 
        inset = 0.01, 
-       legend = c('Statistically indistinguishable from 0.01', 
-                  'Statistically distinguishable from 0.01', 
-                  'Statistically distinguishable from 0.25', 
-                  'Statistically distinguishable from 0.5', 
-                  'Statistically indistingishable from 0.99'))
+       legend = c(expression("Unrelated"), 
+                  expression("Related"), 
+                  expression("Highly related with"~tau == "0.25"), 
+                  expression("Highly related with"~tau == "0.50"),
+                  expression("Clonal")))
 
 #par(pin = default_par$pin)
 
@@ -162,7 +163,7 @@ legend('topleft', legend = c('Road (Google maps)',
 #===========================================================
 par(mfrow = c(1,1), family = 'serif', mar = c(6,5,2,2))
 X <- barplot(proportions_time['mean',], 
-             las = 2, xlab = expression(Delta~'Time (weeks)'), 
+             las = 2, xlab = expression(Delta~'time (weeks)'), 
              xaxt = 'n', cex.lab = 1.25,  
              ylab = expression('Fraction of highly related'~italic('P. falciparum')~'sample pairs'), 
              cex.names = 1, ylim = c(0,max(proportions_time)), 
@@ -176,7 +177,7 @@ text(x = X, y = -max(proportions_time)/20, srt = 40, adj= 1, xpd = TRUE,
 # Histogram of time (partioned by clone)
 #===========================================================
 X <- barplot(proportions_time_cloned[, ,'r_threshold'], 
-             las = 2, xlab = expression(Delta~'Time (weeks)'), 
+             las = 2, xlab = expression(Delta~'time (weeks)'), 
              xaxt = 'n', cex.lab = 1.25,  
              ylab = bquote('Proportion with LCI of relatedness estimated'>.(r_threshold)), 
              cex.names = 1, ylim = c(0,max(proportions_time)), 
@@ -247,8 +248,8 @@ text(x = X[11], pos = 2, cex = 0.75, bg = 'white',
 
 # Legend
 legend('top',density = c(100,35), fill = brewer.pal(5, "GnBu")[3], bty = 'n', 
-       legend = c(expression('within sites ('~Delta~'distance = 0 km )'),
-                  expression('across sites ('~Delta~'distance > 0 km )')))
+       legend = c(expression('within cities ('~Delta~'distance = 0 km )'),
+                  expression('across cities ('~Delta~'distance > 0 km )')))
 legend('top', lty = 1, pch = 20, legend = expression(Delta~'distance'), 
        inset = 0.15, bty = 'n')
 

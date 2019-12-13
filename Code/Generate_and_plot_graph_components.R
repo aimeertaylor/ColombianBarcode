@@ -22,6 +22,9 @@ cols = colorRampPalette(brewer.pal(12, "Paired")) # Function to create colours
 FILTER = F # To re-generate filtered results
 PDF = T # Set to TRUE to plot graphs to pdf
 
+
+
+
 ############################################################
 # 1) In this section we filter results, create graphs 
 # and memberships etc. 
@@ -47,7 +50,6 @@ if (FILTER) {
 } else {
   load('../RData/All_results.RData')
 }
-
 
 #===========================================================
 # Convert filtered results into graphs
@@ -160,6 +162,9 @@ print(anomaly_CC_SNPData[,1:5])
 save(anomaly_CC_SNPData, file = '../RData/anomaly_CC_SNPData.RData')
 # -----------------------------------------
 
+# scale weights to zero one for maximal visualisation
+weights_rescaled = (E(Comp_G)$weight - min(E(Comp_G)$weight)) / (max(E(Comp_G)$weight) - min(E(Comp_G)$weight))
+
 
 if(PYRIMID){
   
@@ -199,9 +204,11 @@ if(PYRIMID){
        vertex.label.color = 'black',
        vertex.frame.color = 'white',
        vertex.color = cols_cities[V(Comp_G)$site], 
-       edge.color = sapply(E(Comp_G)$weight, adjustcolor, col = 'black'))
+       edge.color = sapply(weights_rescaled, adjustcolor, col = 'black')
+       )
 }
 range(E(Comp_G)$weight)
+
 
 # # Legend of names of clonal components
 # legend('left', pch = 16, bty = 'n', cex = 0.7, pt.cex = 1.5, col = Cols, 

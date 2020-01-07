@@ -6,24 +6,24 @@
 # The transport approach is directly applicable to our between-city
 # spatial analysis: it is trivial to construct a fully populated 
 # adjacency matrix of comparisons across samples that fall into two 
-# discrete populations (e.g. samples collected in Tumaco vesus 
+# discrete populations (e.g. samples collected in Tumaco versus 
 # Buenaventura). 
 # 
 # The transport approach is not directly applicable to our temporal 
 # analysis: it is not possible to construct a fully populated and  
-# representative adjacency matrix with distinct rows and colunms from
+# representative adjacency matrix with distinct rows and columns from
 # sample pairs that are labelled relatively (e.g. sample pairs collected one 
 # week apart) ---- For example, if we were to randomly split all samples 
 # collected one week apart into two distinct sets and thus construct a 
 # adjacency matrix with distinct rows and columns, only a subset of samples 
-# comparisons within the adjency matrix would correspond to one week's 
+# comparisons within the adjacency matrix would correspond to one week's 
 # separation. The rest could either be given a NA value, resulting in a 
-# sparse adjency matrix that cannot be evaluated, or their relatedness value, 
-# resulting in a non-representative matrix whose one-week signal is burried 
+# sparse adjacency matrix that cannot be evaluated, or their relatedness value, 
+# resulting in a non-representative matrix whose one-week signal is buried 
 # in noise. Since almost all samples have at least one comparison of any 
-# given time separation, noisy adjency matrices are likely no more informative 
+# given time separation, noisy adjacency matrices are likely no more informative 
 # that any random split of the entire data set. --- We thus create 
-# pseudo-descrete time populations by splitting the time-line into intervals 
+# pseudo-discrete time populations by splitting the time-line into intervals 
 # and perform this analysis as a sanity check only (it isn't worthy of 
 # publication). Note that within time-interval results are random since 
 # they are based on a random split of the time-interval. 
@@ -126,6 +126,8 @@ segments(x0 = X, x1 = X, y0 = W_results_t[2,], y1 = W_results_t[3,])
 weeks_ordered = sort(weeks) 
 plot(weeks_ordered, pch = 20, ylab = 'weeks', xlab = 'sample index', 
      col = .bincode(weeks_ordered, breaks = week_bin_breaks, include.lowest = T))
+
+round(week_bin_breaks)
 
 # Unsuprising that comparisons with one are more costly given
 # the range of weeks interval one spans

@@ -15,7 +15,7 @@ load('../RData/mle_CIs.RData')
 load('../RData/SNPData.RData') # Load SNP data for cities
 load('../RData/geo_dist_info.RData')
 source('./igraph_functions.R')
-PDF = T # Set to TRUE to plot graphs to pdf
+PDF = F # Set to TRUE to plot graphs to pdf
 eps = 0.01 # Below which LCI considered close to zero
 cols = colorRampPalette(brewer.pal(12, "Paired")) # Functn to create colours
 
@@ -277,7 +277,8 @@ EV_names = do.call(rbind, strsplit(attributes(E(G_clonal_comp_BT))$vname, split 
 
 # Extract average relatedness between clonal components (includes some guapi)
 Mean_sd_matrix = array(NA, dim = c(length(unique_M_BT), length(unique_M_BT), 4), 
-                       dimnames = list(unique_M_BT, unique_M_BT, c('mu','k','2.5%','97.5%')))
+                       dimnames = list(unique(C_names[as.character(M_high[V(G_clonal_comp_BT)$name])]),
+                                       unique(C_names[as.character(M_high[V(G_clonal_comp_BT)$name])]), c('mu','k','2.5%','97.5%')))
 for(i in 1:(length(unique_M_BT)-1)){
   for(j in (i+1):length(unique_M_BT)){
     members_i = names(which(M_high == unique_M_BT[i])) 

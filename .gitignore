@@ -3,6 +3,7 @@
 
 .DS_Store
 
+To-sort-web-restore_1
 
 Slides/**
 Notes/**
@@ -19,10 +20,11 @@ RData/**
 !RData/mles_frequencies_true.RData
 !RData/mles_frequencies_unif.RData
 !RData/SNPData.RData
-!RData/geo_dist_info.RData
-!RData/mle_CIs.RData
 !RData/populations_cities.RData
 !RData/populations_states.RData
+
+# Scripts to ignore
+Code/Generate_plot_PCA.R
 ###################################################################
 
 

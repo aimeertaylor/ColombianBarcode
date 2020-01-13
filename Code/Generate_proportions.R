@@ -7,9 +7,10 @@
 rm(list = ls())
 
 # Load and summarise raw data 
-load('../RData/mle_CIs.RData') 
+load('../RData/All_results.RData') 
 load('../RData/edge_cols.RData') # for histograms partioned by clone
 load('../RData/geo_dist_info_cities.RData')
+mle_CIs <- All_results$Unfiltered
 
 # Extract sites in ascending order distance-wise
 inter = geo_dist_info$geo_order  
@@ -25,7 +26,7 @@ intra_inter = c(intra, inter)
 #=================================================================
 nrep <- 100 # For bootstrap confidence intervals
 r_threshold = 0.25
-set.seed(1) # For reproducibility
+set.seed(1) # For reproducibility 
 
 # Add membership by colour
 mle_CIs$sample_comp = apply(mle_CIs[, c("individual1", "individual2")], 1, function(x)paste(sort(x), collapse = "_"))
@@ -59,7 +60,7 @@ for(i in time_bins){
   index_i = as.character(i)
   ind <- mle_CIs$time_bins == i
   n_time_bin <- sum(ind)
-  rhats <- mle_CIs$`2.5%`[ind]
+  rhats <- mle_CIs$`r2.5.`[ind]
   
   # Proportions of different site comps within
   site_comp_breakdown_all = table(mle_CIs$City12[ind])
@@ -89,7 +90,7 @@ for(i in site_comps){
   # Extract data
   ind <- mle_CIs$City12 == i 
   n_city12 = sum(ind)
-  rhats <- mle_CIs$`2.5%`[ind]
+  rhats <- mle_CIs$`r2.5.`[ind]
   
   # Proportions of different times within
   time_bin_breakdown_all = table(mle_CIs$time_bins[ind])

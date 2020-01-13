@@ -1,10 +1,10 @@
-##########################################################
+###################################################################
 # This script is adapted from PlasmodiumRelatedness/Generate_mles.R
 # s.t. all mles and parametric bootstrap mles for Colombia only
 # are calculated in one script.
 # 134690 seconds on my Pro with nrepeat = 500. 
 # consider changing nboot to 100 and dropping those for k
-##########################################################
+###################################################################
 rm(list = ls())
 set.seed(1)
 library(ggplot2)
@@ -38,7 +38,7 @@ simulate_Ys_hmm <- function(frequencies, distances, k, r, epsilon){
 # Load data
 data_set = read.delim("../TxtData/hmmInput.txt") 
 
-# Create indeces for pairwise comparisons
+# Create indices for pairwise comparisons
 individual_names <- names(data_set)[-(1:2)]
 nindividuals <- length(individual_names)
 name_combinations <- matrix(nrow = nindividuals*(nindividuals-1)/2, ncol = 2)
@@ -57,7 +57,6 @@ data_set$fs = rowMeans(data_set[,-(1:2)], na.rm = TRUE) # Calculate frequencies
 data_set$dt <- c(diff(data_set$pos), Inf)
 pos_change_chrom <- 1 + which(diff(data_set$chrom) != 0) # find places where chromosome changes
 data_set$dt[pos_change_chrom-1] <- Inf
-
 
 funif = runif(250)
 frequencies_unif <- cbind(funif, 1-funif) 

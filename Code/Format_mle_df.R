@@ -1,19 +1,14 @@
-##############################################
-# This script simply loads a very large file 
-# and saves more manageable versions
-# 
-# To-do
-# remove the bootstrap from mle_CIs and readd k 95% CI
-# Adapt this script
-##############################################
+#######################################################
+# This script loads the output from Generate_mles_CIs.R
+# and adds metadata
+#######################################################
 rm(list = ls())
 
 for(f in c("true", "unif")){
   
   load(sprintf('../RData/mles_frequencies_%s.RData', f)) # Few mins
-  mle_CIs = mle_df # To remove
   
-  # Do some formating 
+  # Factors to characters
   if(class(mle_CIs$individual1) == 'factor'){mle_CIs$individual1 = as.character(mle_CIs$individual1)}
   if(class(mle_CIs$individual2) == 'factor'){mle_CIs$individual2 = as.character(mle_CIs$individual2)}
   
@@ -29,11 +24,12 @@ for(f in c("true", "unif")){
   mle_CIs$City2 = as.character(SNPData[mle_CIs$individual2, 'City'])
   mle_CIs$City12 = apply(mle_CIs[,c('City1','City2')], 1, function(x)paste(sort(x),collapse="_"))
   
+  # Add state comps
   mle_CIs$State1 = as.character(SNPData[mle_CIs$individual1, 'STATE'])
   mle_CIs$State2 = as.character(SNPData[mle_CIs$individual2, 'STATE'])
   mle_CIs$State12 = apply(mle_CIs[,c('State1','State2')], 1, function(x)paste(sort(x),collapse="_"))
   
-  # Add ditance for cities
+  # Add distance between cities
   mle_CIs$geo_dist_cities = geo_dist_info_cities$pairwise_site_distance_all[mle_CIs$City12]
   mle_CIs$geo_dist_states = geo_dist_info_states$pairwise_site_distance_all[mle_CIs$State12]
   

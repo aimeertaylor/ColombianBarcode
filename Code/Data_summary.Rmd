@@ -45,7 +45,7 @@ kable(counts_table, format = 'latex', caption = '\\label{tab: sample counts} Yea
 
 ```{r Raw_data_ordered, include=TRUE,fig.cap= "\\label{fig: Raw data} Plot of raw data."}
 # Plot the raw data 
-par(mfrow = c(1,1), family = 'serif')
+par(mfrow = c(1,1), family = 'serif', mar = c(2,2,1,1))
 cols <- brewer.pal(3,'Dark2')
 image(t(as.matrix(SNPDataBinary[names(sort(rowSums(SNPDataBinary, na.rm = T))),])), 
       ylab = '', xlab = '', xaxt = 'n', yaxt = 'n', col = cols)
@@ -56,7 +56,7 @@ legend('topleft', bty = 'n', legend =
 ```
 
 ```{r MAF, include = TRUE, fig.cap= "\\label{fig: MAF} Minor allele frequency distribution of all 250 SNPs."}
-par(family = 'serif', mar = c(4,5,1,1))
-hist(1-Frequencies, breaks = 20, freq = FALSE, col = 'gray', 
+par(family = 'serif', mar = c(4,4,1,1))
+hist(1-Frequencies, breaks = 20, col = 'gray', ylab = 'Number of SNPs', 
      main = '', xlab = 'Minor allele frequency')
 ```

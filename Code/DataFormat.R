@@ -1,8 +1,9 @@
-##############################################################################################
-# Formatting the Colombian data for relatedness inference and downstream analyses 
+###########################################################
+# Formatting the Colombian data for relatedness inference 
+# and downstream analyses 
 # Format for relatedness inference: chrom pos sample
 # Time to run: 0.689 sec 
-##############################################################################################
+###########################################################
 rm(list = ls())
 library(tictoc)
 tic()

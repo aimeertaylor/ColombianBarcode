@@ -1,6 +1,5 @@
 #==========================================================
 # Function to create an adjacency matrix
-# Different from that used in Generate_transportdistances.R
 #=========================================================
 construct_adj_matrix = function(Result, Entry){
   
@@ -24,10 +23,10 @@ rm_highly_related_within = function(Result, Cities, Edge){
   
   if(Edge){
     # Keep edges statistically diff. from one
-    Result_filtered = Result[Result$`97.5%` < 1-eps,] 
+    Result_filtered = Result[Result$`r97.5.` < 1-eps,] 
   } else {
     # First construct an adjaceny matrix of 97.5% CI IBD
-    adj_matrix = construct_adj_matrix(Result, Entry = '97.5%')
+    adj_matrix = construct_adj_matrix(Result, Entry = 'r97.5.')
     sample_names = rownames(adj_matrix)
     
     # Second, modify s.t. only edges NOT statistically diff. from one
@@ -67,7 +66,7 @@ rm_highly_related_within = function(Result, Cities, Edge){
 #==========================================================
 # Function to return city subgraph
 #==========================================================
-extract_city_graph = function(x, city1, city2){
+extract_city_graph = function(x, city1, city2, col_edge = 'white'){
   inds = V(x)$site == city1|V(x)$site == city2 # indices for cities
   z = induced_subgraph(x, vids = which(inds)) # extract subgraph
   Jitter_sign = rep(1, length(V(z)$site ))
@@ -78,7 +77,7 @@ extract_city_graph = function(x, city1, city2){
   V(z)$color = M_cols[V(z)$name] # Colour by clonal component
   E(z)$weight[is.na(E(z)$weight)] = 0 # NAs introduced when filter edges 
   E(z)$width <- E(z)$weight
-  E(z)$color = sapply(E(z)$weight, adjustcolor, col = 'white') # Make transparency a function of rhat
+  E(z)$color = sapply(E(z)$weight, adjustcolor, col = col_edge) # Make transparency a function of rhat
   v_names = do.call(rbind, strsplit(attributes(E(z))$vnames, split = "\\|"))
   edge_col_ind = which(M_cols[v_names[,1]] == M_cols[v_names[,2]] & M_cols[v_names[,1]] != "#FFFFFF")
   if(any(edge_col_ind)){

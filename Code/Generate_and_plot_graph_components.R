@@ -39,11 +39,6 @@ G_high = graph_from_adjacency_matrix(A_high, mode='upper', diag=F, weighted=T) #
 C_high = components(G_high) # Extract components from graph
 M_high = C_high$membership # Extract membership of vertices
 
-# Add jitter for layout within sites
-Jitter = M_high*10^-3 # For graph layout (function on M)
-Jitter[M_high %in% which(C_high$csize < 2)] = -0.15 
-Jitter = Jitter + rnorm(length(Jitter), 0 , 0.05)
-
 # Create clonal component colours 
 Cols = cols(sum(C_high$csize > 1)) # Enumerate colours
 names(Cols) = (1:C_high$no)[C_high$csize > 1] # Names cols agrees with memberships set by igraph

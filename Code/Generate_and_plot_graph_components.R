@@ -4,7 +4,7 @@
 # 1) filter results 
 #   - remove edges and see if trend remains (almost all samples remain)
 #   - remove vertices and see if trend remains (samples deplete)
-# 2) plot igraph results (not width < 1 does not show on pdfs so map r to transpancy)
+# 2) plot igraph results (note width < 1 does not show on pdfs so map r to transpancy)
 #
 # To-do: reduce redundancy (e.g. A_related)
 ##############################################################
@@ -12,7 +12,7 @@
 rm(list = ls())
 library(igraph) # To make graph, construct components etc.
 library(RColorBrewer)
-load('../RData/mles_true.RData')
+load('../RData/mles_frequencies_true.RData')
 load('../RData/SNPData.RData') # Load SNP data for cities
 load('../RData/geo_dist_info.RData')
 source('./igraph_functions.R')
@@ -20,7 +20,7 @@ eps = 0.01 # Below which LCI considered close to zero
 cols = colorRampPalette(brewer.pal(12, "Paired")) # Function to create colours
 
 FILTER = F # To re-generate filtered results
-PDF = T # Set to TRUE to plot graphs to pdf
+PDF = F # Set to TRUE to plot graphs to pdf
 
 
 
@@ -109,6 +109,8 @@ save(edge_cols, file = '../RData/edge_cols.RData')
 if(PDF){pdf('../Plots/All_CCs.pdf', height = 8, width = 8)}
 par(mfrow = c(1,1), family = 'serif')
 
+#++++++++++++++++++++++++++++++++++++++++++++
+# Put dates of first observed in table.
 #===========================================================
 # Plot the relatedness between components
 # with edge only if statistically distinguishable from zero
@@ -134,7 +136,7 @@ set.seed(150)
 C_names = paste0('CC',1:length(Cols)) # Create CC names
 ordered_date_index <- sort.int(V(Comp_G)$date, index.return = T)$ix
 sid_ordered_date = V(Comp_G)$name[ordered_date_index] # reorder sample ID by date 
-names(C_names) = as.character(M_high[sid_ordered_date]) # Make sure the CC names are same order or memberships
+names(C_names) = as.character(M_high[sid_ordered_date]) # Make sure the CC names are same order as memberships
 
 # Check order and print mapping
 cbind(C_names[as.character(M_high[V(Comp_G)$name[ordered_date_index]])], 

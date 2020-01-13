@@ -39,7 +39,7 @@ G_high = graph_from_adjacency_matrix(A_high, mode='upper', diag=F, weighted=T) #
 C_high = components(G_high) # Extract components from graph
 M_high = C_high$membership # Extract membership of vertices
 
-# Create clonal component colours 
+# Create colour per clonal component 
 Cols = cols(sum(C_high$csize > 1)) # Enumerate colours
 names(Cols) = (1:C_high$no)[C_high$csize > 1] # Names cols agrees with memberships set by igraph
 
@@ -53,8 +53,6 @@ v_names = do.call(rbind, strsplit(attributes(E(G_high))$vnames, split = "\\|")) 
 edge_col_ind = M_cols[v_names[,1]] == M_cols[v_names[,2]] & M_cols[v_names[,1]] != "#000000"
 edge_cols = array(M_cols[v_names[,1]][edge_col_ind], dim = sum(edge_col_ind), # Creat a vector grays
                   dimnames = list(apply(v_names[edge_col_ind, ], 1, function(x)paste(sort(x), collapse = '_'))))
-
-save(edge_cols, file = '../RData/edge_cols.RData')
 
 
 
@@ -73,19 +71,33 @@ par(mfrow = c(1,1), family = 'serif')
 # with edge only if statistically distinguishable from zero
 # and edge colour proportion to remaining rhats 
 #===========================================================
-R_comp = rm_highly_related_within(Result = mle_CIs, Edge = F,
-                                  Cities = sapply(row.names(SNPData), function(x)return("City")))
-A_comp = construct_adj_matrix(R_comp, Entry = 'rhat')
-A_comp_related = A_comp = construct_adj_matrix(R_comp, Entry = 'r2.5.')
-A_comp[A_comp_related < eps] = 0
 
+# Remove all but but the first sample per CC regardless of city
+# using a dummy vector that says all samples come from one city
+R_comp = rm_highly_related_within(Result = mle_CIs, Edge = F, 
+                                  Cities = sapply(row.names(SNPData), function(x)return("DummyCity")))
+
+# Create adjacency matrix over clonal components
+A_comp = construct_adj_matrix(R_comp, Entry = 'rhat')
+
+# Set edges that are statistically indistinguishable from zero to zero
+A_comp[construct_adj_matrix(R_comp, Entry = 'r2.5.') < eps] = 0
+
+# Create graph
 G_comp = graph_from_adjacency_matrix(A_comp, mode='upper', diag=F, weighted=T)
+
+# Colour vertices by CC
 V(G_comp)$color = M_cols[V(G_comp)$name]
+
+# Based on colour, extract subgraph of those with two or more members
 Comp_G = induced_subgraph(G_comp, vids = which(V(G_comp)$color!="#FFFFFF"))
+
+#
 E(Comp_G)$width <- E(Comp_G)$weight
 E(Comp_G)$colour <- 'black'
 V(Comp_G)$date <- SNPData[V(Comp_G)$name, 'COLLECTION.DATE']
 V(Comp_G)$site <- SNPData[V(Comp_G)$name, 'City']
+
 set.seed(150)
 
 # Create clonal component names in order of date of earliest sample per CC

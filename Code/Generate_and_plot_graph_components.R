@@ -111,12 +111,12 @@ par(mfrow = c(1,1), family = 'serif')
 
 #++++++++++++++++++++++++++++++++++++++++++++
 # Put dates of first observed in table.
+# To access dates: '\n', SNPData[V(Comp_G)$name, 'COLLECTION.DATE'])
 #===========================================================
 # Plot the relatedness between components
 # with edge only if statistically distinguishable from zero
 # and edge colour proportion to remaining rhats 
 #===========================================================
-PYRIMID = F # For pyrimid layout where clones seen in multiple sites are on top
 R_comp = rm_highly_related_within(Result = mle_CIs, Edge = F,
                                   Cities = sapply(row.names(SNPData), function(x)return("City")))
 A_comp = construct_adj_matrix(R_comp, Entry = 'rhat')
@@ -168,35 +168,7 @@ save(anomaly_CC_SNPData, file = '../RData/anomaly_CC_SNPData.RData')
 weights_rescaled = (E(Comp_G)$weight - min(E(Comp_G)$weight)) / (max(E(Comp_G)$weight) - min(E(Comp_G)$weight))
 
 
-if(PYRIMID){
-  
-  # Work out where each clone is seen
-  cites_per_clone = lapply(V(Comp_G)$color, function(COL){
-    inds = mle_CIs$sample_comp %in% names(edge_cols)[edge_cols == COL]
-    unique(c(mle_CIs$City1[inds], mle_CIs$City1[inds]))
-  })
-  
-  # Count the number of sites observed per clone
-  clone_site_no = sapply(cites_per_clone, length) 
-  V(Comp_G)$label = sapply(cites_per_clone, function(x){
-    paste(sapply(strsplit(x, split = ''), function(y) paste(y[1:2], collapse = '')), collapse = '+')})
-  attr(Comp_G, 'layout') = cbind(X = V(Comp_G)$date, 
-                                 Y = clone_site_no + rnorm(length(V(Comp_G)), 0, 0.2)) # Full layout
-  plot.igraph(Comp_G, vertex.size = 10, 
-       vertex.label.cex = 0.5, 
-       layout = attributes(Comp_G)$layout, # uncomment for pyrimid layout 
-       vertex.label.color = 'black',
-       vertex.frame.color = V(Comp_G)$color,
-       edge.color = sapply(E(Comp_G)$weight, adjustcolor, col = 'black'))
-  
-  # Add dates if pyrimid layout
-  unique_yrs = as.numeric(unique(SNPData[V(Comp_G)$name, "Year"]))
-  min_yr = min(unique_yrs); max_yr = max(unique_yrs)
-  yr01 = (unique_yrs-min_yr)/(max_yr - min_yr)
-  axis(side = 1, labels = unique_yrs, las = 1, cex.axis = 0.7, 
-       at = -1 + yr01 * 2, line = -1, tick = F)
-} else {
-  
+
   set.seed(1)
   plot(Comp_G, layout = layout_with_fr, 
        vertex.size = table(M_cols)[V(Comp_G)$color]+5, 
@@ -207,7 +179,7 @@ if(PYRIMID){
        vertex.color = cols_cities[V(Comp_G)$site], 
        edge.color = sapply(weights_rescaled, adjustcolor, col = 'black')
        )
-}
+
 range(E(Comp_G)$weight)
 
 

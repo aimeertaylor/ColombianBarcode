@@ -1,10 +1,6 @@
 ##############################################################
-# Script to 
-#
-# 1) filter results 
-#   - remove edges and see if trend remains (almost all samples remain)
-#   - remove vertices and see if trend remains (samples deplete)
-# 2) plot igraph results (note width < 1 does not show on pdfs so map r to transpancy)
+# Script to plot igraph results 
+# Note width < 1 does not show on pdfs so map r to transpancy
 #
 # To-do: reduce redundancy (e.g. A_related)
 ##############################################################
@@ -18,67 +14,32 @@ load('../RData/geo_dist_info.RData')
 source('./igraph_functions.R')
 eps = 0.01 # Below which LCI considered close to zero
 cols = colorRampPalette(brewer.pal(12, "Paired")) # Function to create colours
-
 FILTER = F # To re-generate filtered results
 PDF = F # Set to TRUE to plot graphs to pdf
 
+load('../RData/All_results.RData') # Load All_results
+load('../RData/All_adj_matrix.RData') # Load All_adj_matrix
+load('../RData/All_G.RData') # Load All_G
 
 
-
-############################################################
-# 1) In this section we filter results, create graphs 
-# and memberships etc. 
-############################################################
+# n x 1 vector of cities named by sample ID (maybe not needed)
 Cities = SNPData$City; names(Cities) = row.names(SNPData) 
-cols_cities = brewer.pal(length(unique(Cities)), 'Spectral')
-names(cols_cities) = rev(unique(Cities))
+
+# 5 x 1 vector of city colours named by city
+cols_cities = brewer.pal(length(unique(Cities)), 'Spectral') 
+names(cols_cities) = rev(unique(Cities)) 
 
 #===========================================================
-# Filter and save
+# Using unfiltered results, generate CC adj matrix and graph
 #===========================================================
-if (FILTER) {
-  All_results = lapply(c(F,T), rm_highly_related_within, Result = mle_CIs, Cities = Cities)
-  All_results[[3]] = mle_CIs
-  names(All_results) = c('Filter by vertex', 'Filter by edge', 'Unfiltered')
-  
-  # Extract summaries
-  sapply(All_results, function(x){c('Edge count' = nrow(x), 
-                                    'Vertex count' = length(unique(c(x$individual1,x$individual2))))})
-  
-  # Save list of results filtered and not 
-  save(All_results, file = '../RData/All_results.RData')
-} else {
-  load('../RData/All_results.RData')
-}
-
-#===========================================================
-# Convert filtered results into graphs
-#===========================================================
-# Create adjacency matrices 
-All_adj_matrix = lapply(All_results, construct_adj_matrix, Entry = 'rhat')
-
-# Create graphs 
-All_G = lapply(All_adj_matrix, graph_from_adjacency_matrix, mode='upper', diag=F, weighted=T)
-
-# Add meta data
-All_G = lapply(All_G, function(x){
-  V(x)$site = SNPData[V(x)$name, 'City']
-  V(x)$date = SNPData[V(x)$name, 'COLLECTION.DATE']
-  return(x)
-})
-
-#===========================================================
-# Based on unfiltered results, generate jitter 
-# and clonal component membership and colour 
-#===========================================================
-# Adjaceny matrix unfiltered (same as All_adj_matrix_v[[1]] and All_adj_matrix_e[[1]]
+# Adj. matrix unfiltered using 'r97.5.' (not rhat as in All_adj_matrix$Unfiltered)
 A_high = construct_adj_matrix(mle_CIs, Entry = 'r97.5.')
 A_high[A_high < 1-eps] = 0 # Edit s.t. only not stat diff from clonal have weight
 G_high = graph_from_adjacency_matrix(A_high, mode='upper', diag=F, weighted=T) # Construct graph 
 C_high = components(G_high) # Extract components from graph
-M_high = C_high$membership # Extract membership of vertices==
+M_high = C_high$membership # Extract membership of vertices
 
-# Layout within sites
+# Add jitter for layout within sites
 Jitter = M_high*10^-3 # For graph layout (function on M)
 Jitter[M_high %in% which(C_high$csize < 2)] = -0.15 
 Jitter = Jitter + rnorm(length(Jitter), 0 , 0.05)
@@ -140,7 +101,7 @@ names(C_names) = as.character(M_high[sid_ordered_date]) # Make sure the CC names
 
 # Check order and print mapping
 cbind(C_names[as.character(M_high[V(Comp_G)$name[ordered_date_index]])], 
-as.character(SNPData[V(Comp_G)$name[ordered_date_index], 'COLLECTION.DATE']))
+      as.character(SNPData[V(Comp_G)$name[ordered_date_index], 'COLLECTION.DATE']))
 
 # CCs 12 and 13 have earliest parasite samples detected on the same date: "2002-04-03"
 duplicate <- C_names[as.character(M_high[V(Comp_G)$name[duplicated(V(Comp_G)$date)]])]
@@ -167,18 +128,17 @@ save(anomaly_CC_SNPData, file = '../RData/anomaly_CC_SNPData.RData')
 # scale weights to zero one for maximal visualisation
 weights_rescaled = (E(Comp_G)$weight - min(E(Comp_G)$weight)) / (max(E(Comp_G)$weight) - min(E(Comp_G)$weight))
 
-
-
-  set.seed(1)
-  plot(Comp_G, layout = layout_with_fr, 
-       vertex.size = table(M_cols)[V(Comp_G)$color]+5, 
-       vertex.label.cex = 0.5, 
-       vertex.label = C_names[as.character(M_high[V(Comp_G)$name])], 
-       vertex.label.color = 'black',
-       vertex.frame.color = 'white',
-       vertex.color = cols_cities[V(Comp_G)$site], 
-       edge.color = sapply(weights_rescaled, adjustcolor, col = 'black')
-       )
+# Plot
+set.seed(1)
+plot(Comp_G, layout = layout_with_fr, 
+     vertex.size = table(M_cols)[V(Comp_G)$color]+5, 
+     vertex.label.cex = 0.5, 
+     vertex.label = C_names[as.character(M_high[V(Comp_G)$name])], 
+     vertex.label.color = 'black',
+     vertex.frame.color = 'white',
+     vertex.color = cols_cities[V(Comp_G)$site], 
+     edge.color = sapply(weights_rescaled, adjustcolor, col = 'black')
+)
 
 range(E(Comp_G)$weight)
 
@@ -345,8 +305,8 @@ G_clonal_comp_BT = induced_subgraph(All_G$Unfiltered, vids = which(M_high %in% u
 # Plot all those with said membership
 set.seed(2)
 plot.igraph(G_clonal_comp_BT, vertex.size = 3, vertex.label = NA, 
-     vertex.color = M_cols[V(G_clonal_comp_BT)$name], 
-     edge.color = sapply(E(G_clonal_comp_BT)$weight, adjustcolor, col = 'black')) # Make transparency a function of rhat)
+            vertex.color = M_cols[V(G_clonal_comp_BT)$name], 
+            edge.color = sapply(E(G_clonal_comp_BT)$weight, adjustcolor, col = 'black')) # Make transparency a function of rhat)
 
 # Extract edge vertex names as matrix
 EV_names = do.call(rbind, strsplit(attributes(E(G_clonal_comp_BT))$vname, split = "\\|"))

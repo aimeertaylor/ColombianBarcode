@@ -1,6 +1,12 @@
 ##############################################################
 # Script to plot igraph results 
-# Note width < 1 does not show on pdfs so map r to transpancy
+#
+# Re related edge viz (unrelated edges not plotted): 
+# Variation in edge widths between 0 and 1 do not show on pdfs 
+# Edge transparancy between 0 and 1 does not show when printed
+# A.s. use both: e.g. map related edge transparency from a to b 
+# and plot width as transparency * c
+# 
 #
 # To-do: reduce redundancy (e.g. A_related)
 # Put dates and location of first observed in table? 
@@ -19,7 +25,9 @@ eps <- 0.01 # Below which LCI considered close to zero
 cols <- colorRampPalette(brewer.pal(12, "Paired")) # Function to create colours
 FILTER <- F # To re-generate filtered results
 PDF <- F # Set to TRUE to plot graphs to pdf
-Name_CCs_chron <- T # Name CCs by date of earliest sample per CC
+Remove_singletons <- F # Remove CCs with only one parasite sample 
+a = 0.05; b = 1; c = 2 # Scaling parameters for edge weight and transparancy 
+
 
 #+++++++ To sort: see comments +++++++++
 mle_CIs <- All_results$Unfiltered # Could just use All_results$Unfiltered
@@ -32,48 +40,73 @@ cols_cities <- brewer.pal(length(cities), 'Spectral')
 names(cols_cities) <- rev(cities) 
 
 
-
-
-
 #===========================================================
 # Get clonal component (CC) membership for all 325 samples
 #===========================================================
+#-----------------------------------------------------------
+# Create graph of all samples to extract CCs
 A_high <- construct_adj_matrix(mle_CIs, Entry = 'r97.5.') # Adj. matrix unfiltered using 'r97.5.' 
 A_high[A_high < 1-eps] <- 0 # Edit s.t. only clonal have weight
 G_high <- graph_from_adjacency_matrix(A_high, mode='upper', diag=F, weighted=T) # Construct graph 
 C_high <- components(G_high) # Extract CCs from graph
 M_high <- C_high$membership # Extract CC membership per sample (numeric name of each CC)
+#----------------------------------------------------------
 
+#----------------------------------------------------------
 # Create a vector of all CCs with 2+ samples and assign each a unique colour 
 CCs <- cols(sum(C_high$csize > 1)) # First get unique colours 
 names(CCs) <- (1:C_high$no)[C_high$csize > 1] # Name CCs using numeric CC name given igraph
+#----------------------------------------------------------
 
-# Create a vector of chr names for all CCs with 2+ samples not based on earliest sample
-if(!Name_CCs_chron){
-  CC_chr_names <- paste0('CC',1:length(CCs)) # Create CC names based on colour
-  names(CC_chr_names) <- names(CCs) # Name CC_chr_names using numeric CC name given igraph
-}
+#----------------------------------------------------------
+# Create CC character names and order by earliest detected sample per CC
+CC_chr_names <- paste0('CC',1:sum(C_high$csize > 1)) 
+# Map CC character names to dates of earliest detected sample per CC
+# Remove all duplicate CCs regardless of city using a dummy city name
+Rhat_filtCC = rm_highly_related_within(Result = mle_CIs, Edge = F, 
+                                       Cities = sapply(row.names(SNPData), function(x)"DummyCity"))
+# Extract remaining sample ids
+sids_noCCdupl = unique(c(as.character(Rhat_filtCC$individual1), 
+                         as.character(Rhat_filtCC$individual2))) # removes 125 samples
 
-#+++++++ To sort: see comments +++++++++
-# Create a vector of vertex colours by CC
-# Do we need this still? 
+# Keep only those in a CC with one or more sample
+sids_1stperCC = sids_noCCdupl[M_high[sids_noCCdupl] %in% names(CCs)]
+
+# Extract dates for filtered sample ids 
+sample_dates <- SNPData[sids_1stperCC, 'COLLECTION.DATE'] # extract dates of 
+order_of_sample_dates <- sort.int(sample_dates, index.return = T)$ix # extract order 
+sids_1stperCC_ordered <- sids_1stperCC[order_of_sample_dates] # reorder sample ID by date 
+names(CC_chr_names) = as.character(M_high[sids_1stperCC_ordered]) # Ensure CC names are ordered as memberships
+#--------------------------------------------------------
+
+#--------------------------------------------------------
+# Extract Table of site and date of earliest sample per CC 
+First_sample_per_CC_table = cbind(CC = CC_chr_names, 
+                                     Date_earliest_sample = as.character(SNPData[sids_1stperCC_ordered, 'COLLECTION.DATE']), 
+                                     Site_earliest_sample = as.character(SNPData[sids_1stperCC_ordered, 'City']))
+kable(First_sample_per_CC_table, format = "latex")
+#--------------------------------------------------------
+
+#--------------------------------------------------------
+# Create a vector of vertex colours by CC - needed for city pair plots
 M_cols = sapply(M_high, function(x){ # Return white for singleton 
   ifelse(C_high$csize[x]==1,'#FFFFFF',CCs[as.character(x)])})
-#+++++++++++++++++++++++++++++++++++++++
+#--------------------------------------------------------
 
+#--------------------------------------------------------
 # Adjacency over all related with rhat statistically distinguishable from zero
 A_related = construct_adj_matrix(mle_CIs, Entry = 'rhat')
 A_low = construct_adj_matrix(mle_CIs, Entry = 'r2.5.')
 A_related[A_low < eps] = 0 # Edit s.t. only not stat diff from clonal have weight
-
+#--------------------------------------------------------
 
 
 ############################################################
 # CC plots 
 ############################################################
-if(PDF){pdf('../Plots/All_CCs.pdf', height = 8, width = 8)}
+if(PDF){pdf(sprintf('../Plots/All_CCs_remove_singletons%s.pdf', Remove_singletons), 
+            height = 8, width = 8)}
 par(mfrow = c(1,1), family = 'serif')
-
 
 #===========================================================
 # CC plot coloured and weighted by the earliest sample per CC
@@ -94,9 +127,13 @@ A_comp = construct_adj_matrix(R_comp, Entry = 'rhat')
 # And set edges that are statistically indistinguishable from zero to zero
 A_comp[construct_adj_matrix(R_comp, Entry = 'r2.5.') < eps] = 0
 # Create graph: 
-G_comp = graph_from_adjacency_matrix(A_comp, mode='upper', diag=F, weighted=T)
+Comp_G = graph_from_adjacency_matrix(A_comp, mode='upper', diag=F, weighted=T)
+
 # Extract subgraph of CCs with two or more members and call it Comp_G to distingusih from G_comp
-Comp_G = induced_subgraph(G_comp, vids = which(M_high[V(G_comp)$name] %in% names(CCs)))
+if (Remove_singletons){
+  Comp_G = induced_subgraph(Comp_G, vids = which(M_high[V(Comp_G)$name] %in% names(CCs)))
+}
+
 # Annotate the subgraph:
 E(Comp_G)$width <- E(Comp_G)$weight
 E(Comp_G)$colour <- 'black'
@@ -105,57 +142,65 @@ V(Comp_G)$site <- SNPData[V(Comp_G)$name, 'City']
 V(Comp_G)$cc <- as.character(M_high[V(Comp_G)$name])
 
 # If true, name CCs in order of date of earliest sample per CC
-if(Name_CCs_chron){
-  CC_chr_names = paste0('CC',1:length(CCs)) # Create CC names based on colour
-  ordered_date_index <- sort.int(V(Comp_G)$date, index.return = T)$ix
-  sid_ordered_date = V(Comp_G)$name[ordered_date_index] # reorder sample ID by date 
-  names(CC_chr_names) = as.character(M_high[sid_ordered_date]) # Make sure the CC names are same order as memberships
-}
+
+CC_chr_names = paste0('CC',1:length(CCs)) # Create CC names based on colour
+ordered_date_index <- sort.int(V(Comp_G)$date[V(Comp_G)$cc %in% names(CCs)], index.return = T)$ix
+sid_ordered_date = V(Comp_G)$name[V(Comp_G)$cc %in% names(CCs)][ordered_date_index] # reorder sample ID by date 
+names(CC_chr_names) = as.character(M_high[sid_ordered_date]) # Ensure CC names are ordered as memberships
+
 
 # Extract Table of site and date of earliest sample per CC 
-cbind(CC = CC_chr_names[as.character(M_high[V(Comp_G)$name[ordered_date_index]])], 
-      Date_earliest_sample = as.character(SNPData[V(Comp_G)$name[ordered_date_index], 'COLLECTION.DATE']), 
-      Site_earliest_sample = as.character(SNPData[V(Comp_G)$name[ordered_date_index], 'City']))
+Xtab1 = cbind(CC = CC_chr_names[as.character(M_high[V(Comp_G)$name[ordered_date_index]])], 
+              Date_earliest_sample = as.character(SNPData[V(Comp_G)$name[ordered_date_index], 'COLLECTION.DATE']), 
+              Site_earliest_sample = as.character(SNPData[V(Comp_G)$name[ordered_date_index], 'City']))
 
 # CCs 12 and 13 have earliest parasite samples detected on the same date: "2002-04-03"
 duplicate <- CC_chr_names[as.character(M_high[V(Comp_G)$name[duplicated(V(Comp_G)$date)]])]
 writeLines(sprintf('Note that %s has a duplicate date', duplicate))
 
-# ----------------------------------------------------------------------
-# Aside: related components among CCs based on earliest sample per CC
-writeLines(sprintf("Among the clonal components, there are %s related components size %s", 
-                   components(Comp_G)$no, 
-                   paste(components(Comp_G)$csize, collapse = " and ")))
+# Aside: related components among CCs 
+if(Remove_singletons){
+  writeLines(sprintf("Among the clonal components, there are %s related components size %s", 
+                     components(Comp_G)$no, 
+                     paste(components(Comp_G)$csize, collapse = " and ")))
+  
+  # Find and inspect parasite members of the anamolous CC
+  anomaly_CC_sID1 = names(which(components(Comp_G)$membership != 1)) # The sample ID retained in Comp_G
+  anomaly_CC_sIDs = which(M_high == M_high[anomaly_CC_sID1]) # All sample IDs
+  CC_chr_names[as.character(M_high[anomaly_CC_sID1])] # Check name
+  
+  # Extract and print to screen their data (check with Diego )
+  anomaly_CC_SNPData = SNPData[anomaly_CC_sIDs,]
+  writeLines(sprintf("The anomalous CC (unrelated to the other CCs) contains %s samples:", 
+                     length(anomaly_CC_sIDs)))
+  print(anomaly_CC_SNPData[,1:5])
+  save(anomaly_CC_SNPData, file = '../RData/anomaly_CC_SNPData.RData')
+}
 
-# Find and inspect parasite members of the anamolous CC
-anomaly_CC_sID1 = names(which(components(Comp_G)$membership != 1)) # The sample ID retained in Comp_G
-anomaly_CC_sIDs = which(M_high == M_high[anomaly_CC_sID1]) # All sample IDs
-CC_chr_names[as.character(M_high[anomaly_CC_sID1])] # Check name
-
-# Extract and print to screen their data (check with Diego )
-anomaly_CC_SNPData = SNPData[anomaly_CC_sIDs,]
-writeLines(sprintf("The anomalous CC (unrelated to the other CCs) contains %s samples:", 
-                   length(anomaly_CC_sIDs)))
-print(anomaly_CC_SNPData[,1:5])
-save(anomaly_CC_SNPData, file = '../RData/anomaly_CC_SNPData.RData')
-# ----------------------------------------------------------------------
-
-# scale weights to zero one for maximal visualisation
-weights_rescaled = (E(Comp_G)$weight - min(E(Comp_G)$weight)) / (max(E(Comp_G)$weight) - min(E(Comp_G)$weight))
-range(E(Comp_G)$weight)
-E(Comp_G)$width <- weights_rescaled
+# scale weights and vertex size for visualisation
+weights_rescaled = a + (b-a) * (E(Comp_G)$weight - min(E(Comp_G)$weight)) / (max(E(Comp_G)$weight) - min(E(Comp_G)$weight))
+writeLines(sprintf("Relatedness values of edges range from %s to %s", 
+                   round(min(E(Comp_G)$weight),3), round(max(E(Comp_G)$weight),3)))
+vertex_size = table(M_high)[as.character(V(Comp_G)$cc)]
+vertex_size[vertex_size > 1] <- vertex_size[vertex_size > 1] + 5
+vertex_size[vertex_size == 1] <- vertex_size[vertex_size == 1] + 2
 
 # Plot
 set.seed(1)
 plot(Comp_G, 
      layout = layout_with_fr, 
-     vertex.size = table(M_high)[as.character(V(Comp_G)$cc)]+5, # Number of members per CC
+     vertex.size = vertex_size, # Number of members per CC
      vertex.label = CC_chr_names[V(Comp_G)$cc], # Label by CC name 
-     vertex.label.cex = 0.5, # Label size
+     vertex.label.cex = 0.35, # Label size
      vertex.label.color = 'black', # Label colour
      vertex.color = cols_cities[V(Comp_G)$site], # Colour by city of first sample per CC
-     vertex.frame.color = 'white') # Add white border for visual separtion
+     vertex.frame.color = 'white', # Add white border for visual separtion
+     edge.width = weights_rescaled * c, 
+     edge.color = sapply(weights_rescaled, function(x)adjustcolor('black', alpha.f = x))) 
 
+# Legend of cities
+legend('left', pch = 16, bty = 'n', cex = 0.7, pt.cex = 1.5, col = cols_cities, 
+       legend = names(cols_cities), inset = -0.1)
 
 
 #==================================================================================
@@ -164,13 +209,14 @@ plot(Comp_G,
 #==================================================================================.
 
 # For each pair of CCs with 2 or more samples, extract samples and calculate average relatedness
-CCpairs <- gtools::combinations(n = length(CCs), r = 2, v = names(CCs)) # Get CC pairs
+CCs_inc <- if(Remove_singletons){names(CCs)}else{as.character(1:C_high$no)}
+CCpairs <- gtools::combinations(n = length(CCs_inc), r = 2, v = CCs_inc) # Get CC pairs
 colnames(CCpairs) = c('individual1','individual2')
 
 # Average over relatedness estimates that are statistically distinguishable from zero
 R_comp <- data.frame(CCpairs, 'rhat_av' = NA, stringsAsFactors = F) 
 for(i in 1:nrow(R_comp)){
-
+  
   # Extract samples per CC
   samples_CC1 <- names(M_high)[as.character(M_high) == R_comp$individual1[i]]
   samples_CC2 <- names(M_high)[as.character(M_high) == R_comp$individual2[i]]
@@ -196,29 +242,30 @@ Comp_A = construct_adj_matrix(R_comp, Entry = 'rhat_av')
 Comp_G = graph_from_adjacency_matrix(Comp_A, mode='upper', diag=F, weighted=T)
 
 
-# ----------------------------------------------------------------------
-# Aside: related components among CCs based on earliest sample per CC
-writeLines(sprintf("Among the clonal components, there are %s related components size %s", 
-                   components(Comp_G)$no, 
-                   paste(components(Comp_G)$csize, collapse = " and ")))
-
-# Find and inspect parasite members of the anamolous CC
-anomaly_CC_sID1 = names(which(components(Comp_G)$membership != 1)) # The sample ID retained in Comp_G
-anomaly_CC_sIDs = names(which(M_high == anomaly_CC_sID1)) # All sample IDs
-
-# Extract and print to screen their data (check with Diego )
-anomaly_CC_SNPData = SNPData[anomaly_CC_sIDs,]
-writeLines(sprintf("The anomalous CC (unrelated to the other CCs) contains %s samples:", 
-                   length(anomaly_CC_sIDs)))
-print(anomaly_CC_SNPData[,1:5])
-# ----------------------------------------------------------------------
+# Aside: related components among CCs 
+if(Remove_singletons){
+  writeLines(sprintf("Among the clonal components, there are %s related components size %s", 
+                     components(Comp_G)$no, 
+                     paste(components(Comp_G)$csize, collapse = " and ")))
+  
+  # Find and inspect parasite members of the anamolous CC
+  anomaly_CC_sID1 = names(which(components(Comp_G)$membership != 1)) # The sample ID retained in Comp_G
+  anomaly_CC_sIDs = names(which(M_high == anomaly_CC_sID1)) # All sample IDs
+  
+  # Extract and print to screen their data (check with Diego )
+  anomaly_CC_SNPData = SNPData[anomaly_CC_sIDs,]
+  writeLines(sprintf("The anomalous CC (unrelated to the other CCs) contains %s samples:", 
+                     length(anomaly_CC_sIDs)))
+  print(anomaly_CC_SNPData[,1:5])
+  
+}
 
 # For each CC with 2 or more samples, extract number of samples per city (order consistently)
-sample_count_per_city_per_CC <- lapply(names(CCs), function(CC){
+sample_count_per_city_per_CC <- lapply(CCs_inc, function(CC){
   
   # Initialise empty vector of city counts
   city_count_per_CC_inc_zeros = array(0, dim = length(cities), dimnames = list(cities))
-   
+  
   # Extract samples per CC 
   samples_per_CC <- names(M_high)[as.character(M_high) == CC]
   
@@ -232,41 +279,43 @@ sample_count_per_city_per_CC <- lapply(names(CCs), function(CC){
 })
 
 # Name by CC numeric name
-names(sample_count_per_city_per_CC) = names(CCs) 
+names(sample_count_per_city_per_CC) = CCs_inc
 
-# Scale edge weights to zero one 
-weights_rescaled = (E(Comp_G)$weight - min(E(Comp_G)$weight)) / (max(E(Comp_G)$weight) - min(E(Comp_G)$weight))
-E(Comp_G)$width = weights_rescaled * 1.5
+# Scale edge weights to range a to 1 
+weights_rescaled = a + (b-a) * (E(Comp_G)$weight - min(E(Comp_G)$weight)) / (max(E(Comp_G)$weight) - min(E(Comp_G)$weight))
+writeLines(sprintf("Relatedness values of edges range from %s to %s", 
+                   round(min(E(Comp_G)$weight),3), round(max(E(Comp_G)$weight),3)))
+vertex_size = sapply(sample_count_per_city_per_CC[V(Comp_G)$name], sum)
+vertex_size[vertex_size > 1] <- vertex_size[vertex_size > 1] + 5
+vertex_size[vertex_size == 1] <- vertex_size[vertex_size == 1] + 2
 
 # Plot as pie (Tim's suggestion)
 set.seed(1)
 plot(Comp_G, 
-     #layout = layout_with_fr, 
+     layout = layout_with_fr, 
      vertex.shape = "pie", 
      vertex.pie = sample_count_per_city_per_CC[V(Comp_G)$name],
      vertex.pie.color = list(cols_cities[cities]),
-     vertex.size = sapply(sample_count_per_city_per_CC[V(Comp_G)$name], sum) + 5, 
+     vertex.size = vertex_size, 
      vertex.label = CC_chr_names[V(Comp_G)$name], 
-     vertex.label.cex = 0.5, 
+     vertex.label.cex = 0.35, 
      vertex.label.color = 'black',
      vertex.frame.color = NA,
-     edge.color = 'black')
+     edge.width = weights_rescaled * c, 
+     edge.color = sapply(weights_rescaled, function(x)adjustcolor('black', alpha.f = x)))
 
 # Legend of cities
 legend('left', pch = 16, bty = 'n', cex = 0.7, pt.cex = 1.5, col = cols_cities, 
-       legend = names(cols_cities), inset = -0.1)
+       legend = names(cols_cities), inset = 0.1)
 
 if(PDF){dev.off()}
 
 
 
-# +++++++++++++++ This is where I got to +++++++++++++++
 
-
-
-
-
-
+#############################################################
+# City pair plots
+#############################################################
 
 #===========================================================
 # For each site comparison vizualise effect of filter with

@@ -66,7 +66,8 @@ rm_highly_related_within = function(Result, Cities, Edge){
 #==========================================================
 # Function to return city subgraph
 #==========================================================
-extract_city_graph = function(x, city1, city2, col_edge = 'white'){
+extract_city_graph = function(x, city1, city2, col_edge = 'white', 
+                              a = 0, b = 1, c = 2){
   inds = V(x)$site == city1|V(x)$site == city2 # indices for cities
   z = induced_subgraph(x, vids = which(inds)) # extract subgraph
   Jitter_sign = rep(1, length(V(z)$site ))
@@ -76,8 +77,11 @@ extract_city_graph = function(x, city1, city2, col_edge = 'white'){
   attr(z, 'layout') = cbind(X = V(z)$date, Y) # Full layout
   V(z)$color = M_cols[V(z)$name] # Colour by clonal component
   E(z)$weight[is.na(E(z)$weight)] = 0 # NAs introduced when filter edges 
-  E(z)$width <- E(z)$weight
-  E(z)$color = sapply(E(z)$weight, adjustcolor, col = col_edge) # Make transparency a function of rhat
+  
+  # Scale edge widths (not weights) and transparancy to range a, b, c
+  weights_rescaled = a + (b-a) * (E(z)$weight - min(E(z)$weight)) / (max(E(z)$weight) - min(E(z)$weight))
+  E(z)$width = weights_rescaled * c
+  E(z)$color = sapply(weights_rescaled, function(x) adjustcolor(col_edge, alpha.f = x)) # Make transparency a function of rhat
   v_names = do.call(rbind, strsplit(attributes(E(z))$vnames, split = "\\|"))
   edge_col_ind = which(M_cols[v_names[,1]] == M_cols[v_names[,2]] & M_cols[v_names[,1]] != "#FFFFFF")
   if(any(edge_col_ind)){

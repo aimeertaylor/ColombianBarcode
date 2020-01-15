@@ -6,12 +6,10 @@
 # Edge transparancy between 0 and 1 does not show when printed
 # A.s. use both: e.g. map related edge transparency from a to b 
 # and plot width as transparency * c
-# 
 #
-# To-do: reduce redundancy (e.g. A_related)
-# Put dates and location of first observed in table? 
-# To access dates: '\n', SNPData[V(Comp_G)$name, 'COLLECTION.DATE'])
-# Extract vertices per edge: v_names = do.call(rbind, strsplit(attributes(E(G_high))$vnames, split = "\\|")) 
+# Not A_related multiply (4 times) defined as sometimes but not 
+# always based on filtered and sometimes but not always unrelated 
+# edges set to zero - could name differently but done as of yet
 ##############################################################
 
 rm(list = ls())
@@ -23,15 +21,8 @@ load('../RData/geo_dist_info.RData')
 source('./igraph_functions.R')
 eps <- 0.01 # Below which LCI considered close to zero
 cols <- colorRampPalette(brewer.pal(12, "Paired")) # Function to create colours
-FILTER <- F # To re-generate filtered results
 PDF <- T # Set to TRUE to plot graphs to pdf
-a = 0.05; b = 1; c = 2 # Scaling parameters for edge weight and transparancy 
-
-
-#+++++++ To sort: see comments +++++++++
-mle_CIs <- All_results$Unfiltered # Could just use All_results$Unfiltered
-load('../RData/All_G.RData') # Could be obsolete
-#+++++++++++++++++++++++++++++++++++++++
+a = 0.05; b = 1; c = 2 # Scaling parameters for edge width and transparancy 
 
 # 5 x 1 vector of city colours named by city
 cities <- unique(SNPData$City)
@@ -44,7 +35,7 @@ names(cols_cities) <- rev(cities)
 #===========================================================
 #-----------------------------------------------------------
 # Create graph of all samples to extract CCs
-A_high <- construct_adj_matrix(mle_CIs, Entry = 'r97.5.') # Adj. matrix unfiltered using 'r97.5.' 
+A_high <- construct_adj_matrix(All_results$Unfiltered, Entry = 'r97.5.') # Adj. matrix unfiltered using 'r97.5.' 
 A_high[A_high < 1-eps] <- 0 # Edit s.t. only clonal have weight
 G_high <- graph_from_adjacency_matrix(A_high, mode='upper', diag=F, weighted=T) # Construct graph 
 C_high <- components(G_high) # Extract CCs from graph
@@ -62,7 +53,7 @@ names(CCs) <- (1:C_high$no)[C_high$csize > 1] # Name CCs using numeric CC name g
 CC_chr_names <- paste0('CC',1:sum(C_high$csize > 1)) 
 # Map CC character names to dates of earliest detected sample per CC
 # Remove all duplicate CCs regardless of city using a dummy city name
-Rhat_filtCC = rm_highly_related_within(Result = mle_CIs, Edge = F, 
+Rhat_filtCC = rm_highly_related_within(Result = All_results$Unfiltered, Edge = F, 
                                        Cities = sapply(row.names(SNPData), function(x)"DummyCity"))
 # Extract remaining sample ids
 sids_noCCdupl = unique(c(as.character(Rhat_filtCC$individual1), 
@@ -81,8 +72,9 @@ names(CC_chr_names) = as.character(M_high[sids_1stperCC_ordered]) # Ensure CC na
 #--------------------------------------------------------
 # Extract Table of site and date of earliest sample per CC 
 First_sample_per_CC_table = cbind(CC = CC_chr_names, 
-                                     Date_earliest_sample = as.character(SNPData[sids_1stperCC_ordered, 'COLLECTION.DATE']), 
-                                     Site_earliest_sample = as.character(SNPData[sids_1stperCC_ordered, 'City']))
+                                  Earliest_sample = sids_1stperCC_ordered, 
+                                  Date_earliest_sample = as.character(SNPData[sids_1stperCC_ordered, 'COLLECTION.DATE']), 
+                                  Site_earliest_sample = as.character(SNPData[sids_1stperCC_ordered, 'City']))
 kable(First_sample_per_CC_table, format = "latex")
 #--------------------------------------------------------
 
@@ -94,8 +86,9 @@ M_cols = sapply(M_high, function(x){ # Return white for singleton
 
 #--------------------------------------------------------
 # Adjacency over all related with rhat statistically distinguishable from zero
-A_related = construct_adj_matrix(mle_CIs, Entry = 'rhat')
-A_low = construct_adj_matrix(mle_CIs, Entry = 'r2.5.')
+# (no filter)
+A_related = construct_adj_matrix(All_results$Unfiltered, Entry = 'rhat')
+A_low = construct_adj_matrix(All_results$Unfiltered, Entry = 'r2.5.')
 A_related[A_low < eps] = 0 # Edit s.t. only not stat diff from clonal have weight
 #--------------------------------------------------------
 
@@ -182,10 +175,12 @@ for(Remove_singletons in c(TRUE,FALSE)){ # If true, remove CCs with only one par
   # Name by CC numeric name
   names(sample_count_per_city_per_CC) = CCs_inc
   
-  # Scale edge weights to range a to 1 
-  weights_rescaled = a + (b-a) * (E(Comp_G)$weight - min(E(Comp_G)$weight)) / (max(E(Comp_G)$weight) - min(E(Comp_G)$weight))
+  # Print non-zero edge weights before rescaling
   writeLines(sprintf("Relatedness values of edges range from %s to %s", 
                      round(min(E(Comp_G)$weight),3), round(max(E(Comp_G)$weight),3)))
+  
+  # Scale edge widths and transparancy to range a, b, c
+  weights_rescaled = a + (b-a) * (E(Comp_G)$weight - min(E(Comp_G)$weight)) / (max(E(Comp_G)$weight) - min(E(Comp_G)$weight))
   vertex_size = sapply(sample_count_per_city_per_CC[V(Comp_G)$name], sum)
   vertex_size[vertex_size > 1] <- vertex_size[vertex_size > 1] + 5
   vertex_size[vertex_size == 1] <- vertex_size[vertex_size == 1] + 2
@@ -220,9 +215,14 @@ if(PDF){dev.off()}
 # City pair plots
 #############################################################
 
+# Add jitter for layout within cities
+Jitter = M_high*10^-3 # For graph layout (function on M)
+Jitter[M_high %in% which(C_high$csize < 2)] = -0.15 
+Jitter = Jitter + rnorm(length(Jitter), 0 , 0.05)
+
 #===========================================================
 # For each site comparison vizualise effect of filter with
-# Dates and edges proportional to rhats 
+# dates and edges proportional to related rhats 
 #===========================================================
 if(PDF){pdf('../Plots/Graphs_timespace.pdf', height = 5, width = 10)}
 par(mfrow = c(1,1), mar = c(3,4,3,0.1), family = 'serif', bg = 'white')
@@ -230,16 +230,14 @@ filter_name = c("Unfiltered" = "Unfiltered", "Filter by vertex" = "Filter CCs")
 SHAPES = c('circle', 'square') # Different shapes distinguish different sites 
 for(l in c("Unfiltered","Filter by vertex")){
   
-  # Extract adjacency 
+  # Reconstruct adjacency since using both unfiltered and filtered
   X = All_results[[l]]
   A_related_lci = construct_adj_matrix(Result = X, Entry = 'r2.5.')
   A_related = construct_adj_matrix(Result = X, Entry = 'rhat')
-  A_related[A_related_lci < eps] = 0 # Edit s.t. only not stat diff from related have weight
+  A_related[A_related_lci < eps] = 0 # Edit s.t. unrelated not plotted
   G_related = graph_from_adjacency_matrix(A_related, mode='upper', diag=F, weighted=T)
-  # Add meta data
-  V(G_related)$site = SNPData[V(G_related)$name, 'City']
-  V(G_related)$date = SNPData[V(G_related)$name, 'COLLECTION.DATE']
-  
+  V(G_related)$site = SNPData[V(G_related)$name, 'City'] # Add meta data
+  V(G_related)$date = SNPData[V(G_related)$name, 'COLLECTION.DATE'] # Add meta data
   
   for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
     
@@ -248,7 +246,8 @@ for(l in c("Unfiltered","Filter by vertex")){
     s2 = as.character(geo_dist_info$pairwise_site_distance[i,'X2'])
     
     # Filter graph by city
-    G = extract_city_graph(x = G_related, city1 = s1, city2 = s2, 'black')
+    G = extract_city_graph(x = G_related, city1 = s1, city2 = s2, col_edge = 'black', 
+                           a = a, b = b, c = c)
     
     # Calculate years
     colldates = SNPData[V(G)$name, "COLLECTION.DATE"]
@@ -258,25 +257,32 @@ for(l in c("Unfiltered","Filter by vertex")){
     yr01 = as.numeric(years1stjan-min_dt)/as.numeric(max_dt - min_dt)
     
     # Plot graph
-    plot.igraph(G, layout = attributes(G)$layout, vertex.size = 0, edge.color = NA,
-                vertex.label = NA, asp = 0) # For layout
+    plot.igraph(G, layout = attributes(G)$layout, 
+                vertex.size = 0, 
+                vertex.label = NA, 
+                edge.color = NA,
+                asp = 0) # For layout
     abline(v = -1 + yr01 * 2, lty = 'dotted', col = 'lightgray') # Add grid line
-    plot.igraph(G, layout = attributes(G)$layout, vertex.shape = SHAPES[as.numeric(V(G)$site == s1)+1], 
-                vertex.size = 3, vertex.label = NA, add = T) # For layout
+    plot.igraph(G, layout = attributes(G)$layout, add = T, 
+                vertex.shape = SHAPES[as.numeric(V(G)$site == s1)+1], 
+                vertex.size = 3, 
+                vertex.label = NA) # For layout
     
     # Overlay coloured only
     E(G)$color[grepl("#000000", E(G)$color)] = NA
-    plot.igraph(G, layout = attributes(G)$layout, vertex.shape = SHAPES[as.numeric(V(G)$site == s1)+1], 
-                vertex.size = 3, vertex.label = NA, add = T)
+    plot.igraph(G, layout = attributes(G)$layout, add = T,
+                vertex.shape = SHAPES[as.numeric(V(G)$site == s1)+1], 
+                vertex.size = 3, 
+                vertex.label = NA)
     
     # Annotate
-    mtext(side = 3, line = 2, adj = 0, sprintf('%s %s %s', filter_name[l], s1, s2), cex = 1)
-    # legend('left', pch = 23, bty = 'n', inset = -0.07, 
-    #        pt.bg = CCs[CCs %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])], 
-    #        cex = 0.7, pt.cex = 1,
-    #        legend = CC_chr_names[as.character(names(CCs[CCs %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])]))])
-    # legend('topleft', pch = c(0,1), pt.bg = 'white', legend = c(s1,s2), 
-    #        bty = 'n', inset = -0.07)
+    mtext(side = 3, line = 2, adj = 0, sprintf('%s', filter_name[l]), cex = 1)
+    legend('left', pch = 23, bty = 'n', inset = -0.07,
+           pt.bg = CCs[CCs %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])],
+           cex = 0.7, pt.cex = 1,
+           legend = CC_chr_names[as.character(names(CCs[CCs %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])]))])
+    legend('top', pch = c(0,1), pt.bg = 'white', legend = c(s1,s2),
+           bty = 'n', inset = -0.14)
     axis(side = 1, labels = years1stjan, las = 2, cex.axis = 0.7, at = yr01 * 2 - 1,
          line = -1.2, tick = F) # Years
   }
@@ -287,15 +293,13 @@ if(PDF){dev.off()}
 
 
 #===============================================
-# Plot without dates and with edges if
-# statistically distinguishable from zero with transparency
-# proportional to rhat
+# Plot without dates (not filtered)
 #===============================================
 if(PDF){pdf('../Plots/Graphs.pdf', height = 5, width = 10)}
 par(mfrow = c(1,1), mar = c(0,4,0,0), family = 'serif', bg = 'white', pty = 'm')
-# Create matrixA_related = construct_adj_matrix(Result = mle_CIs, Entry = 'r2.5.')
-A_related = construct_adj_matrix(Result = mle_CIs, Entry = 'rhat')
-A_related_lci = construct_adj_matrix(Result = mle_CIs, Entry = 'r2.5.')
+# Re-create matrix A_related since need it based on unfiltered
+A_related = construct_adj_matrix(Result = All_results$Unfiltered, Entry = 'rhat')
+A_related_lci = construct_adj_matrix(Result = All_results$Unfiltered, Entry = 'r2.5.')
 A_related[A_related_lci < eps] = 0 # Edit s.t. only not stat diff from related have weight
 
 # Create graphs 
@@ -306,7 +310,6 @@ V(G_related)$site = SNPData[V(G_related)$name, 'City']
 # Aside: note that there are two related components across the entire graph
 # The second consists of the DD2 clonal component plus a loosely related 
 # sample, "sid95". This is the outlier in the Buenaventura Tumaco plot 
-# (check by doing components(G) when l = "Unfiltered" and i = 6 in the above for loop)
 components(G_related)
 sids_related_to_sid95 = which(A_related[rownames(A_related) == "sid95",] > 0)
 A_related["sid95",sids_related_to_sid95]
@@ -353,6 +356,11 @@ if(PDF){dev.off()}
 # distinguishable from zero (since based on Comp_G)
 #===========================================================
 par(bg = 'white')
+# Reconstruct graph s.t. unrelated not zero
+A_related = construct_adj_matrix(All_results$Unfiltered, Entry = 'rhat')
+G_related = graph_from_adjacency_matrix(A_related, mode='upper', diag=F, weighted=T)
+V(G_related)$site = SNPData[V(G_related)$name, 'City']
+
 G_B = induced_subgraph(G_related, vids = which(grepl("Buenaventura", V(G_related)$site)))
 G_T = induced_subgraph(G_related, vids = which(grepl("Tumaco", V(G_related)$site)))
 
@@ -362,8 +370,7 @@ BT_CCs = BT_CCs[!is.na(BT_CCs)]
 unique_M_BT = as.numeric(names(CC_chr_names[CC_chr_names %in% BT_CCs]))
 
 # Extract all those with said membership (includes some from guapi)
-
-G_clonal_comp_BT = induced_subgraph(All_G$Unfiltered, vids = which(M_high %in% unique_M_BT)) 
+G_clonal_comp_BT = induced_subgraph(G_related, vids = which(M_high %in% unique_M_BT)) 
 
 # Plot all those with said membership
 set.seed(2)
@@ -387,13 +394,14 @@ for(j in 1:(length(unique_M_BT)-1)){
     Mean_sd_matrix[i,j,'r mean'] = mean(E(G_clonal_comp_BT)$weight[inds])
     
     # Extract the mean lower confidence interval 
-    inds_mle = mle_CIs$sample_comp %in% apply(EV_names[inds,], 1, function(x)paste(x[1],x[2],sep='_')) | mle_CIs$sample_comp %in% apply(EV_names[inds,], 1, function(x)paste(x[2],x[1],sep='_'))
-    if (Mean_sd_matrix[i,j,'r mean'] == mean(mle_CIs$rhat[inds_mle])){ # check
-      Mean_sd_matrix[i,j,'r 2.5%'] = max(mle_CIs$`r2.5.`[inds_mle]) # To see highest lower bound
-      Mean_sd_matrix[i,j,'r 97.5%'] = max(mle_CIs$`r97.5.`[inds_mle]) 
-      Mean_sd_matrix[i,j,'k mean'] = max(mle_CIs$khat[inds_mle])
-      Mean_sd_matrix[i,j,'k 2.5%'] = max(mle_CIs$`k2.5.`[inds_mle]) # To see highest lower bound
-      Mean_sd_matrix[i,j,'k 97.5%'] = max(mle_CIs$`k97.5.`[inds_mle]) 
+    inds_mle = (as.character(All_results$Unfiltered$individual1) %in% members_i & as.character(All_results$Unfiltered$individual2) %in% members_j) | 
+      as.character(All_results$Unfiltered$individual1) %in% members_j & as.character(All_results$Unfiltered$individual2) %in% members_i 
+    if (Mean_sd_matrix[i,j,'r mean'] == mean(All_results$Unfiltered$rhat[inds_mle])){ # check
+      Mean_sd_matrix[i,j,'r 2.5%'] = max(All_results$Unfiltered$`r2.5.`[inds_mle]) # To see highest lower bound
+      Mean_sd_matrix[i,j,'r 97.5%'] = max(All_results$Unfiltered$`r97.5.`[inds_mle]) 
+      Mean_sd_matrix[i,j,'k mean'] = max(All_results$Unfiltered$khat[inds_mle])
+      Mean_sd_matrix[i,j,'k 2.5%'] = max(All_results$Unfiltered$`k2.5.`[inds_mle]) # To see highest lower bound
+      Mean_sd_matrix[i,j,'k 97.5%'] = max(All_results$Unfiltered$`k97.5.`[inds_mle]) 
     } 
   }
 }
@@ -410,11 +418,9 @@ kable(round(Mean_sd_matrix[order_by_CC_name,order_by_CC_name,'r mean'],3), forma
 round(Mean_sd_matrix[order_by_CC_name,order_by_CC_name, 'r 2.5%'], 3)
 
 # Aside: relatedness between CC20, CC15 and CC14: valid example of recombination? Likely via some intermediates
-Ms_CC20_15_14 <- names(CC_chr_names[CC_chr_names %in% c("CC20", "CC15", "CC14")])
-Ms_Comp_G <- as.character(M_high[V(Comp_G)$name])
-earliest_sids_CC20_15_14 <- V(Comp_G)$name[Ms_Comp_G %in% Ms_CC20_15_14]
-CC_chr_names[as.character(M_high[earliest_sids_CC20_15_14])] # check
-G_earliest_sids_CC20_15_14 <- induced_subgraph(Comp_G, vids = earliest_sids_CC20_15_14)
+earliest_sids_CC20_15_14 <- sids_1stperCC_ordered[c(20,15,14)] # For c("CC20", "CC15", "CC14")
+G_earliest_sids_CC20_15_14 <- induced_subgraph(G_related, vids = earliest_sids_CC20_15_14)
 plot(G_earliest_sids_CC20_15_14, 
-     vertex.label = CC_chr_names[as.character(M_high[V(G_earliest_sids_CC20_15_14)$name])])
-E(G_earliest_sids_CC20_15_14)$weight
+     edge.width = E(G_earliest_sids_CC20_15_14)$weight*2, 
+     vertex.label = CC_chr_names[as.character(M_high[earliest_sids_CC20_15_14])])
+round(E(G_earliest_sids_CC20_15_14)$weight,2)

@@ -22,21 +22,5 @@ sapply(All_results, function(x){c('Edge count' = nrow(x),
                                   'Vertex count' = length(unique(c(x$individual1,x$individual2))))})
 
 
-#===========================================================
-# Convert filtered results into adjaceny matrices and graphs
-#===========================================================
-# Create adjacency matrices 
-All_adj_matrix = lapply(All_results, construct_adj_matrix, Entry = 'rhat')
-save(All_adj_matrix, file = '../RData/All_adj_matrix.RData')
 
-# Create graphs 
-All_G = lapply(All_adj_matrix, graph_from_adjacency_matrix, mode='upper', diag=F, weighted=T)
-
-# Add meta data
-All_G = lapply(All_G, function(x){
-  V(x)$site = SNPData[V(x)$name, 'City']
-  V(x)$date = SNPData[V(x)$name, 'COLLECTION.DATE']
-  return(x)
-})
-save(All_G, file = '../RData/All_G.RData')
 

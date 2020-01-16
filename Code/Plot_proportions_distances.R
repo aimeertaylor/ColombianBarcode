@@ -16,14 +16,14 @@ r_threshold = 0.25 # This is the threshold used in Generate_proportions.R
 eps = 0.01
 par(family = 'serif', mfrow = c(1,1))
 default_par = par() # Record default plotting parameters before changing
-PDF = F
+PDF = T
 
 if(PDF){pdf('../Plots/Proportions_and_W_distance.pdf')}
 par(family = 'serif')
 load('../RData/proportions_time.RData')
 load('../RData/proportions_geo.RData')
-load('../RData/All_results.RData')
-mle_CIs = All_results$Unfiltered
+load('../RData/mles_true.RData') # Change to All results
+# mle_CIs = All_results$Unfiltered
 
 # Load geography
 load('../RData/geo_dist_info_cities.RData')
@@ -33,6 +33,11 @@ intra = c('Guapi_Guapi', 'Tado_Tado', 'Tumaco_Tumaco', 'Buenaventura_Buenaventur
 site_comps = c(intra, inter)
 no_site_comps = length(site_comps)
 no_time_bins = ncol(proportions_time)
+
+# Create a vector of labels for barplot
+time_xlabels = c(paste(colnames(proportions_time)[-no_time_bins], colnames(proportions_time)[-1], sep = '-'), 
+                      paste(colnames(proportions_time)[no_time_bins], max(mle_CIs$time_dist), sep = '-'))
+
 
 #================================================================
 # Function to automatically set gap in a gap plot given counts
@@ -159,7 +164,7 @@ legend('topleft', legend = c('Road (Google maps)',
 
 
 #===========================================================
-# Histogram of time 
+# Barplot of time 
 #===========================================================
 par(mfrow = c(1,1), family = 'serif', mar = c(6,5,2,2))
 X <- barplot(proportions_time['mean',], 
@@ -169,12 +174,12 @@ X <- barplot(proportions_time['mean',],
              cex.names = 1, ylim = c(0,max(proportions_time)), 
              col = brewer.pal(5, "GnBu")[3])
 segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
-text(x = X, y = -max(proportions_time)/20, srt = 40, adj= 1, xpd = TRUE, 
-     labels = colnames(proportions_time), cex = 0.75)
+text(x = X, y = -max(proportions_time)/40, srt = 40, adj= 1, xpd = TRUE, 
+     labels = time_xlabels, cex = 0.75)
 
 
 #===========================================================
-# Histogram of time (partioned by clone)
+# Barplot of time (partioned by clone)
 #===========================================================
 X <- barplot(proportions_time_cloned[, ,'r_threshold'], 
              las = 2, xlab = expression(Delta~'time (weeks)'), 
@@ -182,8 +187,8 @@ X <- barplot(proportions_time_cloned[, ,'r_threshold'],
              ylab = bquote('Proportion with LCI of relatedness estimated'>.(r_threshold)), 
              cex.names = 1, ylim = c(0,max(proportions_time)), 
              col = rownames(proportions_time_cloned[, ,'all']))
-text(x = X, y = -max(proportions_time)/20, srt = 40, adj= 1, xpd = TRUE, 
-     labels = colnames(proportions_time), cex = 0.5)
+text(x = X, y = -max(proportions_time)/40, srt = 40, adj= 1, xpd = TRUE, 
+     labels = time_xlabels)
 segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
 
 
@@ -197,7 +202,7 @@ X <- barplot(proportions_time_grouped[, ,'all'], las = 2, xaxt = 'n',
              ylab = 'Proportion of sample comparisons', 
              cex.names = 1, col = rainbow(no_site_comps))
 text(x = X, y = -1/20, srt = 40, adj= 1, xpd = TRUE, 
-     labels = colnames(proportions_time), cex = 0.5)
+     labels = time_xlabels, cex = 0.5)
 
 X <- barplot(proportions_time_grouped[, ,'r_threshold'], 
              las = 2, xlab = expression(Delta~'Time (weeks)'), 
@@ -205,7 +210,7 @@ X <- barplot(proportions_time_grouped[, ,'r_threshold'],
              ylab = bquote('Proportion with LCI of'~italic(widehat(r))>.(r_threshold)), 
              cex.names = 1, ylim = c(0,max(proportions_time)), col = rainbow(no_site_comps))
 text(x = X, y = -max(proportions_time)/20, srt = 40, adj= 1, xpd = TRUE, 
-     labels = colnames(proportions_time), cex = 0.5)
+     labels = time_xlabels, cex = 0.5)
 
 segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
 legend('topright', fill = rainbow(no_site_comps), bty = 'n',legend = gsub('_', ' & ', site_comps), 

@@ -136,6 +136,12 @@ for(fs in Filter_status){
 
 # Times
 par(mfrow = c(3,4), family = 'serif')
+# Create a vector of labels for barplot
+no_time_bins = dim(proportions_times)[2]
+load('../RData/mles_true.RData') # Change to All results
+time_xlabels = c(paste(colnames(proportions_times)[-no_time_bins], colnames(proportions_times)[-1], sep = '-'), 
+                 paste(colnames(proportions_times)[no_time_bins], max(mle_CIs$time_dist), sep = '-'))
+
 for(fs in Filter_status){
   
   #---------------------------------------
@@ -157,9 +163,9 @@ for(fs in Filter_status){
     
     segments(x0 = Midpoints[,1], x1 = Midpoints[,1], 
              y0 = X['2.5%', times_sorted], y1 = X['97.5%', times_sorted], lty = 1)
-    text(x = Midpoints, y = -max(X)/20, srt = 40, adj= 1, xpd = TRUE, 
-         labels = gsub('_', ' & ',colnames(X)), cex = 0.5)
-    title(xlab = expression(Delta~'Time (weeks)'), line = 2)
+    text(x = Midpoints, y = -max(X)/30, srt = 40, adj= 1, xpd = TRUE, 
+         labels = time_xlabels, cex = 0.5)
+    title(xlab = expression(Delta~'time (weeks)'), line = 2)
   }
   
   #---------------------------------------
@@ -177,9 +183,9 @@ for(fs in Filter_status){
   
   segments(x0 = Midpoints[,1], x1 = Midpoints[,1], 
            y0 = X['2.5%', times_sorted], y1 = X['97.5%', times_sorted], lty = 1)
-  text(x = Midpoints, y = -max(X)/20, srt = 40, adj= 1, xpd = TRUE, 
-       labels = gsub('_', ' & ',colnames(X)), cex = 0.5)
-  title(xlab = expression(Delta~'Time (weeks)'), line = 2)
+  text(x = Midpoints, y = -max(X)/30, srt = 40, adj= 1, xpd = TRUE, 
+       labels = time_xlabels, cex = 0.5)
+  title(xlab = expression(Delta~'time (weeks)'), line = 2)
 }
 
 if(PDF){dev.off()}

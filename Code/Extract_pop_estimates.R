@@ -3,6 +3,9 @@
 # Last census in 2005 
 # Tutorial following:
 # http://www.guilles.website/2017/12/16/exploring-worldpop-gis-data-with-r/
+# Takes a long time to extract at the state level
+# Population estimates are not necessary to replicate the 
+# analyses in the manuscript
 ###########################################################
 
 library(rgdal)

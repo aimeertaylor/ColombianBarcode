@@ -1,9 +1,14 @@
-#######################################################
-# This script loads the output from Generate_mles_CIs.R
-# and adds metadata
-#######################################################
-rm(list = ls())
+#################################################################
+# This script 
+# 1) loads the output from Generate_mles_CIs.R and adds metadata 
+# (currently using frequencies unif and true)
+# 2) loads the mles with add data and filter
+#################################################################
 
+#====================================================
+# 1) Add metadata to Generate_mles_CIs.R output
+#====================================================
+rm(list = ls())
 for(f in c("true", "unif")){
   
   load(sprintf('../RData/mles_frequencies_%s.RData', f)) # Few mins
@@ -61,3 +66,39 @@ for(f in c("true", "unif")){
   # Save data frame
   save(mle_CIs, file = sprintf("../RData/mles_%s.RData", f))
 }
+
+
+#====================================================
+# 2) Filter data sets with added metadata 
+#====================================================
+rm(list = ls())
+library(igraph)
+source('./igraph_functions.R') # For rm_highly_related_within and construct_adj_matrix
+load('../RData/SNPData.RData') # Load SNP data for cities
+eps = 0.01 # Below which LCI considered close to zero (needed by rm_highly_related_within)
+Cities = SNPData$City; names(Cities) = row.names(SNPData) # n x 1 vector of cities named by sample ID
+
+for(f in c("true", "unif")){
+  
+  load(sprintf('../RData/mles_%s.RData', f)) # Few mins
+  
+  #===========================================================
+  # Filter and save results
+  #   - remove edges (almost all samples remain)
+  #   - remove vertices (removes all samples per CC per city except one)
+  #===========================================================
+  All_results = lapply(c(F,T), rm_highly_related_within, Result = mle_CIs, Cities = Cities)
+  All_results[[3]] = mle_CIs # Add unfiltered
+  names(All_results) = c('Filter by vertex', 'Filter by edge', 'Unfiltered')
+  
+  # Extract summaries
+  EV_summary = sapply(All_results, function(x){c('Edge count' = nrow(x), 
+                                    'Vertex count' = length(unique(c(x$individual1,x$individual2))))})
+  
+  writeLines('Data set summary of edge and vertex count:')
+  print(EV_summary)
+  
+  save(All_results, file = sprintf('../RData/All_results_%s.RData', f))
+}
+
+

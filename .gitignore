@@ -27,6 +27,8 @@ RData/**
 # Scripts to ignore
 Code/Generate_plot_PCA.R
 Code/Plot_proportions_GRC_2019.R
+Code/Extract_pop_estimates.R
+Code/Analyses_pre2019/
 ###################################################################
 
 

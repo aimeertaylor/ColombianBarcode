@@ -29,10 +29,13 @@
 # they are based on a random split of the time-interval. 
 ##############################################################
 rm(list = ls())
-load('../RData/mles_true.RData')
+load('../RData/All_results_true.RData')
 source('./transport_functions.R')
 nrepeats = 100 # Number of bootstrap repeats 
 set.seed(10)
+
+# Unfiltered
+mle_CIs = All_results$Unfiltered
 
 # Generate a full rhat adjacency matrix
 sample_names = unique(c(mle_CIs$individual1, mle_CIs$individual2))

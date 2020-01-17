@@ -22,8 +22,8 @@ if(PDF){pdf('../Plots/Proportions_and_W_distance.pdf')}
 par(family = 'serif')
 load('../RData/proportions_time.RData')
 load('../RData/proportions_geo.RData')
-load('../RData/mles_true.RData') # Change to All results
-# mle_CIs = All_results$Unfiltered
+load('../RData/All_results_true.RData') 
+mle_CIs = All_results$Unfiltered
 
 # Load geography
 load('../RData/geo_dist_info_cities.RData')

@@ -15,7 +15,7 @@
 rm(list = ls())
 library(igraph) # To make graph, construct components etc.
 library(RColorBrewer) # For colours
-load('../RData/All_results.RData') # Load All_results
+load('../RData/All_results_true.RData') # Load All_results
 load('../RData/SNPData.RData') # Load SNP data for cities
 load('../RData/geo_dist_info.RData')
 source('./igraph_functions.R')

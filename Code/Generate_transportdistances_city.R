@@ -16,7 +16,7 @@
 ##############################################################
 rm(list = ls())
 library(transport) # transport package
-load('../RData/All_results.RData')
+load('../RData/All_results_true.RData')
 load('../RData/geo_dist_info.RData')
 attach(geo_dist_info)
 source('./transport_functions.R')
@@ -91,11 +91,18 @@ All_W_results_c = lapply(All_results, function(mle_CIs){
 # Save
 save(All_W_results_c, file = '../RData/All_W_results_c.RData')
 
-# Quick plot
+# Quick plots
 W_results_c = All_W_results_c$Unfiltered
 X = barplot(W_results_c[1,], las = 2, ylim = c(0, max(W_results_c)))
 segments(x0 = X, x1 = X, y0 = W_results_c[2,], y1 = W_results_c[3,])
 
+W_results_c = All_W_results_c$`Filter by vertex`
+X = barplot(W_results_c[1,], las = 2, ylim = c(0, max(W_results_c)))
+segments(x0 = X, x1 = X, y0 = W_results_c[2,], y1 = W_results_c[3,])
+
+W_results_c = All_W_results_c$`Filter by edge`
+X = barplot(W_results_c[1,], las = 2, ylim = c(0, max(W_results_c)))
+segments(x0 = X, x1 = X, y0 = W_results_c[2,], y1 = W_results_c[3,])
 
 
 

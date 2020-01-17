@@ -69,7 +69,8 @@ for(f in c("true", "unif")){
 
 
 #====================================================
-# 2) Filter data sets with added metadata 
+# 2) Filter data sets with added metadata, save and 
+# delete intermediate file
 #====================================================
 rm(list = ls())
 library(igraph)
@@ -98,6 +99,7 @@ for(f in c("true", "unif")){
   writeLines('Data set summary of edge and vertex count:')
   print(EV_summary)
   
+  system(sprintf('rm ../RData/mles_%s.RData', f)) # Delete intermediate file
   save(All_results, file = sprintf('../RData/All_results_%s.RData', f))
 }
 

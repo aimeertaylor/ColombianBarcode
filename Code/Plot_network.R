@@ -1,8 +1,4 @@
 ############################################################################################
-# !!!!!!!!!README!!!!!!!!!
-# I know longer have the shape file CP_coast - try to retrieve from broad back up, 
-# otherwise re-make
-
 # This script is adapted from Maps_MORU.R
 # 1) Map based on fraction of IBD proportions > 0.5 (2 plots, combined in manuscript)
 # This map was created using QGIS (QGIS Development Team 2017) and the raster (Hijmans 2016),
@@ -17,7 +13,7 @@ library(igraph)
 library(sf) # For st_read instead of readShapeLines (returns warning: "use rgdal::readOGR or sf::st_read" )
 PDF = T # Set to true to generate pdfs
 DWN = F # Set to true to download country files
-ZM = F # Set to true to zoomed out plot surrounding countries 
+ZM = F # Set to true to zoomed out plot surrounding countries (takes a while - few minutes)
 NET = T # Set to true to include network on coast
 Threshold = '0.25' # on edges
 Filter = 'Unfiltered' # on graph
@@ -97,7 +93,7 @@ if(PDF){dev.off()}
 
 
 #================================================
-# Plot of surrounding countries
+# Plot of surrounding countries (takes a long time)
 #================================================
 if(ZM){
   

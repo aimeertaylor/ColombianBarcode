@@ -16,6 +16,7 @@ TxtData/**
 !TxtData/hmmInput.txt 
 !TxtData/Geo_coordinates.txt
 
+# Don't ignore things that take a long time to generate
 RData/**
 !RData/mles_frequencies_true.RData
 !RData/mles_frequencies_unif.RData
@@ -25,6 +26,7 @@ RData/**
 
 # Scripts to ignore
 Code/Generate_plot_PCA.R
+Code/Plot_proportions_GRC_2019.R
 ###################################################################
 
 

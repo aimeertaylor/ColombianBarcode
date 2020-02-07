@@ -317,13 +317,24 @@ for(j in 3:1){
   segments(x0 = mpts[,1], x1 = mpts[,1], y0 = X['2.5%',inter_c], y1 = X['97.5%',inter_c])
   
   plot(y = X['W',inter_c], x = pairwise_site_distance_all[inter_c], 
+       xlim = range(pairwise_site_distance_all[inter_c]) + c(-10,10), 
        ylim = range(X)+c(-0.1, 0.1), pch = 16, bty = 'n', 
        ylab = "1-Wasserstein distance", xlab = expression(Delta~'distance (km)'))
-  text(y = min(X['W',inter_c]), x = pairwise_site_distance_all[names(which.min(X['W',inter_c]))],
-       labels =  gsub('_', ' & ', names(which.min(X['W',inter_c]))), cex = 0.7, pos = 4)
   segments(x0 = pairwise_site_distance_all[inter_c], 
            x1 = pairwise_site_distance_all[inter_c], 
            y0 = X['2.5%',inter_c], y1 = X['97.5%',inter_c])
+  
+  # Buenaventura & Tumaco
+  text(y = min(X['W',inter_c]), 
+       x = pairwise_site_distance_all[names(which.min(X['W',inter_c]))],
+       labels =  gsub('_', ' & ', names(which.min(X['W',inter_c]))), 
+       cex = 0.5, pos = 4)
+  
+  # Not Buenaventura & Tumaco
+  text(y = X['W',inter_c], x = pairwise_site_distance_all[names(X['W',inter_c])],
+       labels =  gsub('Buenaventura & Tumaco', '',gsub('_', ' & ', names(X['W',inter_c]))), 
+       cex = 0.5, pos = 2, srt = 90, offset = 0.4)
+  
 }
 
 

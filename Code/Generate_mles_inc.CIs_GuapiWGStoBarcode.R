@@ -45,7 +45,7 @@ rownames(data_set1) = paste(data_set1$chrom, data_set1$pos, sep = "_")
 rownames(data_set0) = paste(data_set0$chrom, data_set0$pos, sep = "_")
 missing_SNPs = which(!rownames(data_set0) %in% rownames(data_set1))
 
-# Add rows of missing SNPs to data_set1
+# Add rows of missing SNPs to data_set1xx
 X = cbind(data_set0$chrom[missing_SNPs], data_set1$pos[missing_SNPs],  
       matrix(NA, nrow = length(missing_SNPs), ncol = ncol(data_set1)-2))
 rownames(X) = rownames(data_set0)[missing_SNPs]
@@ -53,8 +53,12 @@ colnames(X) = colnames(data_set1)
 data_set1 = rbind(data_set1, X)
 
 # Concatenate data and remove rownames
-data_set = cbind(data_set0, data_set1[rownames(data_set0),-(1:2)])
-rownames(data_set) = NULL
+data_set1 <- data_set1[rownames(data_set0),]
+if(all(rownames(data_set1) == rownames(data_set0))){
+  data_set = cbind(data_set0, data_set1[,-c(1,2)])
+} else { stop('data sets mismatched') }
+
+
 #=====================================
 
 # Create indices for pairwise comparisons

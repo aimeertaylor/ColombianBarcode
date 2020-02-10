@@ -15,9 +15,10 @@
 rm(list = ls())
 library(igraph) # To make graph, construct components etc.
 library(RColorBrewer) # For colours
+library(kableExtra) # Needed for kable
 load('../RData/All_results_true.RData') # Load All_results
 load('../RData/SNPData.RData') # Load SNP data for cities
-load('../RData/geo_dist_info.RData')
+load('../RData/geo_dist_info_cities.RData')
 source('./igraph_functions.R')
 eps <- 0.01 # Below which LCI considered close to zero
 cols <- colorRampPalette(brewer.pal(12, "Paired")) # Function to create colours
@@ -75,7 +76,7 @@ First_sample_per_CC_table = cbind(CC = CC_chr_names,
                                   Earliest_sample = sids_1stperCC_ordered, 
                                   Date_earliest_sample = as.character(SNPData[sids_1stperCC_ordered, 'COLLECTION.DATE']), 
                                   Site_earliest_sample = as.character(SNPData[sids_1stperCC_ordered, 'City']))
-kable(First_sample_per_CC_table, format = "latex")
+kableExtra::kable(First_sample_per_CC_table, format = "latex")
 #--------------------------------------------------------
 
 #--------------------------------------------------------

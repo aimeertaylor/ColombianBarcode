@@ -168,7 +168,7 @@ legend('topleft', legend = c('Road (Google maps)',
 #===========================================================
 par(mfrow = c(1,1), family = 'serif', mar = c(6,5,2,2))
 X <- barplot(proportions_time['mean',], 
-             las = 2, xlab = expression(Delta~'time (weeks)'), 
+             las = 2, xlab = 'Time (weeks)', 
              xaxt = 'n', cex.lab = 1.25,  
              ylab = expression('Fraction of highly related'~italic('P. falciparum')~'sample pairs'), 
              cex.names = 1, ylim = c(0,max(proportions_time)), 
@@ -182,7 +182,7 @@ text(x = X, y = -max(proportions_time)/40, srt = 40, adj= 1, xpd = TRUE,
 # Barplot of time (partioned by clone)
 #===========================================================
 X <- barplot(proportions_time_cloned[, ,'r_threshold'], 
-             las = 2, xlab = expression(Delta~'time (weeks)'), 
+             las = 2, xlab = 'Ttime (weeks)', 
              xaxt = 'n', cex.lab = 1.25,  
              ylab = bquote('Proportion with LCI of relatedness estimated'>.(r_threshold)), 
              cex.names = 1, ylim = c(0,max(proportions_time)), 
@@ -198,14 +198,14 @@ segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X
 par(mfrow = c(2,1), family = 'serif')
 # Grouped version 
 X <- barplot(proportions_time_grouped[, ,'all'], las = 2, xaxt = 'n', 
-             xlab = expression(Delta~'Time (weeks)'), 
+             xlab = 'Time (weeks)', 
              ylab = 'Proportion of sample comparisons', 
              cex.names = 1, col = rainbow(no_site_comps))
 text(x = X, y = -1/20, srt = 40, adj= 1, xpd = TRUE, 
      labels = time_xlabels, cex = 0.5)
 
 X <- barplot(proportions_time_grouped[, ,'r_threshold'], 
-             las = 2, xlab = expression(Delta~'Time (weeks)'), 
+             las = 2, xlab = 'Time (weeks)', 
              xaxt = 'n',
              ylab = bquote('Proportion with LCI of'~italic(widehat(r))>.(r_threshold)), 
              cex.names = 1, ylim = c(0,max(proportions_time)), col = rainbow(no_site_comps))
@@ -291,7 +291,7 @@ X <- barplot(proportions_geo_grouped[,site_comps,'r_threshold'], las = 2, xlab =
 segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
          x0 = X, x1 = X)
 legend('topright', fill = rainbow(no_time_bins), bty = 'n', cex = 0.5, 
-       legend = rownames(proportions_geo_grouped), title = expression(Delta~'Time (weeks)'))
+       legend = rownames(proportions_geo_grouped), title = 'Time (weeks)')
 # x labels 
 text(x = X, y = -0.01, srt = 30, adj= 1, xpd = TRUE, labels = gsub('_', ' ',site_comps), cex=0.5)
 

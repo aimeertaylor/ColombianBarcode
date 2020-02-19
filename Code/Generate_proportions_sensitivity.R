@@ -18,7 +18,7 @@ set.seed(1) # For reproducibility
 # Extract different ways of partitioning pairwise comparisons
 cities = unique(All_results[["Unfiltered"]]$City12)
 states = unique(All_results[["Unfiltered"]]$State12)
-times = unique(All_results[["Unfiltered"]]$time_bins)
+times = sort(unique(All_results[["Unfiltered"]]$time_bins))
 
 
 # Result stores

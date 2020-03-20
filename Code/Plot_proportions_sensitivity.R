@@ -139,7 +139,7 @@ par(mfrow = c(3,4), family = 'serif')
 # Create a vector of labels for barplot
 times_sorted = as.character(sort(as.numeric(colnames(proportions_times))))
 no_time_bins = length(times_sorted)
-load('../RData/All_results_true.RData') # Change to All results
+load('../RData/All_results.RData') # Change to All results
 time_xlabels = c(paste(times_sorted[-no_time_bins], times_sorted[-1], sep = '-'), 
                  paste(times_sorted[no_time_bins], max(All_results$Unfiltered$time_dist), sep = '-'))
 

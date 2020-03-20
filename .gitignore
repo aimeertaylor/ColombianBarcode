@@ -18,8 +18,7 @@ TxtData/**
 
 # Don't ignore things that take a long time to generate
 RData/**
-!RData/mles_frequencies_true.RData
-!RData/mles_frequencies_unif.RData
+!RData/mles_CIs.RData
 !RData/SNPData.RData
 !RData/populations_cities.RData
 !RData/populations_states.RData

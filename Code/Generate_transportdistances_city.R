@@ -16,7 +16,7 @@
 ##############################################################
 rm(list = ls())
 library(transport) # transport package
-load('../RData/All_results_true.RData')
+load('../RData/All_results.RData')
 load('../RData/geo_dist_info_cities.RData')
 attach(geo_dist_info)
 source('./transport_functions.R')

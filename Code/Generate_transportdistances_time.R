@@ -30,7 +30,7 @@
 # they are based on a random split of the time-interval. 
 ##############################################################
 rm(list = ls())
-load('../RData/All_results_unif.RData')
+load('../RData/All_results.RData')
 source('./transport_functions.R')
 nrepeats = 100 # Number of bootstrap repeats 
 set.seed(10)

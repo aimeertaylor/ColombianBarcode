@@ -22,7 +22,7 @@ if(PDF){pdf('../Plots/Proportions_and_W_distance.pdf')}
 par(family = 'serif')
 load('../RData/proportions_time.RData')
 load('../RData/proportions_geo.RData')
-load('../RData/All_results_true.RData') 
+load('../RData/All_results.RData') 
 mle_CIs = All_results$Unfiltered
 
 # Load geography

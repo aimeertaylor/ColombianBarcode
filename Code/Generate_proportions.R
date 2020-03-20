@@ -7,7 +7,7 @@
 rm(list = ls())
 
 # Load and summarise raw data 
-load('../RData/All_results_true.RData') 
+load('../RData/All_results.RData') 
 load('../RData/edge_cols.RData') # for histograms partioned by clone
 load('../RData/geo_dist_info_cities.RData')
 mle_CIs <- All_results$Unfiltered

@@ -16,7 +16,7 @@ rm(list = ls())
 library(igraph) # To make graph, construct components etc.
 library(RColorBrewer) # For colours
 library(kableExtra) # Needed for kable
-load('../RData/All_results_true.RData') # Load All_results
+load('../RData/All_results.RData') # Load All_results
 load('../RData/SNPData.RData') # Load SNP data for cities
 load('../RData/geo_dist_info_cities.RData')
 source('./igraph_functions.R')

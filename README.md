@@ -9,8 +9,8 @@ To reproduce the work in the manuscript entitled "Identifying departures from is
 
 2. Run in the following order
 
-- Generate_mles_CIs.R (SLOW, outputs mles_frequencies_true.RData and mles_frequencies_unif.RData)
-- Format_mle_df.R (ouputs All_results_true.RDat and All_results_unif.RData)
+- Generate_mles_CIs.R (SLOW, outputs mles_CIs.RData)
+- Format_mle_df.R (ouputs All_results.RData)
 
 3. Run in no particular order
 

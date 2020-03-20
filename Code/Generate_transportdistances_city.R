@@ -17,7 +17,7 @@
 rm(list = ls())
 library(transport) # transport package
 load('../RData/All_results_true.RData')
-load('../RData/geo_dist_info.RData')
+load('../RData/geo_dist_info_cities.RData')
 attach(geo_dist_info)
 source('./transport_functions.R')
 nrepeats = 100 # Number of bootstrap repeats (79 seconds)

@@ -1,11 +1,12 @@
 ##############################################################
 # In this script we generate transport ("1-Wasserstein") distances 
-# between parasite populations sampled in five different time 
-# intervals (five is arbitrary - chosen to match the city count). 
+# between parasite populations sampled in four or five different time  
+# arbitrary intervals - five chosen to match the city count, four
+# because five doesn't work for temporally equi-spaced intervals. 
 # 
 # The transport approach is directly applicable to our between-city
 # spatial analysis: it is trivial to construct a fully populated 
-# adjacency matrix of comparisons across samples that fall into two 
+# adjacency matrix of comparisons across samples that fall into 
 # discrete populations (e.g. samples collected in Tumaco versus 
 # Buenaventura). 
 # 
@@ -29,7 +30,7 @@
 # they are based on a random split of the time-interval. 
 ##############################################################
 rm(list = ls())
-load('../RData/All_results_true.RData')
+load('../RData/All_results_unif.RData')
 source('./transport_functions.R')
 nrepeats = 100 # Number of bootstrap repeats 
 set.seed(10)
@@ -37,7 +38,7 @@ set.seed(10)
 # Unfiltered
 mle_CIs = All_results$Unfiltered
 
-# Generate a full rhat adjacency matrix
+# Generate a fully populated rhat adjacency matrix
 sample_names = unique(c(mle_CIs$individual1, mle_CIs$individual2))
 adj_matrix = array(data = 0, dim = rep(length(sample_names), 2), 
                    dimnames = list(sample_names, sample_names))
@@ -52,6 +53,7 @@ for(i in 1:nrow(mle_CIs)){
 # Calculate the "1-Wasserstein" distance over same versus different time intervals
 # (not possible to otherwise construct a adjacency matrix)
 #=============================================================================
+# Create a weekly count date, counting the earliest week as week one
 min_date = min(mle_CIs$date1, mle_CIs$date2)
 mle_CIs$week1 = difftime(time2 = min_date, time1 = mle_CIs$date1, units = "weeks")
 mle_CIs$week2 = difftime(time2 = min_date, time1 = mle_CIs$date2, units = "weeks")
@@ -66,8 +68,8 @@ weeks = c(indiv_weeks$week1, sapply(setdiff(indivs, indiv_weeks$individual1), fu
 
 # Using length.out = 6, create n = 5 intervals that are 
 # 1) evenly populated using quatile() 
-# 2) evenly spaced using seq() - does not work for n = 5 so use n = 4
 week_bin_breaks = quantile(weeks, probs = seq(0,1,length.out = 6))
+# 2) evenly spaced using seq() - does not work for n = 5 so use n = 4
 # week_bin_breaks = seq(min(weeks), max(weeks), length.out = 5)
 
 # Allocate bins (.bincode is fast for assigning numeric bins)
@@ -117,23 +119,35 @@ W_results_t = sapply(week_coms_ordered$ix, function(i){
 
 save(W_results_t, file = '../RData/W_results_t.RData')
 
-# Quick plot 
+
+# Plot and print the time intervals
+weeks_ordered = sort(weeks) 
+plot(weeks_ordered, pch = 20, ylab = 'weeks', xlab = 'sample index', 
+     col = .bincode(weeks_ordered, breaks = week_bin_breaks, include.lowest = T))
+round(week_bin_breaks)
+
+# Quick plot for all time interval combinations
 par(mfrow = c(1,1))
 X = barplot(W_results_t[1,], ylim = c(0, max(W_results_t)), 
             names.arg = sapply(week_coms_ordered$ix, function(i){
               paste(week_coms[i,], collapse = ' ')
             }), las = 2)
 segments(x0 = X, x1 = X, y0 = W_results_t[2,], y1 = W_results_t[3,])
+# Unsuprising that comparisons within the first interval are more costly among
+# those within the second to fifth given the range of weeks the first interval 
+# spans
 
-# Plot of time intervals
-weeks_ordered = sort(weeks) 
-plot(weeks_ordered, pch = 20, ylab = 'weeks', xlab = 'sample index', 
-     col = .bincode(weeks_ordered, breaks = week_bin_breaks, include.lowest = T))
+# Average over comparisons of time intervals with the same difference 
+# where the difference is equi-timed if using evenly timed intervals using seq();
+# otherwise the difference is equi-spaced in quantile terms
+W_results_t_av_coms = sapply(unique(week_coms_ordered$x), function(com){
+  mean(W_results_t[1,which(week_coms_ordered$x == com)])
+})
+barplot(W_results_t_av_coms, ylim = c(0, max(W_results_t)), 
+            names.arg = unique(week_coms_ordered$x), las = 2)
+# Makes sense: more costly if further apart. 
 
-round(week_bin_breaks)
 
-# Unsuprising that comparisons with one are more costly given
-# the range of weeks interval one spans
 
 
 

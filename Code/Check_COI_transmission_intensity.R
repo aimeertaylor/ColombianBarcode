@@ -11,8 +11,8 @@
 # related sample pairs for the reasons stated below. 
 # 
 # Result: non-significant negative correlation 
-# -0.19 (-0.73, 0.50) driven entirely by Cauca (Guapi)
-# If Cauca removed, correlation 0.32 (-0.44, 0.81)
+# driven entirely by Cauca (Guapi)
+# If Cauca removed, on-significant positive correlation 
 # 
 # Reason 1) unequal proportions of multiclonal samples: 
 # removal of multiclonal parasite samples
@@ -49,7 +49,7 @@ load('../RData/proportions_sensitivities.RData')
 COI <- c('Choco' = 0.25, 'Valle' = 0.14, 'Cauca' = 0.14, 'Narino' = 0.19)
 
 # Load highly related fractions
-fract_highly_related <- proportions_states["mean",,"0.5","Unfiltered"]
+fract_highly_related <- proportions_states["mean",,"0.25","Unfiltered"]
 
 # Create weights based on monoclonal sample sizes
 weights <- table(SNPData$STATE)/sum(table(SNPData$STATE))

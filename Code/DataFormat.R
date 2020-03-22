@@ -80,7 +80,7 @@ chrom <- as.numeric(do.call(rbind, strsplit(as.character(SNPPos$V2), split = '_'
 HMMData <- cbind(chrom, pos, t(SNPData[,6:255]))
 
 # Save data in format for HMM and RData
-write.table(HMMData, file = '/Users/aimeet/Documents/BroadLaptop/ColombianBarcode/TxtData/hmmInput.txt', 
+write.table(HMMData, file = '../TxtData/hmmInput.txt', 
             quote = FALSE, row.names = FALSE, sep = '\t')
 save(SNPData, file = '../RData/SNPData.RData')
 toc()

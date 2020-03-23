@@ -63,7 +63,7 @@ mle_CIs$sample_comp = apply(mle_CIs[, c("individual1", "individual2")], 1,
                             function(x)paste(sort(x), collapse = "_"))
 
 # Save data frame
-save(mle_CIs, "../RData/mles_CIs_metadata.RData")
+save(mle_CIs, file = "../RData/mles_CIs_metadata.RData")
 
 
 

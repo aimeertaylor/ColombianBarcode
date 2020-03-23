@@ -202,7 +202,7 @@ for(Remove_singletons in c(TRUE,FALSE)){ # If true, remove CCs with only one par
        edge.color = sapply(weights_rescaled, function(x)adjustcolor('black', alpha.f = x)))
   
   # Legend of cities
-  legend('left', pch = 16, bty = 'n', cex = 0.7, pt.cex = 1.5, col = cols_cities, 
+  legend('bottomleft', pch = 16, bty = 'n', cex = 0.7, pt.cex = 1.5, col = cols_cities, 
          legend = names(cols_cities), inset = 0.1)
 }
 if(PDF){dev.off()}

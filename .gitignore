@@ -13,14 +13,16 @@ Archive_frequencies_true_unif/**
 
 PopData/**
 GISData/**
+
+# Don't ignore necessary intermediate data nor data that take a long time to generate
 TxtData/**
 !TxtData/hmmInput.txt 
 !TxtData/Geo_coordinates.txt
 
 # Don't ignore things that take a long time to generate
 RData/**
-!RData/mles_CIs.RData
 !RData/SNPData.RData
+!RData/mles_CIs.RData
 !RData/populations_cities.RData
 !RData/populations_states.RData
 

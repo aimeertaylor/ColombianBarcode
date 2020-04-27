@@ -2,6 +2,26 @@
 # This script is adapted from Generate_mles_CIs.R
 # At present, using frequencies calucted from the combined data sets
 # As such, results for Diego's data set will differ slightly
+
+## Manuela's notes sent via email dated Jan 24th 2020. 
+## In a follow up email (same tread), dated Feb 10th, Manuela clarified that
+## -1 = missing, 0 = ref and 1 = alt using 3D7 as the reference. 
+## Filter for positions in Diego's data and also by COI=1
+# 
+# vcftools
+# --gzvcf Guapi_Aug2018_core_genome_PASS.SortedChr.recode.vcf.gz
+# --keep Guapi_COI1_sample_list.txt
+# --out Guapi_matrix_filtered_251Barcode
+# --positions Barcode_positions.txt  ## This already has the right chromosome names 
+# --recode
+# --remove-filtered-all
+# 
+# vcftools
+# --vcf Guapi_matrix_filtered_251Barcode.vcf
+# --remove-indels
+# --012
+# --out Guapi_matrix_filtered_251Barcode
+#
 ###################################################################
 rm(list = ls())
 set.seed(1)
@@ -35,7 +55,7 @@ simulate_Ys_hmm <- function(frequencies, distances, k, r, epsilon){
 
 # Load and process data =============
 data_set0 = read.delim("../TxtData/hmmInput.txt") # Original data set from Echeverry et al. 
-data_set1 = read.csv("../OriginalData/Guapi_WGStoBarcode.csv") # Data set provided by Vladimir courtesy of Manuela 
+data_set1 = read.csv("../OriginalData/Guapi_WGStoBarcode.csv") # Data set provided by Vladimir courtesy of Manuela's email dated 24th Jan 2020 
 
 # Match colnames of data_set1 to data_set0 
 colnames(data_set1) = gsub("chr", "chrom", colnames(data_set1)) # Reformat colnames

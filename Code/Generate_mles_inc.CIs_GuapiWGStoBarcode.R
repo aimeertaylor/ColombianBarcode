@@ -1,12 +1,15 @@
 ###################################################################
-# This script is adapted from Generate_mles_CIs.R
-# At present, using frequencies calucted from the combined data sets
-# As such, results for Diego's data set will differ slightly
-
-## Manuela's notes sent via email dated Jan 24th 2020. 
-## In a follow up email (same tread), dated Feb 10th, Manuela clarified that
-## -1 = missing, 0 = ref and 1 = alt using 3D7 as the reference. 
-## Filter for positions in Diego's data and also by COI=1
+# This script is adapted from Generate_mles_CIs.R At present, using frequencies
+# calculated from the combined data sets As such, results for Diego's data set
+# will differ slightly from those in the pre-print entitled
+# "Identity-by-descent relatedness estimates with uncertainty characterise
+# departure from isolation-by-distance between Plasmodium falciparum
+# populations on the Colombian-Pacific coast"
+#
+# Manuela's notes sent via email dated Jan 24th 2020. In a follow up email
+# (same tread), dated Feb 10th, Manuela clarified that -1 = missing, 0 = ref
+# and 1 = alt using 3D7 as the reference. Filter for positions in Diego's data
+# and also by COI=1
 # 
 # vcftools
 # --gzvcf Guapi_Aug2018_core_genome_PASS.SortedChr.recode.vcf.gz
@@ -21,7 +24,6 @@
 # --remove-indels
 # --012
 # --out Guapi_matrix_filtered_251Barcode
-#
 ###################################################################
 rm(list = ls())
 set.seed(1)
@@ -34,7 +36,7 @@ source("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/simulate_data.R") # Downloa
 sourceCpp("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/hmmloglikelihood.cpp") # Download this script from https://github.com/artaylor85/PlasmodiumRelatedness
 registerDoParallel(cores = detectCores()-1)
 epsilon <- 0.001 # Fix epsilon throughout
-nboot <- 100 # For CIs 
+nboot <- 2 # For CIs 
 set.seed(1) # For reproducibility
 Ps = c(0.025, 0.975) # CI quantiles
 
@@ -53,19 +55,21 @@ simulate_Ys_hmm <- function(frequencies, distances, k, r, epsilon){
   return(Ys)
 }
 
-# Load and process data =============
-data_set0 = read.delim("../TxtData/hmmInput.txt") # Original data set from Echeverry et al. 
-data_set1 = read.csv("../OriginalData/Guapi_WGStoBarcode.csv") # Data set provided by Vladimir courtesy of Manuela's email dated 24th Jan 2020 
+#=====================================
+# Load and process data 
+#=====================================
+data_set0 = read.delim("../../TxtData/hmmInputRecode.txt") # Original data set from Echeverry et al. 
+data_set1 = read.csv("../../OriginalData/Guapi_WGStoBarcode.csv") # Data set provided by Vladimir courtesy of Manuela's email dated 24th Jan 2020 
 
 # Match colnames of data_set1 to data_set0 
 colnames(data_set1) = gsub("chr", "chrom", colnames(data_set1)) # Reformat colnames
 
 # Match rownames of data_set1 to data_set0 
-rownames(data_set1) = paste(data_set1$chrom, data_set1$pos, sep = "_")
 rownames(data_set0) = paste(data_set0$chrom, data_set0$pos, sep = "_")
+rownames(data_set1) = paste(data_set1$chrom, data_set1$pos, sep = "_")
 missing_SNPs = which(!rownames(data_set0) %in% rownames(data_set1))
 
-# Add rows of missing SNPs to data_set1xx
+# Add rows of missing SNPs to data_set1
 X = cbind(data_set0$chrom[missing_SNPs], data_set1$pos[missing_SNPs],  
       matrix(NA, nrow = length(missing_SNPs), ncol = ncol(data_set1)-2))
 rownames(X) = rownames(data_set0)[missing_SNPs]
@@ -80,8 +84,8 @@ if(all(rownames(data_set1) == rownames(data_set0))){
 
 
 #=====================================
-
 # Create indices for pairwise comparisons
+#=====================================
 individual_names <- names(data_set)[-(1:2)]
 nindividuals <- length(individual_names)
 name_combinations <- matrix(nrow = nindividuals*(nindividuals-1)/2, ncol = 2)
@@ -94,15 +98,20 @@ for (i in 1:(nindividuals-1)){
   }
 }
 
-# Sort data by chromosome and position and add frequencies
+#=====================================
+# Sort data by chromosome and position and extract frequencies
+#=====================================
 data_set <- data_set %>% arrange(chrom, pos) 
 data_set$fs = rowMeans(data_set[,-(1:2)], na.rm = TRUE) # Calculate frequencies
 data_set$dt <- c(diff(data_set$pos), Inf)
 pos_change_chrom <- 1 + which(diff(data_set$chrom) != 0) # find places where chromosome changes
 data_set$dt[pos_change_chrom-1] <- Inf
-
-
 frequencies = cbind(1-data_set$fs, data_set$fs)
+
+
+#=====================================
+# Calculate mles
+#=====================================
 system.time(
   
   # For each pair...  
@@ -136,6 +145,6 @@ system.time(
     X
   })
 
-save(mle_CIs, file = "../RData/mles_inc.GuapiWGStoBarcode.RData")
+save(mle_CIs, file = "../../RData/mles_WGStoBarcode.RData")
 
 

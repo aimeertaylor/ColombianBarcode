@@ -6,10 +6,10 @@
 # departure from isolation-by-distance between Plasmodium falciparum
 # populations on the Colombian-Pacific coast"
 #
-# Manuela's notes sent via email dated Jan 24th 2020. In a follow up email
+# Manuela's notes sent via email dated Jan 24th 2020 (in a follow up email
 # (same tread), dated Feb 10th, Manuela clarified that -1 = missing, 0 = ref
-# and 1 = alt using 3D7 as the reference. Filter for positions in Diego's data
-# and also by COI=1
+# and 1 = alt using 3D7 as the reference):
+# Filter for positions in Diego's data and also by COI=1
 # 
 # vcftools
 # --gzvcf Guapi_Aug2018_core_genome_PASS.SortedChr.recode.vcf.gz
@@ -36,7 +36,7 @@ source("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/simulate_data.R") # Downloa
 sourceCpp("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/hmmloglikelihood.cpp") # Download this script from https://github.com/artaylor85/PlasmodiumRelatedness
 registerDoParallel(cores = detectCores()-1)
 epsilon <- 0.001 # Fix epsilon throughout
-nboot <- 2 # For CIs 
+nboot <- 100 # For CIs (estimate around 60 hours on pro)
 set.seed(1) # For reproducibility
 Ps = c(0.025, 0.975) # CI quantiles
 
@@ -58,7 +58,7 @@ simulate_Ys_hmm <- function(frequencies, distances, k, r, epsilon){
 #=====================================
 # Load and process data 
 #=====================================
-data_set0 = read.delim("../../TxtData/hmmInputRecode.txt") # Original data set from Echeverry et al. 
+data_set0 = read.delim("../../TxtData/hmmInputRecode.txt") # Re-coded data set from Echeverry et al. 
 data_set1 = read.csv("../../OriginalData/Guapi_WGStoBarcode.csv") # Data set provided by Vladimir courtesy of Manuela's email dated 24th Jan 2020 
 
 # Match colnames of data_set1 to data_set0 
@@ -145,6 +145,6 @@ system.time(
     X
   })
 
-save(mle_CIs, file = "../../RData/mles_WGStoBarcode.RData")
+save(mle_CIs, file = "../../RData/mles_CIs_extended.RData")
 
 

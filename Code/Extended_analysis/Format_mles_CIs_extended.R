@@ -8,26 +8,26 @@
 # 1) Add metadata 
 #====================================================
 rm(list = ls())
-load("../RData/mles_inc.GuapiWGStoBarcode.RData") 
+load("../../RData/mles_CIs_extended.RData") 
 
 # Factors to characters
 if(class(mle_CIs$individual1) == 'factor'){mle_CIs$individual1 = as.character(mle_CIs$individual1)}
 if(class(mle_CIs$individual2) == 'factor'){mle_CIs$individual2 = as.character(mle_CIs$individual2)}
 
 # Load Diego's meta data 
-load('../RData/SNPData.RData') # These are Diego's data
-load('../RData/geo_dist_info_cities.RData')
+load('../../RData/SNPDataRecode.RData') # These are Diego's data
+load('../../RData/geo_dist_info_cities.RData')
 geo_dist_info_cities = geo_dist_info
-load('../RData/geo_dist_info_states.RData')
+load('../../RData/geo_dist_info_states.RData')
 geo_dist_info_states = geo_dist_info
 
 # Extract Guapi WGS to Barcode sample names
 all_sids = unique(c(mle_CIs$individual1, mle_CIs$individual2))
-VC_sids = all_sids[!all_sids %in% rownames(SNPData)]
+VC_sids = all_sids[!all_sids %in% rownames(SNPDataRecode)]
 
 # Create a template SNPData for VC_sids
-SNPData_VC <- data.frame(array(NA, dim = c(length(VC_sids), ncol(SNPData)), 
-                               dimnames = list(VC_sids, colnames(SNPData))), 
+SNPData_VC <- data.frame(array(NA, dim = c(length(VC_sids), ncol(SNPDataRecode)), 
+                               dimnames = list(VC_sids, colnames(SNPDataRecode))), 
                          check.names = F) # Prevents conversion of "-" to "."
 SNPData_VC$City = "Guapi"
 SNPData_VC$STATE = "Cauca"
@@ -35,8 +35,7 @@ SNPData_VC$COLLECTION.DATE = format(Sys.Date(), format = "%Y-%m-%d")
 SNPData_VC$Year = format(Sys.Date(), format = "%Y")
 
 # Add SNPData_VC to SNPData
-SNPData = rbind(SNPData, SNPData_VC)
-
+SNPData = rbind(SNPDataRecode, SNPData_VC)
 
 # Add city comps
 mle_CIs$City1 = as.character(SNPData[mle_CIs$individual1, 'City'])
@@ -78,8 +77,8 @@ mle_CIs$sample_comp = apply(mle_CIs[, c("individual1", "individual2")], 1,
                             function(x)paste(sort(x), collapse = "_"))
 
 # Save data frame
-save(mle_CIs, file = "../RData/mles_inc.GuapiWGStoBarcode_meta.RData")
-save(SNPData, file = "../RData/SNPData_inc.GuapiWGStoBarcode.RData")
+save(mle_CIs, file = "../../RData/mles_CIs_extended_meta.RData")
+save(SNPData, file = "../../RData/SNPData_extended.RData")
 
 
 #====================================================
@@ -88,11 +87,11 @@ save(SNPData, file = "../RData/SNPData_inc.GuapiWGStoBarcode.RData")
 #====================================================
 rm(list = ls())
 library(igraph)
-source('./igraph_functions.R') # For rm_highly_related_within and construct_adj_matrix
-load('../RData/SNPData_inc.GuapiWGStoBarcode.RData') # Load SNP data for cities
+source('../igraph_functions.R') # For rm_highly_related_within and construct_adj_matrix
+load('../../RData/SNPData_extended.RData') # Load SNP data for cities
 eps = 0.01 # Below which LCI considered close to zero (needed by rm_highly_related_within)
 Cities = SNPData$City; names(Cities) = row.names(SNPData) # n x 1 vector of cities named by sample ID
-load('../RData/mles_inc.GuapiWGStoBarcode_meta.RData') # Few mins
+load('../../RData/mles_CIs_extended_meta.RData') # Few mins
 
 #===========================================================
 # Filter and save results
@@ -110,8 +109,8 @@ EV_summary = sapply(All_results, function(x){c('Edge count' = nrow(x),
 writeLines('Data set summary of edge and vertex count:')
 print(EV_summary)
 
-system('rm ../RData/mles_inc.GuapiWGStoBarcode_meta.RData') # Delete intermediate file
-save(All_results, file = '../RData/All_results_inc.GuapiWGStoBarcode.RData')
+system('rm ../../RData/mles_CIs_extended_meta.RData') # Delete intermediate file
+save(All_results, file = '../../RData/All_results_extended.RData')
 
 
 

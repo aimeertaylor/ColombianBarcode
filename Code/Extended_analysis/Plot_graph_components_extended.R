@@ -5,10 +5,10 @@ rm(list = ls())
 library(igraph) # To make graph, construct components etc.
 library(RColorBrewer) # For colours
 library(kableExtra)
-load('../RData/All_results_inc.GuapiWGStoBarcode.RData') # Load All_results
-load('../RData/SNPData_inc.GuapiWGStoBarcode.RData') # Load SNP data for cities
-load('../RData/geo_dist_info_cities.RData')
-source('./igraph_functions.R')
+load('../../RData/All_results_extended.RData') # Load All_results
+load('../../RData/SNPData_extended.RData') # Load SNP data for cities
+load('../../RData/geo_dist_info_cities.RData')
+source('../igraph_functions.R')
 eps <- 0.01 # Below which LCI considered close to zero
 cols <- colorRampPalette(brewer.pal(12, "Paired")) # Function to create colours
 PDF <- T # Set to TRUE to plot graphs to pdf
@@ -23,7 +23,7 @@ cols_cities <- brewer.pal(length(cities), 'Spectral')
 names(cols_cities) <- rev(cities) 
 
 #===========================================================
-# Get clonal component (CC) membership for all 461 samples (325 from Diego, )
+# Get clonal component (CC) membership for all 461 samples (325 from Diego)
 #===========================================================
 
 #-----------------------------------------------------------
@@ -90,7 +90,7 @@ A_related[A_low < eps] = 0 # Edit s.t. only not stat diff from clonal have weigh
 # CC pie-graph whose edges are weighted according to average relatedness 
 # averaged of those that are statistically distinguishable from zero
 #==================================================================================.
-if(PDF){pdf(sprintf('../Plots/All_CCs_WGStoBarcode.pdf'), height = 8, width = 8)}
+if(PDF){pdf(sprintf('../../Plots/All_CCs_WGStoBarcode.pdf'), height = 8, width = 8)}
 par(mfrow = c(1,1), family = 'serif')
 
 for(Remove_singletons in c(TRUE,FALSE)){ # If true, remove CCs with only one parasite sample 
@@ -217,7 +217,7 @@ Jitter = Jitter + rnorm(length(Jitter), 0 , 0.05)
 # For each site comparison vizualise effect of filter with
 # dates and edges proportional to related rhats 
 #===========================================================
-if(PDF){pdf('../Plots/Graphs_timespace.pdf', height = 5, width = 10)}
+if(PDF){pdf('../../Plots/Graphs_timespace_extended.pdf', height = 5, width = 10)}
 par(mfrow = c(1,1), mar = c(3,4,3,0.1), family = 'serif', bg = 'white')
 filter_name = c("Unfiltered" = "Unfiltered", "Filter by vertex" = "Filter CCs")
 SHAPES = c('circle', 'square') # Different shapes distinguish different sites 

@@ -1,37 +1,37 @@
 ##################################################################################
-#' Formatting the Golden Gate Colombian data for analyses inc. more contemporary
-#' WGS data from Guapi (Vladimir and co.) and Ecuador (Fabian and co.). This
-#' script is not automated: go through each line manually
-#'
-#' Coding used in original data formating script; see Code/DataFormat.R:
-#' AA = 1, BB = 0, AB = NA, -- = NA.
-#'
-#' Where AA, BB etc. is the GoldenGate code whose mapping onto 3D7 ref/alt (as
-#' used by Manuela to process the WGS Guapi data; see email dated Feb 10th) is
-#' non trivial. Nonetheless, Diego figured out the mapping (see notes below
-#' copied from Diego's email dated via email dated April 9th 20 within the
-#' thread whose subject is Quick question about funders and Colombia preprint)
-#' and shared it via google drive (see email dated April 9th 2020 whose subject
-#' is "revealing SNPs Goldengate April2020.xlsx")
-#'
-#' Please see in your email an access via google-drive to get an excel doc with
-#' some sheets. I figured out the nucleotides for each SNP, in other words, we
-#' now know what does mean AA or BB in each allele. to do so I combined
-#' information such as:
-#' 1) The order that Tim sent to Illumina in order to build the chip-array (it
-#' contain the flanking regions and SNPs)
-#' 2) The output information of a whole plate after the genotyping. With this, I
-#' was able to know what is AA or BB and the equivalent SNPs
-#' 3) As Tim mentioned to me, some SNPs were identified in the 5'-->3 or 3'-->5
-#' strains (that was the very difficult part)  but as we had the reference
-#' strains (specially 3D7) I figured out using PlasmoDB and the supplementary
-#' figure 2 of my paper
-#' 4) A lot of patients, I checked the files 3X, and in different ways in order to
-#' avoid painful mistakes in further analyses. to the very right of the last
-#' sheet "final table," you will see the most important table, which contains
-#' the meaning of each AA or BB per allele and the respective nucleotide. You
-#' may find previous files kind of busy and probably difficult to follow, I will
-#' be happy to try to explain what I did.
+# Formatting the Golden Gate Colombian data for analyses inc. more contemporary
+# WGS data from Guapi (Vladimir and co.) and Ecuador (Fabian and co.). This
+# script is not automated: go through each line manually
+#
+# Coding used in original data formating script; see Code/DataFormat.R:
+# AA = 1, BB = 0, AB = NA, -- = NA.
+#
+# Where AA, BB etc. is the GoldenGate code whose mapping onto 3D7 ref/alt (as
+# used by Manuela to process the WGS Guapi data; see email dated Feb 10th) is
+# non trivial. Nonetheless, Diego figured out the mapping (see notes below
+# copied from Diego's email dated via email dated April 9th 20 within the
+# thread whose subject is Quick question about funders and Colombia preprint)
+# and shared it via google drive (see email dated April 9th 2020 whose subject
+# is "revealing SNPs Goldengate April2020.xlsx")
+#
+# Please see in your email an access via google-drive to get an excel doc with
+# some sheets. I figured out the nucleotides for each SNP, in other words, we
+# now know what does mean AA or BB in each allele. to do so I combined
+# information such as:
+# 1) The order that Tim sent to Illumina in order to build the chip-array (it
+# contain the flanking regions and SNPs)
+# 2) The output information of a whole plate after the genotyping. With this, I
+# was able to know what is AA or BB and the equivalent SNPs
+# 3) As Tim mentioned to me, some SNPs were identified in the 5'-->3 or 3'-->5
+# strains (that was the very difficult part)  but as we had the reference
+# strains (specially 3D7) I figured out using PlasmoDB and the supplementary
+# figure 2 of my paper
+# 4) A lot of patients, I checked the files 3X, and in different ways in order to
+# avoid painful mistakes in further analyses. to the very right of the last
+# sheet "final table," you will see the most important table, which contains
+# the meaning of each AA or BB per allele and the respective nucleotide. You
+# may find previous files kind of busy and probably difficult to follow, I will
+# be happy to try to explain what I did.
 ##################################################################################
 rm(list = ls())
 
@@ -156,8 +156,8 @@ plot(hmmInput_freq, hmmInputRecode_freq)
 abline(a = 0, b = 1, col = 'blue'); abline(a = 1, b = -1, col = 'blue')
 
 # Save Recoded data in format for HMM and RData
-write.table(hmmInputRecode, file = '../../TxtData/hmmInputRecode.txt', 
+write.table(hmmInputRecode, file = '../../TxtData/hmmInputRecode.txt',
             quote = FALSE, row.names = FALSE, sep = '\t')
 save(SNPDataRecode, file = '../../RData/SNPDataRecode.RData')
-
+save(GoldenGate_to_3D7_map, file = '../../RData/GoldenGate_to_3D7_map.RData')
 

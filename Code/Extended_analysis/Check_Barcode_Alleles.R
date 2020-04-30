@@ -38,6 +38,9 @@ length(Barcode_alleles$POS) == length(unique(Barcode_alleles$POS))
 all(Barcode_alleles$POS %in% GoldenGate_to_3D7_map$pos) # All those from Angela are in GoldenGate_to_3D7_map$pos
 sum(!GoldenGate_to_3D7_map$pos %in% Barcode_alleles$POS) # Two missing from Barcode_alleles$POS
 
+# Which positions are missing? 
+GoldenGate_to_3D7_map[!GoldenGate_to_3D7_map$pos %in% Barcode_alleles$POS,]
+
 # Add the Alt nucleotide
 GoldenGate_to_3D7_map$Alt_nucleotide_3D7 <- sapply(1:nrow(GoldenGate_to_3D7_map), function(i){
   if(GoldenGate_to_3D7_map$Ref_nucleotide_3D7[i] == GoldenGate_to_3D7_map$Nucleotide_3D7_1[i]){
@@ -48,7 +51,6 @@ GoldenGate_to_3D7_map$Alt_nucleotide_3D7 <- sapply(1:nrow(GoldenGate_to_3D7_map)
     stop("Something wrong")
   }
 })
-
 
 # Rename 
 Joined <- Barcode_alleles %>% 

@@ -97,11 +97,14 @@ GoldenGate_to_3D7_map$Ref_code_3D7 <-
 hmmInput <- read.delim(file = '../../TxtData/hmmInput.txt')
 load(file = '../../RData/SNPData.RData')
 
-# Calculate frequencies before converting 
+# Calculate frequencies before converting (used in checks below)
 SNP_inds <- grepl("MAL", colnames(SNPData))
 colnames(SNPData)[SNP_inds] # Check
 SNPData_freq <- colMeans(SNPData[, SNP_inds], na.rm = TRUE)
 hmmInput_freq <- rowMeans(hmmInput[,-(1:2)], na.rm = TRUE)
+
+# Extract binary before converting (used in checks below)
+SNPDataBinary <- SNPData[,SNP_inds]
 
 # Convert SNPData 
 SNPData[, SNP_inds][SNPData[, SNP_inds] == 1] <- "AA" 
@@ -142,6 +145,10 @@ for(i in 1:nrow(hmmInput)){
     }
 }
 
+
+#=======================================================
+# Some checks
+#=======================================================
 # Check numeric
 str(SNPDataRecode)
 str(hmmInputRecode)
@@ -149,6 +156,16 @@ str(hmmInputRecode)
 # Check frequencies are unchanged (f) or 1-f
 SNPDataRecode_freq <- colMeans(SNPDataRecode[, SNP_inds], na.rm = TRUE)
 hmmInputRecode_freq <- rowMeans(hmmInputRecode[,-(1:2)], na.rm = TRUE)
+
+# Check recoded are identical
+all(SNPDataRecode_freq == hmmInputRecode_freq)
+
+# Check the MAF is the same as before
+SNPData_MAF <- pmin(SNPData_freq, 1-SNPData_freq) 
+SNPDataRecode_MAF <- pmin(SNPDataRecode_freq, 1-SNPDataRecode_freq)
+range(abs(SNPData_MAF-SNPDataRecode_MAF))
+plot(SNPData_MAF, SNPDataRecode_MAF)
+abline(a = 0, b = 1, col = 'blue')
 
 plot(SNPData_freq, SNPDataRecode_freq)
 abline(a = 0, b = 1, col = 'blue'); abline(a = 1, b = -1, col = 'blue')
@@ -161,3 +178,12 @@ write.table(hmmInputRecode, file = '../../TxtData/hmmInputRecode.txt',
 save(SNPDataRecode, file = '../../RData/SNPDataRecode.RData')
 save(GoldenGate_to_3D7_map, file = '../../RData/GoldenGate_to_3D7_map.RData')
 
+
+# Plot the data (code copied from Data_summary.Rmd)
+SNPDataRecodeBinary <- SNPDataRecode[, SNP_inds]
+par(mfrow = c(2,1), family = 'serif', mar = c(2,2,1,1))
+cols <- RColorBrewer::brewer.pal(3,'Dark2')
+image(t(as.matrix(SNPDataBinary[names(sort(rowSums(SNPDataBinary, na.rm = T))),])), 
+      ylab = '', xlab = '', xaxt = 'n', yaxt = 'n', col = cols)
+image(t(as.matrix(SNPDataRecodeBinary[names(sort(rowSums(SNPDataBinary, na.rm = T))),])), 
+      ylab = '', xlab = '', xaxt = 'n', yaxt = 'n', col = cols)

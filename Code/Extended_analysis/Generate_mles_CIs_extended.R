@@ -39,6 +39,7 @@ epsilon <- 0.001 # Fix epsilon throughout
 nboot <- 100 # For CIs (estimate around 60 hours on pro)
 set.seed(1) # For reproducibility
 Ps = c(0.025, 0.975) # CI quantiles
+load(file = "../../RData/data_set_extended.RData") # Load the extended data set
 
 ## Mechanism to compute MLE given fs, distances, Ys, epsilon
 compute_rhat_hmm <- function(frequencies, distances, Ys, epsilon){
@@ -54,34 +55,6 @@ simulate_Ys_hmm <- function(frequencies, distances, k, r, epsilon){
   Ys <- simulate_data(frequencies, distances, k = k, r = r, epsilon, rho = 7.4 * 10^(-7))
   return(Ys)
 }
-
-#=====================================
-# Load and process data 
-#=====================================
-data_set0 = read.delim("../../TxtData/hmmInputRecode.txt") # Re-coded data set from Echeverry et al. 
-data_set1 = read.csv("../../OriginalData/Guapi_WGStoBarcode.csv") # Data set provided by Vladimir courtesy of Manuela's email dated 24th Jan 2020 
-
-# Match colnames of data_set1 to data_set0 
-colnames(data_set1) = gsub("chr", "chrom", colnames(data_set1)) # Reformat colnames
-
-# Match rownames of data_set1 to data_set0 
-rownames(data_set0) = paste(data_set0$chrom, data_set0$pos, sep = "_")
-rownames(data_set1) = paste(data_set1$chrom, data_set1$pos, sep = "_")
-missing_SNPs = which(!rownames(data_set0) %in% rownames(data_set1))
-
-# Add rows of missing SNPs to data_set1
-X = cbind(data_set0$chrom[missing_SNPs], data_set1$pos[missing_SNPs],  
-      matrix(NA, nrow = length(missing_SNPs), ncol = ncol(data_set1)-2))
-rownames(X) = rownames(data_set0)[missing_SNPs]
-colnames(X) = colnames(data_set1)
-data_set1 = rbind(data_set1, X)
-
-# Concatenate data and remove rownames
-data_set1 <- data_set1[rownames(data_set0),]
-if(all(rownames(data_set1) == rownames(data_set0))){
-  data_set = cbind(data_set0, data_set1[,-c(1,2)])
-} else { stop('data sets mismatched') }
-
 
 #=====================================
 # Create indices for pairwise comparisons
@@ -145,6 +118,6 @@ system.time(
     X
   })
 
-save(mle_CIs, file = "../../RData/mles_CIs_extended.RData")
+#save(mle_CIs, file = "../../RData/mles_CIs_extended.RData")
 
 

@@ -22,7 +22,7 @@ load('../RData/geo_dist_info_cities.RData')
 source('./igraph_functions.R')
 eps <- 0.01 # Below which LCI considered close to zero
 cols <- colorRampPalette(brewer.pal(12, "Paired")) # Function to create colours
-PDF <- T # Set to TRUE to plot graphs to pdf
+PDF <- F # Set to TRUE to plot graphs to pdf
 a = 0.05; b = 1; c = 2 # Scaling parameters for edge width and transparancy 
 
 # 5 x 1 vector of city colours named by city
@@ -64,19 +64,107 @@ sids_noCCdupl = unique(c(as.character(Rhat_filtCC$individual1),
 sids_1stperCC = sids_noCCdupl[M_high[sids_noCCdupl] %in% names(CCs)]
 
 # Extract dates for filtered sample ids 
-sample_dates <- SNPData[sids_1stperCC, 'COLLECTION.DATE'] # extract dates of 
+sample_dates <- SNPData[sids_1stperCC, 'COLLECTION.DATE'] # extract dates 
 order_of_sample_dates <- sort.int(sample_dates, index.return = T)$ix # extract order 
 sids_1stperCC_ordered <- sids_1stperCC[order_of_sample_dates] # reorder sample ID by date 
 names(CC_chr_names) = as.character(M_high[sids_1stperCC_ordered]) # Ensure CC names are ordered as memberships
 #--------------------------------------------------------
 
 #--------------------------------------------------------
-# Extract Table of site and date of earliest sample per CC 
-First_sample_per_CC_table = cbind(CC = CC_chr_names, 
-                                  Earliest_sample = sids_1stperCC_ordered, 
-                                  Date_earliest_sample = as.character(SNPData[sids_1stperCC_ordered, 'COLLECTION.DATE']), 
-                                  Site_earliest_sample = as.character(SNPData[sids_1stperCC_ordered, 'City']))
-kableExtra::kable(First_sample_per_CC_table, format = "latex")
+# Extract table of site and date of earliest sample per CC 
+supp_table = data.frame(CC = CC_chr_names, 
+                        Earliest_sample = sids_1stperCC_ordered, 
+                        Date_earliest_sample = as.character(SNPData[sids_1stperCC_ordered, 'COLLECTION.DATE']), 
+                        Site_earliest_sample = as.character(SNPData[sids_1stperCC_ordered, 'City']))
+rownames(supp_table) <- names(CC_chr_names)
+#--------------------------------------------------------
+
+
+#--------------------------------------------------------
+# In response to reviewer #1's comment about the longevity of CCs from Tado and Quibdo
+# Extract the longevity of each CC (and all cities detected) to add to supplementary table 
+# And to plot by city
+
+# Start with a vectors whose cc names are the numeric values assigned by igraph
+CC_longevities <- array(dim = length(CC_chr_names),  
+                        dimnames = list(names(CC_chr_names)))
+CC_cities <- array(dim = length(CC_chr_names),  
+                   dimnames = list(names(CC_chr_names)))
+CC_sizes <- array(dim = length(CC_chr_names),  
+                  dimnames = list(names(CC_chr_names)))
+
+for(cc_no_chr in names(CC_chr_names)){ # For each CC with 2 or more samples
+  sids <- names(M_high[M_high == as.numeric(cc_no_chr)]) # Extract samples that belong to said cc
+  if (supp_table[cc_no_chr,"Earliest_sample"] != sids[which.min(SNPData[sids, 'COLLECTION.DATE'])]) {
+    stop("First sample per CC mismatch")
+  } else {
+    date_range <- range(SNPData[sids, 'COLLECTION.DATE']) # Extract min and max date
+    CC_longevities[cc_no_chr] <- diff(date_range) # Calculate the difference in days
+    CC_cities[cc_no_chr] <- paste(sort(unique(SNPData[sids, 'City'])), collapse = " ")
+    CC_sizes[cc_no_chr] <- length(unique(sids))
+  }
+}
+
+supp_table$Longevity <- CC_longevities[rownames(supp_table)]
+supp_table$All_cities_detected <- CC_cities[rownames(supp_table)]
+supp_table$Sample_count <- CC_sizes[rownames(supp_table)]
+#--------------------------------------------------------
+
+#--------------------------------------------------------
+# Print supplementary table
+kableExtra::kable(supp_table, format = "latex")
+#--------------------------------------------------------
+
+
+#--------------------------------------------------------
+# # Plot longevities for different cities (exc. CCs detected in multiple cities)
+# # - not a great way to visualise
+# par(mfrow = c(c(5,1)), mar = c(4,4,0,0))
+# for(city in cities){
+#   inds <- supp_table$All_cities_detected == city
+#   longevities <- supp_table[inds, "Longevity"]
+#   barplot(sort(longevities, decreasing = T), col = cols_cities[city], 
+#           ylim = range(supp_table$Longevity))
+# }
+
+# Plot longevities on log scale and inc. CCs detected in multiple cities
+longevities_sorted <- sort.int( supp_table$Longevity, decreasing = T, index.return = T)
+cols <- cols_cities[supp_table$All_cities_detected[longevities_sorted$ix]]
+cols[is.na(cols)] <- "#BEBEBEFF" 
+x <- barplot(height = supp_table$Longevity[longevities_sorted$ix], 
+             col = cols, las = 1, log = "y", yaxp = c(1,1,1), 
+             ylab = "Longevity (days)", xlab = "Clonal components", xaxt = "n")
+text(labels = supp_table$CC[longevities_sorted$ix], pos = 1, offset = 1, 
+     x = x-0.8, y = 1, xpd = TRUE, srt = 50, cex = 0.5)
+legend("topright", fill = c("#BEBEBEFF",cols_cities),
+       legend = c("Multiple cities",names(cols_cities)), bty = 'n')
+
+# Plot longevities versus sample count
+plot(y = supp_table$Longevity[longevities_sorted$ix], 
+     x = supp_table$Sample_count[longevities_sorted$ix], 
+     col = cols, pch = 20, 
+     ylab = "Longevity (days)", xlab = "Clonal component sample count")
+
+# Positively correlated
+cor.test(supp_table$Longevity, 
+         supp_table$Sample_count)
+
+# Compute average longevity per city / multiple cities
+Average_longevities <- data.frame(sapply(cities, function(city){
+  inds <- supp_table$All_cities_detected == city
+  c(mean(supp_table$Longevity[inds]), # regardless of sample count
+    mean(supp_table$Longevity[inds]/supp_table$Sample_count[inds])) # per sample
+}))
+
+# Add averaged for multiple cities
+inds <- !supp_table$All_cities_detected %in% cities
+Average_longevities$`Muliple cities` <- c(mean(supp_table$Longevity[inds]), 
+                                 mean(supp_table$Longevity[inds]/supp_table$Sample_count[inds]))
+
+# Either way, CCs in Tumaco, Buenaventura and Multiple cities have larger longevities 
+# than Tado and Quido: 
+sort(Average_longevities[1,]) # Average longevity of CC
+sort(Average_longevities[2,]) # Average longevity of CC per sample
 #--------------------------------------------------------
 
 #--------------------------------------------------------

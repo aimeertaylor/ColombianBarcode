@@ -1,6 +1,6 @@
 #############################################
 # This script plots proportions of 
-# highly related parasite sample comparisons
+# highly-related parasite sample comparisons
 # using various 
 # partitions (cities, states, times)
 # thresholds for high relatedness 
@@ -39,8 +39,10 @@ save(cols, file = "../RData/threshold_cols.RData")
 
 # Function to add labels and CIs
 Add_text_CIs = function(){
-  text(x = Midpoints, y = -max(X)/20, srt = 40, xpd = TRUE, # rotate 60 degrees
-       adj= 1, labels = gsub('_', ' & ',colnames(X)), cex = 0.5)
+  text(x = Midpoints, y = -max(X)/60, srt = 35, xpd = TRUE, # rotate 60 degrees
+       adj= 1, labels = do.call(c,lapply(strsplit(colnames(X), split = "_"), 
+                                         function(x) paste0(unique(x), collapse = " "))), 
+       cex = 0.75)
   segments(x0 = Midpoints[,1], x1 = Midpoints[,1],
            y0 = X['2.5%',], y1 = X['97.5%',], lty = 1)
 }
@@ -164,7 +166,7 @@ for(fs in Filter_status){
     
     segments(x0 = Midpoints[,1], x1 = Midpoints[,1], 
              y0 = X['2.5%', times_sorted], y1 = X['97.5%', times_sorted], lty = 1)
-    text(x = Midpoints, y = -max(X)/30, srt = 40, adj= 1, xpd = TRUE, 
+    text(x = Midpoints, y = -max(X)/60, srt = 35, adj= 1, xpd = TRUE, 
          labels = time_xlabels, cex = 0.5)
     title(xlab = 'Time (weeks)', line = 2)
   }
@@ -184,7 +186,7 @@ for(fs in Filter_status){
   
   segments(x0 = Midpoints[,1], x1 = Midpoints[,1], 
            y0 = X['2.5%', times_sorted], y1 = X['97.5%', times_sorted], lty = 1)
-  text(x = Midpoints, y = -max(X)/30, srt = 40, adj= 1, xpd = TRUE, 
+  text(x = Midpoints, y = -max(X)/60, srt = 35, adj= 1, xpd = TRUE, 
        labels = time_xlabels, cex = 0.5)
   title(xlab = 'Time (weeks)', line = 2)
 }

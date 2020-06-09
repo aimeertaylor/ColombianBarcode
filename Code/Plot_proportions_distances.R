@@ -17,6 +17,9 @@ eps = 0.01
 par(family = 'serif', mfrow = c(1,1))
 default_par = par() # Record default plotting parameters before changing
 PDF = T
+CEX.LAB = 1.35
+CEX.AXIS = 1.25
+CEX.LEGEND = 1.25
 
 if(PDF){pdf('../Plots/Proportions_and_W_distance.pdf')}
 par(family = 'serif')
@@ -67,11 +70,12 @@ Y = gap.barplot(y = X$counts,
                 main = '', 
                 ylab = expression('Number of'~italic('P. falciparum')~'sample pairs'), 
                 xlab = 'Estimate of genetic relatedness',
-                cex.lab = 1.25, 
+                cex.lab = CEX.LAB, 
+                cex.axis = CEX.AXIS, 
                 las = 2, col = rep('gray', length(X$mids)))
 
 axis(side = 1, at = seq(0,length(Y),length.out = 5), 
-     labels = seq(0,1,length.out = 5), cex.axis = 1)
+     labels = seq(0,1,length.out = 5), cex.axis = CEX.AXIS)
 
 
 #===========================================================
@@ -81,8 +85,10 @@ Ordered_r = sort.int(mle_CIs$rhat, index.return = T) # Order estimates
 
 # NULL plot
 plot(NULL, ylim = c(0,1), xlim = c(1,length(mle_CIs$rhat)), 
-     ylab = 'Relatedness estimate', cex.lab = 1.25, 
-     xlab = "Sample comparison ranked by relatedness estimate", 
+     ylab = 'Relatedness estimate', 
+     xlab = "Sample pair index", 
+     cex.axis = CEX.AXIS, 
+     cex.lab = CEX.LAB,  
      las = 1, panel.first = grid())
 
 segments(x0 = 1:length(mle_CIs$rhat), x1 = 1:length(mle_CIs$rhat),
@@ -102,8 +108,9 @@ Ordered_r = sort.int(mle_CIs$rhat, index.return = T) # Order estimates
 # NULL plot
 plot(NULL, ylim = c(0,1), xlim = c(1,length(mle_CIs$rhat)), 
      ylab = 'Relatedness estimate', #expression('Relatedness estimate'~hat(italic(r))), 
-     xlab = "Sample comparison index", #expression("Sample comparison ranked by"~hat(italic(r))), 
-     las = 1, panel.first = grid(), cex.axis = 1.2, cex.lab = 1.25)
+     xlab = "Sample pair index", #expression("Sample comparison ranked by"~hat(italic(r))), 
+     las = 1, panel.first = grid(), 
+     cex.axis = CEX.AXIS, cex.lab = CEX.LAB)
 
 # Make transparency a function of lower CI
 Thresholds = c(0.01, 0.25, 0.5, 0.99)
@@ -131,15 +138,14 @@ lines(Ordered_r$x, lwd = 2) # Add mles
 
 # Add legend
 legend('topleft', fill = brewer.pal(5, "GnBu"), 
-       inset = 0.01, 
+       inset = 0.01, cex = CEX.LEGEND, 
        legend = c(expression("Unrelated"), 
                   expression("Related"), 
-                  expression("Highly related with"~tau == "0.25"), 
-                  expression("Highly related with"~tau == "0.50"),
+                  expression("Highly-related with"~tau == "0.25"), 
+                  expression("Highly-related with"~tau == "0.50"),
                   expression("Clonal")))
 
 #par(pin = default_par$pin)
-
 #===========================================================
 # Travel_time instead of distance
 # Guapi Buenaventura: c(4, 12)/2 = 8
@@ -152,7 +158,8 @@ pairwise_site_distance$travel_type = c(1,2,1,2,1,3,3,3,1,1)
 
 plot(x = pairwise_site_distance$distance, 
      y = pairwise_site_distance$travel_time, 
-     ylab = 'Travel time estimate (hr)', xlab = 'Distance (km)', 
+     ylab = 'Travel time estimate (hr)', 
+     xlab = 'Distance (km)', 
      panel.first = grid(), col = cols[pairwise_site_distance$travel_type], 
      pch = 16, bty = 'n')
 X = cor.test(pairwise_site_distance$distance, pairwise_site_distance$travel_time)
@@ -169,13 +176,15 @@ legend('topleft', legend = c('Road (Google maps)',
 par(mfrow = c(1,1), family = 'serif', mar = c(6,5,2,2))
 X <- barplot(proportions_time['mean',], 
              las = 2, xlab = 'Time (weeks)', 
-             xaxt = 'n', cex.lab = 1.25,  
-             ylab = expression('Fraction of highly related'~italic('P. falciparum')~'sample pairs'), 
+             xaxt = 'n', 
+             cex.lab = CEX.LAB,  
+             cex.axis = CEX.AXIS,  
+             ylab = expression('Fraction of highly-related'~italic('P. falciparum')~'sample pairs'), 
              cex.names = 1, ylim = c(0,max(proportions_time)), 
              col = brewer.pal(5, "GnBu")[3])
 segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
-text(x = X, y = -max(proportions_time)/40, srt = 40, adj= 1, xpd = TRUE, 
-     labels = time_xlabels, cex = 0.75)
+text(x = X, y = -max(proportions_time)/100, srt = 35, adj= 1, xpd = TRUE, 
+     labels = time_xlabels, cex = CEX.AXIS)
 
 
 #===========================================================
@@ -183,13 +192,15 @@ text(x = X, y = -max(proportions_time)/40, srt = 40, adj= 1, xpd = TRUE,
 #===========================================================
 X <- barplot(proportions_time_cloned[, ,'r_threshold'], 
              las = 2, xlab = 'Ttime (weeks)', 
-             xaxt = 'n', cex.lab = 1.25,  
+             xaxt = 'n', 
+             cex.lab = CEX.LAB,  
+             cex.axis = CEX.AXIS,  
              ylab = bquote('Proportion with LCI of relatedness estimated'>.(r_threshold)), 
              cex.names = 1, ylim = c(0,max(proportions_time)), 
              col = rownames(proportions_time_cloned[, ,'all']))
-text(x = X, y = -max(proportions_time)/40, srt = 40, adj= 1, xpd = TRUE, 
-     labels = time_xlabels)
 segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
+text(x = X, y = -max(proportions_time)/100, srt = 35, adj= 1, xpd = TRUE, 
+     labels = time_xlabels, cex = CEX.AXIS)
 
 
 #===========================================================
@@ -201,7 +212,7 @@ X <- barplot(proportions_time_grouped[, ,'all'], las = 2, xaxt = 'n',
              xlab = 'Time (weeks)', 
              ylab = 'Proportion of sample comparisons', 
              cex.names = 1, col = rainbow(no_site_comps))
-text(x = X, y = -1/20, srt = 40, adj= 1, xpd = TRUE, 
+text(x = X, y = -1/20, srt = 35, adj= 1, xpd = TRUE, 
      labels = time_xlabels, cex = 0.5)
 
 X <- barplot(proportions_time_grouped[, ,'r_threshold'], 
@@ -209,7 +220,7 @@ X <- barplot(proportions_time_grouped[, ,'r_threshold'],
              xaxt = 'n',
              ylab = bquote('Proportion with LCI of'~italic(widehat(r))>.(r_threshold)), 
              cex.names = 1, ylim = c(0,max(proportions_time)), col = rainbow(no_site_comps))
-text(x = X, y = -max(proportions_time)/20, srt = 40, adj= 1, xpd = TRUE, 
+text(x = X, y = -max(proportions_time)/20, srt = 35, adj= 1, xpd = TRUE, 
      labels = time_xlabels, cex = 0.5)
 
 segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
@@ -227,16 +238,21 @@ par(mfrow = c(1,1), family = 'serif', mar = c(6,5,2,2))
 # Bar plot 
 X <- barplot(proportions_geo['mean',site_comps], 
              las = 2, col = brewer.pal(5, "GnBu")[3], 
-             density = rep(c(100,25), c(length(intra), length(site_comps)-length(intra))),
-             xlab = '', xaxt = 'n', cex.lab = 1.25, 
-             ylab = expression('Fraction of highly related'~italic('P. falciparum')~'sample pairs'), 
+             density = rep(c(NA,15), c(length(intra), length(site_comps)-length(intra))),
+             xlab = '', xaxt = 'n', 
+             cex.lab = CEX.LAB,  
+             cex.axis = CEX.AXIS,  
+             ylab = expression('Fraction of highly-related'~italic('P. falciparum')~'sample pairs'), 
              ylim = c(0,max(proportions_geo)))
 segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
          x0 = X, x1 = X)
 
 # x labels rotate 60 degrees, srt=60
-text(x = X, y = -max(proportions_geo)/50, srt = 40, adj= 1, xpd = TRUE, 
-     labels = gsub('_', ' & ',site_comps), cex=0.75)
+text(x = X, y = -max(proportions_geo)/100, 
+     srt = 35, adj= 1, xpd = TRUE, 
+     cex = CEX.AXIS, 
+     labels = do.call(c,lapply(strsplit(site_comps, split = "_"), 
+                               function(x) paste0(unique(x), collapse = " "))))
 
 # Add distance 
 # note that par(new = T) resulted in expansion of plotting space for which I couldn't find any
@@ -244,19 +260,19 @@ text(x = X, y = -max(proportions_geo)/50, srt = 40, adj= 1, xpd = TRUE,
 lines(x = X, y = normalised_geo_dist, ylim = c(0,510),
       type = 'b', pch = 20, panel.first = grid(nx = NA),
       yaxt = 'n', xaxt = 'n', ylab = ' ', xlab = ' ', bty = 'n')
-text(x = max(X), pos = 3, cex = 0.75, 
+text(x = max(X), pos = 3, cex = CEX.AXIS, 
      y = max(normalised_geo_dist), 
-     labels = bquote(.(round(max(pairwise_site_distance_all), 0))~'(km)'))
-text(x = X[11], pos = 2, cex = 0.75, bg = 'white', 
+     labels = bquote(.(round(max(pairwise_site_distance_all), 0))))
+text(x = X[11], pos = 2, cex = CEX.AXIS, bg = 'white', 
      y = normalised_geo_dist['Buenaventura_Tumaco'], 
-     labels = bquote(.(round(pairwise_site_distance_all['Buenaventura_Tumaco'], 0))~'(km)'))
+     labels = bquote(.(round(pairwise_site_distance_all['Buenaventura_Tumaco'], 0))))
 
 # Legend
-legend('top',density = c(100,35), fill = brewer.pal(5, "GnBu")[3], bty = 'n', 
-       legend = c(expression('within cities ('~Delta~'distance = 0 km )'),
-                  expression('across cities ('~Delta~'distance > 0 km )')))
-legend('top', lty = 1, pch = 20, legend = expression(Delta~'distance'), 
-       inset = 0.15, bty = 'n')
+legend('top',density = c(100,15), fill = brewer.pal(5, "GnBu")[3], 
+       bty = 'n', cex = CEX.LEGEND, inset = 0.10, 
+       legend = c('within cities','across cities'))
+legend('top', lty = 1, pch = 20, legend = 'Inter-city great-circle distance (km)', 
+       bty = 'n', cex = CEX.LEGEND)
 
 
 # Break down partitioned by clone
@@ -302,7 +318,7 @@ text(x = X, y = -0.01, srt = 30, adj= 1, xpd = TRUE, labels = gsub('_', ' ',site
 # Plot transport distance results 
 #==================================================
 load('../RData/All_W_results_c.RData')
-par(mfrow = c(2,2), family = 'serif', mar = c(6,4,3,1))
+par(mfrow = c(1,1), family = 'serif', mar = c(6,4,3,1))
 
 # Barplot
 for(j in 3:1){
@@ -312,14 +328,18 @@ for(j in 3:1){
   X = All_W_results_c[[j]]
   mpts = barplot(X['W',inter_c], las = 2, xaxt = 'n', ylab = "1-Wasserstein distance", 
                  main = names(All_W_results_c)[j], ylim = c(0,1), col = 'gray')
-  text(x = mpts[,1], y = -0.02, srt = 40, adj= 1, xpd = TRUE,
-       labels =  gsub('_', ' & ', inter_c), cex = 0.7)
-  segments(x0 = mpts[,1], x1 = mpts[,1], y0 = X['2.5%',inter_c], y1 = X['97.5%',inter_c])
+  text(x = mpts[,1], y = -0.02, srt = 35, adj= 1, xpd = TRUE,
+       labels =  gsub('_', ' ', inter_c), cex = CEX.AXIS)
+  segments(x0 = mpts[,1], x1 = mpts[,1], 
+           y0 = X['2.5%',inter_c], 
+           y1 = X['97.5%',inter_c])
   
   plot(y = X['W',inter_c], x = pairwise_site_distance_all[inter_c], 
        xlim = range(pairwise_site_distance_all[inter_c]) + c(-10,10), 
-       ylim = range(X)+c(-0.1, 0.1), pch = 16, bty = 'n', 
-       ylab = "1-Wasserstein distance", xlab = expression(Delta~'distance (km)'))
+       ylim = range(X[,inter_c]), pch = 16, bty = 'n', 
+       ylab = "1-Wasserstein distance", 
+       xlab = 'Inter-city great-circle distance (km)', 
+       cex.axis = CEX.AXIS, cex.lab = CEX.LAB)
   segments(x0 = pairwise_site_distance_all[inter_c], 
            x1 = pairwise_site_distance_all[inter_c], 
            y0 = X['2.5%',inter_c], y1 = X['97.5%',inter_c])
@@ -327,13 +347,15 @@ for(j in 3:1){
   # Buenaventura & Tumaco
   text(y = min(X['W',inter_c]), 
        x = pairwise_site_distance_all[names(which.min(X['W',inter_c]))],
-       labels =  gsub('_', ' & ', names(which.min(X['W',inter_c]))), 
-       cex = 0.5, pos = 4)
+       labels =  gsub('_', ' ', names(which.min(X['W',inter_c]))), 
+       cex = CEX.AXIS, pos = 4)
   
   # Not Buenaventura & Tumaco
-  text(y = X['W',inter_c], x = pairwise_site_distance_all[names(X['W',inter_c])],
-       labels =  gsub('Buenaventura & Tumaco', '',gsub('_', ' & ', names(X['W',inter_c]))), 
-       cex = 0.5, pos = 2, srt = 90, offset = 0.4)
+  text(y = X['W',inter_c], 
+       x = pairwise_site_distance_all[names(X['W',inter_c])] + c(-5,-5,-5,5,5,-5,-5,-5,-5,-5),
+       labels =  gsub('Buenaventura Tumaco', ' ', gsub('_', ' ', names(X['W',inter_c]))), 
+       cex = CEX.AXIS, pos = c(3,3,3,1,1,3,3,3,3,3), 
+       srt = 90, offset = 0.1)
   
 }
 

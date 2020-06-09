@@ -22,7 +22,7 @@ load('../RData/geo_dist_info_cities.RData')
 source('./igraph_functions.R')
 eps <- 0.01 # Below which LCI considered close to zero
 cols <- colorRampPalette(brewer.pal(12, "Paired")) # Function to create colours
-PDF <- F # Set to TRUE to plot graphs to pdf
+PDF <- T # Set to TRUE to plot graphs to pdf
 a = 0.05; b = 1; c = 2 # Scaling parameters for edge width and transparancy 
 
 # 5 x 1 vector of city colours named by city
@@ -105,14 +105,9 @@ for(cc_no_chr in names(CC_chr_names)){ # For each CC with 2 or more samples
   }
 }
 
-supp_table$Longevity <- CC_longevities[rownames(supp_table)]
 supp_table$All_cities_detected <- CC_cities[rownames(supp_table)]
 supp_table$Sample_count <- CC_sizes[rownames(supp_table)]
-#--------------------------------------------------------
-
-#--------------------------------------------------------
-# Print supplementary table
-kableExtra::kable(supp_table, format = "latex")
+supp_table$Longevity <- CC_longevities[rownames(supp_table)]
 #--------------------------------------------------------
 
 
@@ -165,6 +160,12 @@ Average_longevities$`Muliple cities` <- c(mean(supp_table$Longevity[inds]),
 # than Tado and Quido: 
 sort(Average_longevities[1,]) # Average longevity of CC
 sort(Average_longevities[2,]) # Average longevity of CC per sample
+#--------------------------------------------------------
+
+#--------------------------------------------------------
+# Print supplementary table
+cols_to_inc <- c("CC", "Sample_count", "Longevity", "Date_earliest_sample", "Site_earliest_sample")
+kableExtra::kable(supp_table[,cols_to_inc], row.names = FALSE, format = "latex")
 #--------------------------------------------------------
 
 #--------------------------------------------------------

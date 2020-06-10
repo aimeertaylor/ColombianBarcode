@@ -19,6 +19,7 @@ Buenaventura_inds <- mle_CIs$City12 == 'Buenaventura_Buenaventura'
 mle_CIs <- mle_CIs[Buenaventura_inds, ]
 rhats <- mle_CIs$`r2.5.`
 n_Buenaventura <- sum(Buenaventura_inds)
+length(rhats)
 
 # Boostrap proportions 
 prob_b <- sapply(1:nrep, function(b){ 
@@ -49,9 +50,9 @@ for(i in years){
   # Extract data
   ind <- mle_CIs$year1 == i
   if (unique(mle_CIs$year2[ind]) != i) stop ("Something wrong")
-  n_yr <- sum(ind)
+  n_yr <- sum(ind) # No. of comparisons
   rhats <- mle_CIs$`r2.5.`[ind]
-  print(n_yr)
+  print(c(n_yr, length(unique(c(mle_CIs$individual1[ind], mle_CIs$individual2[ind]))))) # No. of comparisons,samples
   
   # Boostrap proportions 
   prob_b <- sapply(1:nrep, function(b) mean(sample(rhats, size = n_yr, replace = TRUE) > r_threshold))

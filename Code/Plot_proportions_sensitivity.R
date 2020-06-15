@@ -48,7 +48,7 @@ Add_text_CIs = function(){
 }
 
 
-if(PDF){pdf('../Plots/Proportions_sensitivity.pdf', height = 8, width = 12)}
+if(PDF){pdf('../Plots/Proportions_sensitivity.pdf', height = 8/3, width = 12)}
 
 #=============================================
 # Plot results for thresholds on the lower CI
@@ -64,7 +64,7 @@ if(PDF){pdf('../Plots/Proportions_sensitivity.pdf', height = 8, width = 12)}
 # filter by vetex are due to comparisons across Quidbo 
 # and Tado
 #=============================================
-par(mfrow = c(3,4), family = 'serif')
+par(mfrow = c(1,4), family = 'serif')
 for(fs in Filter_status){
   
   #---------------------------------------
@@ -100,7 +100,7 @@ for(fs in Filter_status){
 }
 
 
-par(mfrow = c(3,4), family = 'serif')
+par(mfrow = c(1,4), family = 'serif')
 for(fs in Filter_status){
   
   #---------------------------------------
@@ -137,7 +137,7 @@ for(fs in Filter_status){
 
 
 # Times
-par(mfrow = c(3,4), family = 'serif')
+par(mfrow = c(1,4), family = 'serif')
 # Create a vector of labels for barplot
 times_sorted = as.character(sort(as.numeric(colnames(proportions_times))))
 no_time_bins = length(times_sorted)

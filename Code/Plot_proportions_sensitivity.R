@@ -39,9 +39,13 @@ save(cols, file = "../RData/threshold_cols.RData")
 
 # Function to add labels and CIs
 Add_text_CIs = function(){
-  text(x = Midpoints, y = -max(X)/60, srt = 35, xpd = TRUE, # rotate 60 degrees
-       adj= 1, labels = do.call(c,lapply(strsplit(colnames(X), split = "_"), 
-                                         function(x) paste0(unique(x), collapse = " "))), 
+  text(x = Midpoints, y = -max(X)/50, srt = 35, xpd = TRUE, # rotate 60 degrees
+       adj= 1, labels = gsub('Choco', 'Chocó', 
+                             gsub('Narino', 'Nariño', 
+                                  gsub('Quibdo', 'Quibdó', 
+                                       gsub('Tado', 'Tadó', 
+                                            do.call(c, lapply(strsplit(colnames(X), split = "_"), 
+                                                              function(x) paste0(unique(x), collapse = " "))))))), 
        cex = 0.75)
   segments(x0 = Midpoints[,1], x1 = Midpoints[,1],
            y0 = X['2.5%',], y1 = X['97.5%',], lty = 1)

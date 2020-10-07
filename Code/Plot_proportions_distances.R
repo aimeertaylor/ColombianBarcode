@@ -37,6 +37,12 @@ site_comps = c(intra, inter)
 no_site_comps = length(site_comps)
 no_time_bins = ncol(proportions_time)
 
+# Add accents for axes and legends
+site_comps_text = gsub('Quibdo', 'Quibdó', 
+                       gsub('Tado', 'Tadó', 
+                            do.call(c,lapply(strsplit(site_comps, split = "_"), 
+                                             function(x) paste0(unique(x), collapse = " ")))))
+
 # Create a vector of labels for barplot
 time_xlabels = c(paste(colnames(proportions_time)[-no_time_bins], colnames(proportions_time)[-1], sep = '-'), 
                       paste(colnames(proportions_time)[no_time_bins], max(mle_CIs$time_dist), sep = '-'))
@@ -224,8 +230,8 @@ text(x = X, y = -max(proportions_time)/20, srt = 35, adj= 1, xpd = TRUE,
      labels = time_xlabels, cex = 0.5)
 
 segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
-legend('topright', fill = rainbow(no_site_comps), bty = 'n',legend = gsub('_', ' & ', site_comps), 
-       cex = 0.5)
+legend('topright', fill = rainbow(no_site_comps), bty = 'n', legend = site_comps_text, cex = 0.5)
+
 
 
 #===========================================================
@@ -248,11 +254,11 @@ segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',s
          x0 = X, x1 = X)
 
 # x labels rotate 60 degrees, srt=60
-text(x = X, y = -max(proportions_geo)/100, 
+text(x = X, y = -max(proportions_geo)/75, 
      srt = 35, adj= 1, xpd = TRUE, 
      cex = CEX.AXIS, 
-     labels = do.call(c,lapply(strsplit(site_comps, split = "_"), 
-                               function(x) paste0(unique(x), collapse = " "))))
+     labels = site_comps_text)
+
 
 # Add distance 
 # note that par(new = T) resulted in expansion of plotting space for which I couldn't find any
@@ -283,7 +289,8 @@ X <- barplot(proportions_geo_cloned[,site_comps,'r_threshold'], las = 2, xlab = 
              xaxt = 'n')
 segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
          x0 = X, x1 = X)
-text(x = X, y = -max(proportions_geo)/50, srt = 30, adj= 1, xpd = TRUE, labels = gsub('_', ' & ',site_comps), cex=0.5)
+text(x = X, y = -max(proportions_geo)/50, srt = 30, adj= 1, xpd = TRUE, 
+     labels = site_comps_text, cex=0.5)
 
 
 
@@ -297,7 +304,7 @@ par(mfrow = c(2,1), family = 'serif')
 X <- barplot(proportions_geo_grouped[,site_comps,'all'], las = 2, xaxt = 'n',
              ylab = 'Proportion of sample comparisons',
              cex.names = 0.7, col = rainbow(no_site_comps), xlab = ' ')
-text(x = X, y = -0.05, srt = 30, adj= 1, xpd = TRUE, labels = gsub('_', ' ',site_comps), cex=0.5)
+text(x = X, y = -0.05, srt = 30, adj= 1, xpd = TRUE, labels = site_comps_text, cex=0.5)
 
 # Break down it to site comparsion contributions 
 X <- barplot(proportions_geo_grouped[,site_comps,'r_threshold'], las = 2, xlab = '', 
@@ -309,7 +316,7 @@ segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',s
 legend('topright', fill = rainbow(no_time_bins), bty = 'n', cex = 0.5, 
        legend = rownames(proportions_geo_grouped), title = 'Time (weeks)')
 # x labels 
-text(x = X, y = -0.01, srt = 30, adj= 1, xpd = TRUE, labels = gsub('_', ' ',site_comps), cex=0.5)
+text(x = X, y = -0.01, srt = 30, adj= 1, xpd = TRUE, labels = site_comps_text, cex=0.5)
 
 
 
@@ -320,16 +327,22 @@ text(x = X, y = -0.01, srt = 30, adj= 1, xpd = TRUE, labels = gsub('_', ' ',site
 load('../RData/All_W_results_c.RData')
 par(mfrow = c(1,1), family = 'serif', mar = c(6,4,3,1))
 
+# Extract inter-city names
+inter_c = geo_dist_info$geo_order
+
+# Add accents to inter_c
+inter_c_text = gsub('Quibdo', 'Quibdó', 
+                    gsub('Tado', 'Tadó', 
+                         gsub('_', ' ', inter_c)))
+
 # Barplot
 for(j in 3:1){
-  
-  inter_c = geo_dist_info$geo_order  
   
   X = All_W_results_c[[j]]
   mpts = barplot(X['W',inter_c], las = 2, xaxt = 'n', ylab = "1-Wasserstein distance", 
                  main = names(All_W_results_c)[j], ylim = c(0,1), col = 'gray')
   text(x = mpts[,1], y = -0.02, srt = 35, adj= 1, xpd = TRUE,
-       labels =  gsub('_', ' ', inter_c), cex = CEX.AXIS)
+       labels =  inter_c_text, cex = CEX.AXIS)
   segments(x0 = mpts[,1], x1 = mpts[,1], 
            y0 = X['2.5%',inter_c], 
            y1 = X['97.5%',inter_c])
@@ -353,7 +366,7 @@ for(j in 3:1){
   # Not Buenaventura & Tumaco
   text(y = X['W',inter_c], 
        x = pairwise_site_distance_all[names(X['W',inter_c])] + c(-5,-5,-5,5,5,-5,-5,-5,-5,-5),
-       labels =  gsub('Buenaventura Tumaco', ' ', gsub('_', ' ', names(X['W',inter_c]))), 
+       labels =  gsub('Buenaventura Tumaco', ' ', inter_c_text), 
        cex = CEX.AXIS, pos = c(3,3,3,1,1,3,3,3,3,3), 
        srt = 90, offset = 0.1)
   

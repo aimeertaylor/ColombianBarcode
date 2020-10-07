@@ -30,6 +30,11 @@ cities <- unique(SNPData$City)
 cols_cities <- brewer.pal(length(cities), 'Spectral') 
 names(cols_cities) <- rev(cities) 
 
+# Add accents
+cols_cities_text <- gsub('Quibdo', 'Quibdó', 
+                         gsub('Tado', 'Tadó', names(cols_cities)))
+
+
 
 #===========================================================
 # Get clonal component (CC) membership for all 325 samples
@@ -132,7 +137,7 @@ x <- barplot(height = supp_table$Longevity[longevities_sorted$ix],
 text(labels = supp_table$CC[longevities_sorted$ix], pos = 1, offset = 1, 
      x = x-0.8, y = 1, xpd = TRUE, srt = 50, cex = 0.5)
 legend("topright", fill = c("#BEBEBEFF",cols_cities),
-       legend = c("Multiple cities",names(cols_cities)), bty = 'n')
+       legend = c("Multiple cities",cols_cities_text), bty = 'n')
 
 # Plot longevities versus sample count
 plot(y = supp_table$Longevity[longevities_sorted$ix], 
@@ -154,7 +159,7 @@ Average_longevities <- data.frame(sapply(cities, function(city){
 # Add averaged for multiple cities
 inds <- !supp_table$All_cities_detected %in% cities
 Average_longevities$`Muliple cities` <- c(mean(supp_table$Longevity[inds]), 
-                                 mean(supp_table$Longevity[inds]/supp_table$Sample_count[inds]))
+                                          mean(supp_table$Longevity[inds]/supp_table$Sample_count[inds]))
 
 # Either way, CCs in Tumaco, Buenaventura and Multiple cities have larger longevities 
 # than Tado and Quido: 
@@ -163,7 +168,7 @@ sort(Average_longevities[2,]) # Average longevity of CC per sample
 #--------------------------------------------------------
 
 #--------------------------------------------------------
-# Print supplementary table
+# Print supplementary table (add accents in tex)
 cols_to_inc <- c("CC", "Sample_count", "Longevity", "Date_earliest_sample", "Site_earliest_sample")
 kableExtra::kable(supp_table[,cols_to_inc], row.names = FALSE, format = "latex")
 #--------------------------------------------------------
@@ -292,7 +297,7 @@ for(Remove_singletons in c(TRUE,FALSE)){ # If true, remove CCs with only one par
   
   # Legend of cities
   legend('bottomleft', pch = 16, bty = 'n', cex = 0.7, pt.cex = 1.5, col = cols_cities, 
-         legend = names(cols_cities), inset = 0.1)
+         legend = cols_cities_text, inset = 0.1)
 }
 if(PDF){dev.off()}
 
@@ -371,7 +376,9 @@ for(l in c("Unfiltered","Filter by vertex")){
            pt.bg = CCs[CCs %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])],
            cex = 0.7, pt.cex = 1,
            legend = CC_chr_names[as.character(names(CCs[CCs %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])]))])
-    legend('top', pch = c(0,1), pt.bg = 'white', legend = c(s1,s2),
+    legend('top', pch = c(0,1), pt.bg = 'white', legend = gsub('Quibdo', 'Quibdó',
+                                                               gsub('Tado', 'Tadó', 
+                                                                    c(s1,s2))),
            bty = 'n', inset = -0.14)
     axis(side = 1, labels = years1stjan, las = 2, cex.axis = 0.7, at = yr01 * 2 - 1,
          line = -1.2, tick = F) # Years
@@ -433,7 +440,10 @@ for(i in 1:nrow(geo_dist_info$pairwise_site_distance)){
   legend('left', pch = 23, bty = 'n', inset = 0.1, y.intersp = 0.7,
          pt.bg = CCs[CCs %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])], cex = 0.8, pt.cex = 1, 
          legend = CC_chr_names[as.character(names(CCs[CCs %in% unique(V(G)$color[V(G)$color!="#FFFFFF"])]))])
-  legend('topleft', pch = c(0,1), pt.bg = 'white', legend = c(s1,s2), bty = 'n', inset = 0.7)
+  legend('topleft', pch = c(0,1), pt.bg = 'white', legend = gsub('Quibdo', 'Quibdó',
+                                                                 gsub('Tado', 'Tadó', 
+                                                                      c(s1,s2))), 
+         bty = 'n', inset = 0.7)
 }
 
 if(PDF){dev.off()}

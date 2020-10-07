@@ -20,9 +20,6 @@ PDF = T
 CEX.LAB = 1.35
 CEX.AXIS = 1.25
 CEX.LEGEND = 1.25
-
-if(PDF){pdf('../Plots/Proportions_and_W_distance.pdf')}
-par(family = 'serif')
 load('../RData/proportions_time.RData')
 load('../RData/proportions_geo.RData')
 load('../RData/All_results.RData') 
@@ -62,6 +59,159 @@ gapfunction_counts <- function(x){
   return(gap_temp)
 }
 
+
+
+if(PDF){pdf('../Plots/Proportions.pdf', width = 14, height = 7)}
+par(family = 'serif', mfrow = c(1,2), family = 'serif', mar = c(6,5,2,2))
+
+#===========================================================
+# Barplot of time 
+#===========================================================
+X <- barplot(proportions_time['mean',], 
+             las = 2, xlab = 'Time (weeks)', 
+             xaxt = 'n', 
+             cex.lab = CEX.LAB,  
+             cex.axis = CEX.AXIS,  
+             ylab = expression('Fraction of highly-related'~italic('P. falciparum')~'sample pairs'), 
+             cex.names = 1, ylim = c(0,max(proportions_time)), 
+             col = brewer.pal(5, "GnBu")[3])
+segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
+text(x = X, y = -max(proportions_time)/100, srt = 35, adj= 1, xpd = TRUE, 
+     labels = time_xlabels, cex = CEX.AXIS)
+
+
+#===========================================================
+# Histogram of site comparison
+#===========================================================
+# For addition of distance line in [0,0.25]
+normalised_geo_dist = (pairwise_site_distance_all[site_comps]/max(pairwise_site_distance_all))/3
+
+# Bar plot 
+X <- barplot(proportions_geo['mean',site_comps], 
+             las = 2, col = brewer.pal(5, "GnBu")[3], 
+             density = rep(c(NA,15), c(length(intra), length(site_comps)-length(intra))),
+             xlab = '', xaxt = 'n', 
+             cex.lab = CEX.LAB,  
+             cex.axis = CEX.AXIS,  
+             ylab = expression('Fraction of highly-related'~italic('P. falciparum')~'sample pairs'), 
+             ylim = c(0,max(proportions_geo)))
+segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
+         x0 = X, x1 = X)
+
+# x labels rotate 60 degrees, srt=60
+text(x = X, y = -max(proportions_geo)/75, 
+     srt = 35, adj= 1, xpd = TRUE, 
+     cex = CEX.AXIS, 
+     labels = site_comps_text)
+
+# Add distance 
+# note that par(new = T) resulted in expansion of plotting space for which I couldn't find any
+# documentation. I'm therefore plotting distance directly onto the barplot
+lines(x = X, y = normalised_geo_dist, ylim = c(0,510),
+      type = 'b', pch = 20, panel.first = grid(nx = NA),
+      yaxt = 'n', xaxt = 'n', ylab = ' ', xlab = ' ', bty = 'n')
+text(x = max(X), pos = 3, cex = CEX.AXIS, 
+     y = max(normalised_geo_dist), 
+     labels = bquote(.(round(max(pairwise_site_distance_all), 0))))
+text(x = X[11], pos = 2, cex = CEX.AXIS, bg = 'white', 
+     y = normalised_geo_dist['Buenaventura_Tumaco'], 
+     labels = bquote(.(round(pairwise_site_distance_all['Buenaventura_Tumaco'], 0))))
+
+# Legend
+legend('top',density = c(100,15), fill = brewer.pal(5, "GnBu")[3], 
+       bty = 'n', cex = CEX.LEGEND, inset = 0.10, 
+       legend = c('within cities','across cities'))
+legend('top', lty = 1, pch = 20, legend = 'Inter-city great-circle distance (km)', 
+       bty = 'n', cex = CEX.LEGEND)
+
+mtext(text = '(A)', outer = T, side = 3, line = -2, at = 0.05, cex = 1.5)
+mtext(text = '(B)', outer = T, side = 3, line = -2, at = 0.55, cex = 1.5)
+
+if(PDF){dev.off()}
+
+############### Pdf break ##################
+
+if(PDF){pdf('../Plots/Proportions_distances.pdf')}
+par(family = 'serif', mfrow = c(1,1), mar = c(6,5,2,2))
+
+#===========================================================
+# Barplot of time (partioned by clone)
+#===========================================================
+X <- barplot(proportions_time_cloned[, ,'r_threshold'], 
+             las = 2, xlab = 'Ttime (weeks)', 
+             xaxt = 'n', 
+             cex.lab = CEX.LAB,  
+             cex.axis = CEX.AXIS,  
+             ylab = bquote('Proportion with LCI of relatedness estimated'>.(r_threshold)), 
+             cex.names = 1, ylim = c(0,max(proportions_time)), 
+             col = rownames(proportions_time_cloned[, ,'all']))
+segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
+text(x = X, y = -max(proportions_time)/100, srt = 35, adj= 1, xpd = TRUE, 
+     labels = time_xlabels, cex = CEX.AXIS)
+
+
+#===========================================================
+# Barplot of time (partioned by site comp)
+#===========================================================
+par(mfrow = c(2,1), family = 'serif')
+# Grouped version 
+X <- barplot(proportions_time_grouped[, ,'all'], las = 2, xaxt = 'n', 
+             xlab = 'Time (weeks)', 
+             ylab = 'Proportion of sample comparisons', 
+             cex.names = 1, col = rainbow(no_site_comps))
+text(x = X, y = -1/20, srt = 35, adj= 1, xpd = TRUE, 
+     labels = time_xlabels, cex = 0.5)
+
+X <- barplot(proportions_time_grouped[, ,'r_threshold'], 
+             las = 2, xlab = 'Time (weeks)', 
+             xaxt = 'n',
+             ylab = bquote('Proportion with LCI of'~italic(widehat(r))>.(r_threshold)), 
+             cex.names = 1, ylim = c(0,max(proportions_time)), col = rainbow(no_site_comps))
+text(x = X, y = -max(proportions_time)/20, srt = 35, adj= 1, xpd = TRUE, 
+     labels = time_xlabels, cex = 0.5)
+
+segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
+legend('topright', fill = rainbow(no_site_comps), bty = 'n', legend = site_comps_text, cex = 0.5)
+
+
+#===========================================================
+# Barplot of site partitioned by clone
+#===========================================================
+X <- barplot(proportions_geo_cloned[,site_comps,'r_threshold'], las = 2, xlab = '', 
+             ylab = bquote('Proportion with LCI of'~italic(widehat(r))>.(r_threshold)), 
+             cex.names = 0.7, ylim = c(0,max(proportions_geo)), 
+             col = rownames(proportions_geo_cloned[,site_comps,'all']), 
+             xaxt = 'n')
+segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
+         x0 = X, x1 = X)
+text(x = X, y = -max(proportions_geo)/50, srt = 30, adj= 1, xpd = TRUE, 
+     labels = site_comps_text, cex=0.5)
+
+#===========================================================
+# Barplot of site partioned by time
+#===========================================================
+par(mfrow = c(2,1), family = 'serif')
+
+# Grouped version
+X <- barplot(proportions_geo_grouped[,site_comps,'all'], las = 2, xaxt = 'n',
+             ylab = 'Proportion of sample comparisons',
+             cex.names = 0.7, col = rainbow(no_site_comps), xlab = ' ')
+text(x = X, y = -0.05, srt = 30, adj= 1, xpd = TRUE, labels = site_comps_text, cex=0.5)
+
+# Break down it to site comparsion contributions 
+X <- barplot(proportions_geo_grouped[,site_comps,'r_threshold'], las = 2, xlab = '', 
+             ylab = bquote('Proportion with LCI of'~~italic(widehat(r))>.(r_threshold)), 
+             cex.names = 0.7, ylim = c(0,max(proportions_geo)), col = rainbow(no_time_bins), 
+             xaxt = 'n')
+segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
+         x0 = X, x1 = X)
+legend('topright', fill = rainbow(no_time_bins), bty = 'n', cex = 0.5, 
+       legend = rownames(proportions_geo_grouped), title = 'Time (weeks)')
+# x labels 
+text(x = X, y = -0.01, srt = 30, adj= 1, xpd = TRUE, labels = site_comps_text, cex=0.5)
+
+
+par(mfrow = c(1,1))
 
 #================================================================
 # Histogram of mles 
@@ -125,7 +275,7 @@ cols_inds = apply(sapply(1:length(Thresholds), function(i){
   
   # When theshold is 0.01, 0.25 or 0.5
   ind = mle_CIs$`r2.5.` > Thresholds[i] 
-
+  
   if(Thresholds[i] == 0.99){ # Overwrite
     ind = mle_CIs$`r97.5.` > Thresholds[i] & mle_CIs$`r2.5.` > 0.01}
   
@@ -176,151 +326,6 @@ legend('topleft', legend = c('Road (Google maps)',
        bty = 'n', pch = c(16), col = cols[1:3])
 
 
-#===========================================================
-# Barplot of time 
-#===========================================================
-par(mfrow = c(1,1), family = 'serif', mar = c(6,5,2,2))
-X <- barplot(proportions_time['mean',], 
-             las = 2, xlab = 'Time (weeks)', 
-             xaxt = 'n', 
-             cex.lab = CEX.LAB,  
-             cex.axis = CEX.AXIS,  
-             ylab = expression('Fraction of highly-related'~italic('P. falciparum')~'sample pairs'), 
-             cex.names = 1, ylim = c(0,max(proportions_time)), 
-             col = brewer.pal(5, "GnBu")[3])
-segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
-text(x = X, y = -max(proportions_time)/100, srt = 35, adj= 1, xpd = TRUE, 
-     labels = time_xlabels, cex = CEX.AXIS)
-
-
-#===========================================================
-# Barplot of time (partioned by clone)
-#===========================================================
-X <- barplot(proportions_time_cloned[, ,'r_threshold'], 
-             las = 2, xlab = 'Ttime (weeks)', 
-             xaxt = 'n', 
-             cex.lab = CEX.LAB,  
-             cex.axis = CEX.AXIS,  
-             ylab = bquote('Proportion with LCI of relatedness estimated'>.(r_threshold)), 
-             cex.names = 1, ylim = c(0,max(proportions_time)), 
-             col = rownames(proportions_time_cloned[, ,'all']))
-segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
-text(x = X, y = -max(proportions_time)/100, srt = 35, adj= 1, xpd = TRUE, 
-     labels = time_xlabels, cex = CEX.AXIS)
-
-
-#===========================================================
-# Histogram of time (partioned by site comp)
-#===========================================================
-par(mfrow = c(2,1), family = 'serif')
-# Grouped version 
-X <- barplot(proportions_time_grouped[, ,'all'], las = 2, xaxt = 'n', 
-             xlab = 'Time (weeks)', 
-             ylab = 'Proportion of sample comparisons', 
-             cex.names = 1, col = rainbow(no_site_comps))
-text(x = X, y = -1/20, srt = 35, adj= 1, xpd = TRUE, 
-     labels = time_xlabels, cex = 0.5)
-
-X <- barplot(proportions_time_grouped[, ,'r_threshold'], 
-             las = 2, xlab = 'Time (weeks)', 
-             xaxt = 'n',
-             ylab = bquote('Proportion with LCI of'~italic(widehat(r))>.(r_threshold)), 
-             cex.names = 1, ylim = c(0,max(proportions_time)), col = rainbow(no_site_comps))
-text(x = X, y = -max(proportions_time)/20, srt = 35, adj= 1, xpd = TRUE, 
-     labels = time_xlabels, cex = 0.5)
-
-segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X, x1 = X)
-legend('topright', fill = rainbow(no_site_comps), bty = 'n', legend = site_comps_text, cex = 0.5)
-
-
-
-#===========================================================
-# Histogram of site comparison
-#===========================================================
-# For addition of distance line in [0,0.25]
-normalised_geo_dist = (pairwise_site_distance_all[site_comps]/max(pairwise_site_distance_all))/3
-par(mfrow = c(1,1), family = 'serif', mar = c(6,5,2,2))
-
-# Bar plot 
-X <- barplot(proportions_geo['mean',site_comps], 
-             las = 2, col = brewer.pal(5, "GnBu")[3], 
-             density = rep(c(NA,15), c(length(intra), length(site_comps)-length(intra))),
-             xlab = '', xaxt = 'n', 
-             cex.lab = CEX.LAB,  
-             cex.axis = CEX.AXIS,  
-             ylab = expression('Fraction of highly-related'~italic('P. falciparum')~'sample pairs'), 
-             ylim = c(0,max(proportions_geo)))
-segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
-         x0 = X, x1 = X)
-
-# x labels rotate 60 degrees, srt=60
-text(x = X, y = -max(proportions_geo)/75, 
-     srt = 35, adj= 1, xpd = TRUE, 
-     cex = CEX.AXIS, 
-     labels = site_comps_text)
-
-
-# Add distance 
-# note that par(new = T) resulted in expansion of plotting space for which I couldn't find any
-# documentation. I'm therefore plotting distance directly onto the barplot
-lines(x = X, y = normalised_geo_dist, ylim = c(0,510),
-      type = 'b', pch = 20, panel.first = grid(nx = NA),
-      yaxt = 'n', xaxt = 'n', ylab = ' ', xlab = ' ', bty = 'n')
-text(x = max(X), pos = 3, cex = CEX.AXIS, 
-     y = max(normalised_geo_dist), 
-     labels = bquote(.(round(max(pairwise_site_distance_all), 0))))
-text(x = X[11], pos = 2, cex = CEX.AXIS, bg = 'white', 
-     y = normalised_geo_dist['Buenaventura_Tumaco'], 
-     labels = bquote(.(round(pairwise_site_distance_all['Buenaventura_Tumaco'], 0))))
-
-# Legend
-legend('top',density = c(100,15), fill = brewer.pal(5, "GnBu")[3], 
-       bty = 'n', cex = CEX.LEGEND, inset = 0.10, 
-       legend = c('within cities','across cities'))
-legend('top', lty = 1, pch = 20, legend = 'Inter-city great-circle distance (km)', 
-       bty = 'n', cex = CEX.LEGEND)
-
-
-# Break down partitioned by clone
-X <- barplot(proportions_geo_cloned[,site_comps,'r_threshold'], las = 2, xlab = '', 
-             ylab = bquote('Proportion with LCI of'~italic(widehat(r))>.(r_threshold)), 
-             cex.names = 0.7, ylim = c(0,max(proportions_geo)), 
-             col = rownames(proportions_geo_cloned[,site_comps,'all']), 
-             xaxt = 'n')
-segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
-         x0 = X, x1 = X)
-text(x = X, y = -max(proportions_geo)/50, srt = 30, adj= 1, xpd = TRUE, 
-     labels = site_comps_text, cex=0.5)
-
-
-
-
-#===========================================================
-# Histogram of site comparison partioned by time
-#===========================================================
-par(mfrow = c(2,1), family = 'serif')
-
-# Grouped version
-X <- barplot(proportions_geo_grouped[,site_comps,'all'], las = 2, xaxt = 'n',
-             ylab = 'Proportion of sample comparisons',
-             cex.names = 0.7, col = rainbow(no_site_comps), xlab = ' ')
-text(x = X, y = -0.05, srt = 30, adj= 1, xpd = TRUE, labels = site_comps_text, cex=0.5)
-
-# Break down it to site comparsion contributions 
-X <- barplot(proportions_geo_grouped[,site_comps,'r_threshold'], las = 2, xlab = '', 
-             ylab = bquote('Proportion with LCI of'~~italic(widehat(r))>.(r_threshold)), 
-             cex.names = 0.7, ylim = c(0,max(proportions_geo)), col = rainbow(no_time_bins), 
-             xaxt = 'n')
-segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
-         x0 = X, x1 = X)
-legend('topright', fill = rainbow(no_time_bins), bty = 'n', cex = 0.5, 
-       legend = rownames(proportions_geo_grouped), title = 'Time (weeks)')
-# x labels 
-text(x = X, y = -0.01, srt = 30, adj= 1, xpd = TRUE, labels = site_comps_text, cex=0.5)
-
-
-
-
 #==================================================
 # Plot transport distance results 
 #==================================================
@@ -340,7 +345,8 @@ for(j in 3:1){
   
   X = All_W_results_c[[j]]
   mpts = barplot(X['W',inter_c], las = 2, xaxt = 'n', ylab = "1-Wasserstein distance", 
-                 main = names(All_W_results_c)[j], ylim = c(0,1), col = 'gray')
+                 main = names(All_W_results_c)[j], 
+                 ylim = c(0,1), col = 'gray')
   text(x = mpts[,1], y = -0.02, srt = 35, adj= 1, xpd = TRUE,
        labels =  inter_c_text, cex = CEX.AXIS)
   segments(x0 = mpts[,1], x1 = mpts[,1], 
@@ -371,6 +377,7 @@ for(j in 3:1){
        srt = 90, offset = 0.1)
   
 }
+
 
 
 

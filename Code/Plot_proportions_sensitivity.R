@@ -15,6 +15,7 @@ C_Threshold = Thresholds[4] # Clonal threshold
 Thresholds = Thresholds[1:3] # Remove the clonal threshold (plot separately)
 Filter_status =  dimnames(proportions_cities)[[4]][c(3,1,2)]
 PDF = T
+For_publication <- T
 
 # Cities (intra ordered by expectation based on transmission and isolation)
 load('../RData/geo_dist_info_cities.RData')
@@ -51,8 +52,13 @@ Add_text_CIs = function(){
            y0 = X['2.5%',], y1 = X['97.5%',], lty = 1)
 }
 
+ 
+if(PDF & !For_publication) {
+  pdf('../Plots/Proportions_sensitivity.pdf', height = 8/3, width = 12)
+} else if (PDF & For_publication) {
+  pdf('../Plots/Proportions_sensitivity.pdf', height = 16/3, width = 12)
+}
 
-if(PDF){pdf('../Plots/Proportions_sensitivity.pdf', height = 8/3, width = 12)}
 
 #=============================================
 # Plot results for thresholds on the lower CI
@@ -68,8 +74,76 @@ if(PDF){pdf('../Plots/Proportions_sensitivity.pdf', height = 8/3, width = 12)}
 # filter by vetex are due to comparisons across Quidbo 
 # and Tado
 #=============================================
-par(mfrow = c(1,4), family = 'serif')
+if(For_publication) {
+  par(mfrow = c(2,4), family = 'serif', oma = c(0,1,0,0))
+} else {
+  par(mfrow = c(1,4), family = 'serif')
+}
+
+# By Time
+
+# Create a vector of labels for barplot
+times_sorted = as.character(sort(as.numeric(colnames(proportions_times))))
+no_time_bins = length(times_sorted)
+load('../RData/All_results.RData') # Change to All results
+time_xlabels = c(paste(times_sorted[-no_time_bins], times_sorted[-1], sep = '-'), 
+                 paste(times_sorted[no_time_bins], max(All_results$Unfiltered$time_dist), sep = '-'))
+
 for(fs in Filter_status){
+  
+  if(For_publication & fs != "Unfiltered") next()
+  
+  #---------------------------------------
+  # Extract non-clonal proportions time
+  #---------------------------------------
+  for(threshold in Thresholds){
+    
+    # Extract result
+    X = proportions_times[,,threshold, fs]
+    times_sorted = as.character(sort(as.numeric(colnames(X))))
+    
+    # Barplot
+    Midpoints = barplot(X['mean',times_sorted], names.arg = '', 
+                        las = 1, ylim = c(0,max(X)), 
+                        col = cols[threshold], 
+                        main = ifelse(For_publication, '', sprintf('%s', fs)), 
+                        ylab = bquote('Fraction with LCI of'~hat(italic(r))>.(threshold)))
+    
+    
+    segments(x0 = Midpoints[,1], x1 = Midpoints[,1], 
+             y0 = X['2.5%', times_sorted], y1 = X['97.5%', times_sorted], lty = 1)
+    text(x = Midpoints, y = -max(X)/60, srt = 35, adj= 1, xpd = TRUE, 
+         labels = time_xlabels, cex = 0.5)
+    title(xlab = 'Time (weeks)', line = 2)
+  }
+  
+  #---------------------------------------
+  # Extract clonal proportions time
+  #---------------------------------------
+  X = proportions_times[,,C_Threshold, fs]
+  times_sorted = as.character(sort(as.numeric(colnames(X))))
+  
+  # Barplot
+  Midpoints = barplot(X['mean',times_sorted], names.arg = '', 
+                      las = 1, ylim = c(0,max(X)), 
+                      col = cols[as.character(C_Threshold)], 
+                      main = ifelse(For_publication, '', sprintf('%s', fs)), 
+                      ylab = bquote('Fraction with UCI of'~hat(italic(r))>.(C_Threshold)))
+  
+  segments(x0 = Midpoints[,1], x1 = Midpoints[,1], 
+           y0 = X['2.5%', times_sorted], y1 = X['97.5%', times_sorted], lty = 1)
+  text(x = Midpoints, y = -max(X)/60, srt = 35, adj= 1, xpd = TRUE, 
+       labels = time_xlabels, cex = 0.5)
+  title(xlab = 'Time (weeks)', line = 2)
+
+}
+
+
+# By Space
+
+for(fs in Filter_status){
+  
+  if(For_publication & fs != "Unfiltered") next()
   
   #---------------------------------------
   # Extract non-clonal proportions cities
@@ -83,7 +157,7 @@ for(fs in Filter_status){
                         las = 2, ylim = c(0,max(X)),
                         col = cols[threshold], 
                         density = rep(c(100,25), c(5, 10)), 
-                        main = sprintf('%s', fs), 
+                        main = ifelse(For_publication, '', sprintf('%s', fs)), 
                         ylab = bquote('Fraction with LCI of'~hat(italic(r))>.(threshold)))
     Add_text_CIs()
   }
@@ -98,13 +172,21 @@ for(fs in Filter_status){
                       las = 2, ylim = c(0,max(X)),
                       col = cols[as.character(C_Threshold)], 
                       density = rep(c(100,25), c(5, 10)), 
-                      main = sprintf('%s', fs), 
+                      main = ifelse(For_publication, '', sprintf('%s', fs)), 
                       ylab = bquote('Fraction with UCI of'~hat(italic(r))>.(C_Threshold)))
   Add_text_CIs()
+  
+
 }
 
+if(For_publication) {
+  mtext(text = '(A)', outer = T, side = 2, las = 2, line = -1, at = 0.95)
+  mtext(text = '(B)', outer = T, side = 2, las = 2, line = -1, at = 0.45)
+}
 
-par(mfrow = c(1,4), family = 'serif')
+if(PDF){dev.off()}
+
+
 for(fs in Filter_status){
   
   #---------------------------------------
@@ -138,61 +220,3 @@ for(fs in Filter_status){
                       ylab = bquote('Fraction with UCI of'~hat(italic(r))>.(C_Threshold)))
   Add_text_CIs()
 }
-
-
-# Times
-par(mfrow = c(1,4), family = 'serif')
-# Create a vector of labels for barplot
-times_sorted = as.character(sort(as.numeric(colnames(proportions_times))))
-no_time_bins = length(times_sorted)
-load('../RData/All_results.RData') # Change to All results
-time_xlabels = c(paste(times_sorted[-no_time_bins], times_sorted[-1], sep = '-'), 
-                 paste(times_sorted[no_time_bins], max(All_results$Unfiltered$time_dist), sep = '-'))
-
-for(fs in Filter_status){
-  
-  #---------------------------------------
-  # Extract non-clonal proportions time
-  #---------------------------------------
-  for(threshold in Thresholds){
-    
-    # Extract result
-    X = proportions_times[,,threshold, fs]
-    times_sorted = as.character(sort(as.numeric(colnames(X))))
-    
-    # Barplot
-    Midpoints = barplot(X['mean',times_sorted], names.arg = '', 
-                        las = 1, ylim = c(0,max(X)), 
-                        col = cols[threshold], 
-                        main = sprintf('%s', fs), 
-                        ylab = bquote('Fraction with LCI of'~hat(italic(r))>.(threshold)))
-    
-    
-    segments(x0 = Midpoints[,1], x1 = Midpoints[,1], 
-             y0 = X['2.5%', times_sorted], y1 = X['97.5%', times_sorted], lty = 1)
-    text(x = Midpoints, y = -max(X)/60, srt = 35, adj= 1, xpd = TRUE, 
-         labels = time_xlabels, cex = 0.5)
-    title(xlab = 'Time (weeks)', line = 2)
-  }
-  
-  #---------------------------------------
-  # Extract clonal proportions time
-  #---------------------------------------
-  X = proportions_times[,,C_Threshold, fs]
-  times_sorted = as.character(sort(as.numeric(colnames(X))))
-  
-  # Barplot
-  Midpoints = barplot(X['mean',times_sorted], names.arg = '', 
-                      las = 1, ylim = c(0,max(X)), 
-                      col = cols[as.character(C_Threshold)], 
-                      main = sprintf('%s', fs), 
-                      ylab = bquote('Fraction with UCI of'~hat(italic(r))>.(C_Threshold)))
-  
-  segments(x0 = Midpoints[,1], x1 = Midpoints[,1], 
-           y0 = X['2.5%', times_sorted], y1 = X['97.5%', times_sorted], lty = 1)
-  text(x = Midpoints, y = -max(X)/60, srt = 35, adj= 1, xpd = TRUE, 
-       labels = time_xlabels, cex = 0.5)
-  title(xlab = 'Time (weeks)', line = 2)
-}
-
-if(PDF){dev.off()}

@@ -1,4 +1,8 @@
 ##################################################################################
+#' Mon 7th Dec 2020: I belive this script is obsolete since Angela re-mapped
+#' data while I was on maternity leave 
+#' (see email thread entitled "Golden Gate Recoded Data" Started 27th July)
+#' 
 # Formatting the Golden Gate Colombian data for analyses inc. more contemporary
 # WGS data from Guapi (Vladimir and co.) and Ecuador (Fabian and co.). This
 # script is not automated: go through each line manually

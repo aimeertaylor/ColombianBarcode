@@ -1,4 +1,8 @@
 ##################################################################################
+#' Mon 7th Dec 2020: I belive this script is obsolete since Angela re-mapped
+#' data while I was on maternity leave 
+#' (see email thread entitled "Golden Gate Recoded Data" Started 27th July)
+#' 
 #' Script to check the Barcode alleles that Angela extracts for the GoldenGate
 #' barcode against those Diego reports in his recoding. 
 #' 
@@ -12,8 +16,6 @@
 #' In the third file, I've put the alleles that we have for each position in the
 #' vcf. I thought matching this to the barcode data could be a first quick
 #' sanity check. (Happy to do this part myself if you send over the data!)
-#' 
-#' To-do: ask for missing 
 ##################################################################################
 rm(list = ls())
 library(tidyverse)

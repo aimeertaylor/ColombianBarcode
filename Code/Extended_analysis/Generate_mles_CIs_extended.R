@@ -1,30 +1,9 @@
-###################################################################
-# This script is adapted from Generate_mles_CIs.R At present, using frequencies
-# calculated from the combined data sets As such, results for Diego's data set
-# will differ slightly from those in the pre-print entitled
-# "Identity-by-descent relatedness estimates with uncertainty characterise
-# departure from isolation-by-distance between Plasmodium falciparum
-# populations on the Colombian-Pacific coast"
-#
-# Manuela's notes sent via email dated Jan 24th 2020 (in a follow up email
-# (same tread), dated Feb 10th, Manuela clarified that -1 = missing, 0 = ref
-# and 1 = alt using 3D7 as the reference):
-# Filter for positions in Diego's data and also by COI=1
-# 
-# vcftools
-# --gzvcf Guapi_Aug2018_core_genome_PASS.SortedChr.recode.vcf.gz
-# --keep Guapi_COI1_sample_list.txt
-# --out Guapi_matrix_filtered_251Barcode
-# --positions Barcode_positions.txt  ## This already has the right chromosome names 
-# --recode
-# --remove-filtered-all
-# 
-# vcftools
-# --vcf Guapi_matrix_filtered_251Barcode.vcf
-# --remove-indels
-# --012
-# --out Guapi_matrix_filtered_251Barcode
-###################################################################
+###############################################################################
+#' This script is adapted from Generate_mles_CIs.R. Plan: run using frequencies
+#' from 1) Taylor et al 2020 and check mles match; 2) run using frequencies
+#' computed using the extended data. As of Dec 10th, waiting for complete data
+#' from Angela (61 extra samplesand remove low quality) and updated metadata
+###############################################################################
 rm(list = ls())
 set.seed(1)
 library(ggplot2)
@@ -36,10 +15,14 @@ source("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/simulate_data.R") # Downloa
 sourceCpp("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/hmmloglikelihood.cpp") # Download this script from https://github.com/artaylor85/PlasmodiumRelatedness
 registerDoParallel(cores = detectCores()-1)
 epsilon <- 0.001 # Fix epsilon throughout
-nboot <- 100 # For CIs (estimate around 60 hours on pro)
+nboot <- 10 # For CIs (with nboot = 5 using 3 cores = 3.436389 hours; 41.23667 mins per bootstrap; 69 mins for 100)
 set.seed(1) # For reproducibility
 Ps = c(0.025, 0.975) # CI quantiles
-load(file = "../../RData/data_set_extended.RData") # Load the extended data set
+
+# Load the extended data set
+load(file = "../../RData/snpdata_extended.RData")
+
+freqs_to_use <- "Taylor2020" # "AllAvailable"
 
 ## Mechanism to compute MLE given fs, distances, Ys, epsilon
 compute_rhat_hmm <- function(frequencies, distances, Ys, epsilon){
@@ -59,7 +42,7 @@ simulate_Ys_hmm <- function(frequencies, distances, k, r, epsilon){
 #=====================================
 # Create indices for pairwise comparisons
 #=====================================
-individual_names <- names(data_set)[-(1:2)]
+individual_names <- names(snpdata)[-(1:2)]
 nindividuals <- length(individual_names)
 name_combinations <- matrix(nrow = nindividuals*(nindividuals-1)/2, ncol = 2)
 count <- 0
@@ -74,16 +57,46 @@ for (i in 1:(nindividuals-1)){
 #=====================================
 # Sort data by chromosome and position and extract frequencies
 #=====================================
-data_set <- data_set %>% arrange(chrom, pos) 
-data_set$fs = rowMeans(data_set[,-(1:2)], na.rm = TRUE) # Calculate frequencies
-data_set$dt <- c(diff(data_set$pos), Inf)
-pos_change_chrom <- 1 + which(diff(data_set$chrom) != 0) # find places where chromosome changes
-data_set$dt[pos_change_chrom-1] <- Inf
-frequencies = cbind(1-data_set$fs, data_set$fs)
+snpdata <- snpdata %>% arrange(chrom, pos) 
+snpdata$dt <- c(diff(snpdata$pos), Inf)
+pos_change_chrom <- 1 + which(diff(snpdata$chrom) != 0) # find places where chromosome changes
+snpdata$dt[pos_change_chrom-1] <- Inf
+
+
+#========================================================
+if(freqs_to_use == "Taylor2020"){
+  
+  # Cannot use frequencies from TxtData/hmmInput.txt since it is encoded differently
+  # s.t. some zeros in new encoding will be ones in old and vice versa without
+  # knowing which
+  load(file = "../../RData/SNPData.RData")
+  sids <- as.character(SNPData$SAMPLE.CODE)
+  if (!all(sids %in% colnames(snpdata))) stop("Some samples from Taylor2020 are missing")
+  snpdata$fs = rowMeans(snpdata[,-(1:2)][,sids], na.rm = TRUE) # Calculate frequencies
+  frequencies = cbind(1-snpdata$fs, snpdata$fs)
+
+} else if (freqs_to_use == "AllAvailable") {
+  
+  # Calculate frequencies using all available data
+  snpdata$fs = rowMeans(snpdata[,-(1:2)], na.rm = TRUE) 
+  frequencies = cbind(1-snpdata$fs, snpdata$fs)
+  
+}
+#========================================================
+
+
+
+# Check ordering of markers
+plot(snpdata$chrom, type = 'l')
+plot(snpdata$pos, type = 'l')
+
+# Check all frequencies in (0,1): 
+all(snpdata$fs > 0 & snpdata$fs < 1)
+nrow(snpdata) # One marker failed throughout
 
 
 #=====================================
-# Calculate mles
+# Calculate mles 
 #=====================================
 system.time(
   
@@ -95,19 +108,20 @@ system.time(
     individual2 <- name_combinations[icombination,2]
     
     # Indeces of pair
-    i1 <- which(individual1 == names(data_set))
-    i2 <- which(individual2 == names(data_set))
+    i1 <- which(individual1 == names(snpdata))
+    i2 <- which(individual2 == names(snpdata))
     
     # Extract data 
-    subdata <- cbind(data_set[,c("fs","dt")],data_set[,c(i1,i2)])
+    subdata <- cbind(snpdata[,c("fs","dt")],snpdata[,c(i1,i2)])
     names(subdata) <- c("fs","dt","Yi","Yj")
     
     # Generate mle
-    krhat_hmm <- compute_rhat_hmm(frequencies, subdata$dt, cbind(subdata$Yi, subdata$Yj), epsilon)
+    krhat_hmm <- compute_rhat_hmm(frequencies, distances = subdata$dt, 
+                                  Ys = cbind(subdata$Yi, subdata$Yj), epsilon)
     
     # Generate parametric bootstrap mles 
     krhats_hmm_boot = foreach(iboot = 1:nboot, .combine = rbind) %dorng% {
-      Ys_boot <- simulate_Ys_hmm(frequencies, distances = data_set$dt, k = krhat_hmm[1], r = krhat_hmm[2], epsilon)
+      Ys_boot <- simulate_Ys_hmm(frequencies, distances = snpdata$dt, k = krhat_hmm[1], r = krhat_hmm[2], epsilon)
       compute_rhat_hmm(frequencies, subdata$dt, Ys_boot, epsilon)
     }
     
@@ -118,6 +132,6 @@ system.time(
     X
   })
 
-#save(mle_CIs, file = "../../RData/mles_CIs_extended.RData")
+save(mle_CIs, file = sprintf("../../RData/mles_CIs_extended_freqs%s.RData", freqs_to_use))
 
 

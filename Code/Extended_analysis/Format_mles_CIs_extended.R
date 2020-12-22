@@ -1,6 +1,6 @@
 #################################################################
-#################################################################
 
+#################################################################
 rm(list = ls())
 library(stringr)
 
@@ -8,11 +8,6 @@ library(stringr)
 # Relatedness estimates
 freqs_used <- "Taylor2020"
 load(sprintf('../../RData/mles_CIs_extended_freqs%s.RData', freqs_used)) # Load All_results
-# nrow(mle_CIs) == choose(577,2)
-
-# Load metadata 
-metadata <- read.csv("../../fwdgoldengaterecodeddata/Colombia-Ecuador_Barcode_Clusters_Missing40_Master.csv")
-rownames(metadata) <- as.character(metadata$Sample)
 
 # ========== Plot relatedness estimates and CIs ==========
 Ordered_r = sort.int(mle_CIs$rhat, index.return = T) # Order estimates

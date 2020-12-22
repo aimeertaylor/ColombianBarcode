@@ -67,8 +67,7 @@ snpdata$dt[pos_change_chrom-1] <- Inf
 if(freqs_to_use == "Taylor2020"){
   
   # Cannot use frequencies from TxtData/hmmInput.txt since it is encoded differently
-  # s.t. some zeros in new encoding will be ones in old and vice versa without
-  # knowing which
+  # s.t. some zeros in new encoding will be ones in old and vice versa without knowing which
   load(file = "../../RData/SNPData.RData")
   sids <- as.character(SNPData$SAMPLE.CODE)
   if (!all(sids %in% colnames(snpdata))) stop("Some samples from Taylor2020 are missing")
@@ -80,10 +79,8 @@ if(freqs_to_use == "Taylor2020"){
   # Calculate frequencies using all available data
   snpdata$fs = rowMeans(snpdata[,-(1:2)], na.rm = TRUE) 
   frequencies = cbind(1-snpdata$fs, snpdata$fs)
-  
 }
 #========================================================
-
 
 
 # Check ordering of markers
@@ -92,7 +89,13 @@ plot(snpdata$pos, type = 'l')
 
 # Check all frequencies in (0,1): 
 all(snpdata$fs > 0 & snpdata$fs < 1)
-nrow(snpdata) # One marker failed throughout
+nrow(snpdata) 
+
+# Check frequencies
+if(freqs_to_use == "Taylor2020") {
+  plot(frequencies[,1], colMeans(SNPData[,c(6:255)], na.rm = T))
+}
+
 
 
 #=====================================

@@ -1,8 +1,7 @@
 ###############################################################################
 #' This script is adapted from Generate_mles_CIs.R. Plan: run using frequencies
 #' from 1) Taylor et al 2020 and check mles match; 2) run using frequencies
-#' computed using the extended data. As of Dec 10th, waiting for complete data
-#' from Angela (61 extra samplesand remove low quality) and updated metadata
+#' computed using the extended data. 
 ###############################################################################
 rm(list = ls())
 set.seed(1)
@@ -13,9 +12,12 @@ library(doParallel)
 library(doRNG)
 source("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/simulate_data.R") # Download this script from https://github.com/artaylor85/PlasmodiumRelatedness
 sourceCpp("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/hmmloglikelihood.cpp") # Download this script from https://github.com/artaylor85/PlasmodiumRelatedness
-registerDoParallel(cores = detectCores()-1)
+registerDoParallel(cores = detectCores()-2)
 epsilon <- 0.001 # Fix epsilon throughout
-nboot <- 10 # For CIs (with nboot = 5 using 3 cores = 3.436389 hours; 41.23667 mins per bootstrap; 69 mins for 100)
+# For CIs 
+# with nboot = 5 using 3 cores = 3.436389 hours
+# with nboot = 100 using 2 cores = 33 hours (don't understand how)
+nboot <- 100 
 set.seed(1) # For reproducibility
 Ps = c(0.025, 0.975) # CI quantiles
 
@@ -135,6 +137,6 @@ system.time(
     X
   })
 
-save(mle_CIs, file = sprintf("../../RData/mles_CIs_extended_freqs%s.RData", freqs_to_use))
+#save(mle_CIs, file = sprintf("../../RData/mles_CIs_extended_freqs%s.RData", freqs_to_use))
 
 

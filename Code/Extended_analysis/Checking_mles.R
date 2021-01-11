@@ -25,4 +25,6 @@ all(rownames(mles_original) %in% rownames(mles_extended))
 # Compare estimates: yes, match. 
 plot(x = mles_original$rhat, 
      y = mles_extended[rownames(mles_original), "rhat"])
-     
+
+plot(x = mles_original$r97.5., 
+     y = mles_extended[rownames(mles_original), "r97.5."])

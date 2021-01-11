@@ -3,9 +3,10 @@
 #' in Taylor et al. 2020 and join to additional metadata for samples
 #' analysed in upcoming Carrasquilla et al. 2021. 
 #' These additional metadata were provided by Manuela and Angela after
-#' several rounds of troubleshooting. At present they contain some 
-#' duplicate SAMPLE.CODE rows with inconsistent City data. I've flagged these
-#' inconsistencies and 
+#' several rounds of troubleshooting, inc. a problem caused by 
+#' a join that introduced some inconsistent city names for five 
+#' Ecuadorian samples. This problem is fixed by hand below. As such, 
+#' this script needs to be run line-by-line
 #################################################################
 # Set wrking data to source file location
 rm(list = ls())

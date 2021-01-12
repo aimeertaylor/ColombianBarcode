@@ -27,6 +27,7 @@ image(as.matrix(snpdata[,-(1:2)]), ylab = '', xlab = '', xaxt = 'n', yaxt = 'n',
 
 # =============== Check if there any markers with zero data: no
 any(rowSums(snpdata[,-(1:2)], na.rm = T) == 0)
+which(colSums(snpdata, na.rm = T) == 0)
 
 # =============== Save the extended data_set  ===============
 # Replace previous dataset

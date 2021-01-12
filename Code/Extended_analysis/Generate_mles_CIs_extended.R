@@ -17,7 +17,7 @@ epsilon <- 0.001 # Fix epsilon throughout
 # For CIs 
 # with nboot = 5 using 3 cores = 3.436389 hours
 # with nboot = 100 using 2 cores = 33 hours (don't understand how)
-nboot <- 100 
+nboot <- 10 
 set.seed(1) # For reproducibility
 Ps = c(0.025, 0.975) # CI quantiles
 
@@ -27,8 +27,8 @@ load(file = "../../RData/snpdata_extended.RData")
 freqs_to_use <- "Taylor2020" # "AllAvailable"
 
 ## Mechanism to compute MLE given fs, distances, Ys, epsilon
+## NB optim no-longer returns an error when no data are returned
 compute_rhat_hmm <- function(frequencies, distances, Ys, epsilon){
-  ndata <- nrow(frequencies)
   ll <- function(k, r) loglikelihood_cpp(k, r, Ys, frequencies, distances, epsilon, rho = 7.4 * 10^(-7))
   optimization <- optim(par = c(50, 0.5), fn = function(x) - ll(x[1], x[2]))
   rhat <- optimization$par
@@ -57,13 +57,13 @@ for (i in 1:(nindividuals-1)){
 }
 
 #=====================================
-# Sort data by chromosome and position and extract frequencies
+# Sort data by chromosome and position 
 #=====================================
 snpdata <- snpdata %>% arrange(chrom, pos) 
 snpdata$dt <- c(diff(snpdata$pos), Inf)
 pos_change_chrom <- 1 + which(diff(snpdata$chrom) != 0) # find places where chromosome changes
 snpdata$dt[pos_change_chrom-1] <- Inf
-
+distances = snpdata$dt
 
 #========================================================
 if(freqs_to_use == "Taylor2020"){
@@ -75,7 +75,7 @@ if(freqs_to_use == "Taylor2020"){
   if (!all(sids %in% colnames(snpdata))) stop("Some samples from Taylor2020 are missing")
   snpdata$fs = rowMeans(snpdata[,-(1:2)][,sids], na.rm = TRUE) # Calculate frequencies
   frequencies = cbind(1-snpdata$fs, snpdata$fs)
-
+  
 } else if (freqs_to_use == "AllAvailable") {
   
   # Calculate frequencies using all available data
@@ -105,7 +105,7 @@ if(freqs_to_use == "Taylor2020") {
 #=====================================
 system.time(
   
-  # For each pair...  
+  # For each pair...  # 
   mle_CIs <- foreach(icombination = 1:nrow(name_combinations),.combine = rbind) %dorng% {
     
     # Let's focus on one pair of individuals
@@ -116,27 +116,39 @@ system.time(
     i1 <- which(individual1 == names(snpdata))
     i2 <- which(individual2 == names(snpdata))
     
-    # Extract data 
-    subdata <- cbind(snpdata[,c("fs","dt")],snpdata[,c(i1,i2)])
-    names(subdata) <- c("fs","dt","Yi","Yj")
+    # Extract data and check if informative
+    subdata <- snpdata[,c(i1,i2)]
+    names(subdata) <- c("Yi", "Yj")
+    NAs <- is.na(subdata) # NA template to apply to simulated data
+    snp_count <- sum(rowSums(NAs) == 0)
     
-    # Generate mle
-    krhat_hmm <- compute_rhat_hmm(frequencies, distances = subdata$dt, 
-                                  Ys = cbind(subdata$Yi, subdata$Yj), epsilon)
-    
-    # Generate parametric bootstrap mles 
-    krhats_hmm_boot = foreach(iboot = 1:nboot, .combine = rbind) %dorng% {
-      Ys_boot <- simulate_Ys_hmm(frequencies, distances = snpdata$dt, k = krhat_hmm[1], r = krhat_hmm[2], epsilon)
-      compute_rhat_hmm(frequencies, subdata$dt, Ys_boot, epsilon)
+    if (snp_count > 0) {
+      
+      # Generate mle
+      krhat_hmm <- compute_rhat_hmm(frequencies, distances, 
+                                    Ys = cbind(subdata$Yi, subdata$Yj), epsilon)
+      
+      # Generate parametric bootstrap mles 
+      krhats_hmm_boot = foreach(iboot = 1:nboot, .combine = rbind) %dorng% {
+        Ys_boot <- simulate_Ys_hmm(frequencies, distances = snpdata$dt, k = krhat_hmm[1], r = krhat_hmm[2], epsilon)
+        Ys_boot[NAs] <- NA # Apply NA template (did not do in Taylor et al. Genetics 2019 or Plos Genetics 2020)
+        compute_rhat_hmm(frequencies, distances, Ys_boot, epsilon)
+      }
+      
+      CIs = apply(krhats_hmm_boot, 2, function(x)quantile(x, probs=Ps)) # Few seconds
+      X = data.frame('individual1' = individual1, 'individual2' = individual2, 
+                     rhat = krhat_hmm[2], 'r2.5%' = CIs[1,2], 'r97.5%' = CIs[2,2],
+                     khat = krhat_hmm[1], 'k2.5%' = CIs[1,1], 'k97.5%' = CIs[2,1], 
+                     snp_count = snp_count)
+    } else {
+      X = data.frame('individual1' = individual1, 'individual2' = individual2, 
+                     rhat = NA, 'r2.5%' = NA, 'r97.5%' = NA,
+                     khat = NA, 'k2.5%' = NA, 'k97.5%' = NA,
+                     snp_count = snp_count)
     }
-    
-    CIs = apply(krhats_hmm_boot, 2, function(x)quantile(x, probs=Ps)) # Few seconds
-    X = data.frame('individual1' = individual1, 'individual2' = individual2, 
-                   rhat = krhat_hmm[2], 'r2.5%' = CIs[1,2], 'r97.5%' = CIs[2,2],
-                   khat = krhat_hmm[1], 'k2.5%' = CIs[1,1], 'k97.5%' = CIs[2,1])
-    X
-  })
+  }
+)
 
-#save(mle_CIs, file = sprintf("../../RData/mles_CIs_extended_freqs%s.RData", freqs_to_use))
+save(mle_CIs, file = sprintf("../../RData/mles_CIs_extended_freqs%s.RData", freqs_to_use))
 
 

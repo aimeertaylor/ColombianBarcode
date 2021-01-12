@@ -1,20 +1,28 @@
 #################################################################
-# In this script
+# This script adds metadata to the dataframe of relatedness estimates
 #################################################################
 rm(list = ls())
 library(stringr)
 
-# Load relatedness estimates and metadata
-# Relatedness estimates
+# Load relatedness estimates
 freqs_used <- "Taylor2020"
 load(sprintf('../../RData/mles_CIs_extended_freqs%s.RData', freqs_used)) # Load All_results
+mle_CIs$CI_width <- (mle_CIs$r97.5. - mle_CIs$r2.5.) # Add CI width to relatedness estimates
+
+# ========== Add missing loci count ==========
+# Load the extended data set
+load(file = "../../RData/snpdata_extended.RData")
+missing_loci_count <- sapply(1:nrow(mle_CIs), function(i){
+  ys <- snpdata[,c(mle_CIs$individual1[i], mle_CIs$individual2[i])]
+  sum(rowSums(is.na(ys)) > 0)
+})
+mle_CIs$missing_loci_count <- missing_loci_count
+
+# ========== Add meta data to the results ==========
+# Load metadata
 load(file = "../../RData/metadata_extended.RData")
 rownames(metadata) <- metadata$SAMPLE.CODE
 
-# Add CI width to relatedness estimates
-mle_CIs$CI_width <- (mle_CIs$r97.5. - mle_CIs$r2.5.)
-
-# ========== Add meta data to the results ==========
 # Factors to characters
 if(class(mle_CIs$individual1) == 'factor'){mle_CIs$individual1 = as.character(mle_CIs$individual1)}
 if(class(mle_CIs$individual2) == 'factor'){mle_CIs$individual2 = as.character(mle_CIs$individual2)}
@@ -53,6 +61,5 @@ mle_CIs$sample_comp = apply(mle_CIs[, c("individual1", "individual2")], 1,
 
 # Save data frame
 save(mle_CIs, file = sprintf("../../RData/mles_CIs_extended_freqs%s_meta.RData", freqs_used))
-
 
 

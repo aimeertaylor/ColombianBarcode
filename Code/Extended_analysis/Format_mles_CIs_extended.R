@@ -9,14 +9,14 @@ freqs_used <- "Taylor2020"
 load(sprintf('../../RData/mles_CIs_extended_freqs%s.RData', freqs_used)) # Load All_results
 mle_CIs$CI_width <- (mle_CIs$r97.5. - mle_CIs$r2.5.) # Add CI width to relatedness estimates
 
-# ========== Add missing loci count ==========
+# ========== Check missing loci count ==========
 # Load the extended data set
 load(file = "../../RData/snpdata_extended.RData")
 missing_loci_count <- sapply(1:nrow(mle_CIs), function(i){
   ys <- snpdata[,c(mle_CIs$individual1[i], mle_CIs$individual2[i])]
   sum(rowSums(is.na(ys)) > 0)
 })
-mle_CIs$missing_loci_count <- missing_loci_count
+all((250-mle_CIs$missing_loci_count) == missing_loci_count)
 
 # ========== Add meta data to the results ==========
 # Load metadata

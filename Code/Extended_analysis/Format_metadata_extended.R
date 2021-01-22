@@ -146,6 +146,9 @@ str(metadata_extended) # 526 obs. of  8 variables
 lapply(metadata_extended, function(x) unique(x))
 head(metadata_extended)
 
+# Add a column to label data origin
+metadata$PloSGen2020 <- metadata$SAMPLE.CODE %in% SNPData$SAMPLE.CODE
+
 # =============== Save the extended set of metadata  ===============
 metadata <- metadata_extended
 save(metadata , file = "../../RData/metadata_extended.RData")

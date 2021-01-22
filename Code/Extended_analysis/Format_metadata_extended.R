@@ -147,7 +147,7 @@ lapply(metadata_extended, function(x) unique(x))
 head(metadata_extended)
 
 # Add a column to label data origin
-metadata$PloSGen2020 <- metadata$SAMPLE.CODE %in% SNPData$SAMPLE.CODE
+metadata_extended$PloSGen2020 <- metadata$SAMPLE.CODE %in% SNPData$SAMPLE.CODE
 
 # =============== Save the extended set of metadata  ===============
 metadata <- metadata_extended

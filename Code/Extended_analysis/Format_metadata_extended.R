@@ -149,6 +149,9 @@ head(metadata_extended)
 # Add a column to label data origin
 metadata_extended$PloSGen2020 <- metadata_extended$SAMPLE.CODE %in% SNPData$SAMPLE.CODE
 
+# Add rownames
+rownames(metadata_extended) <- metadata_extended$SAMPLE.CODE
+
 # =============== Save the extended set of metadata  ===============
 metadata <- metadata_extended
 save(metadata, file = "../../RData/metadata_extended.RData")

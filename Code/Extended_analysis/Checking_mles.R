@@ -33,6 +33,11 @@ plot(x = mles_original$rhat,
 plot(x = mles_original$r97.5., 
      y = mles_extended[rownames(mles_original), "r97.5."])
 
+# Compare exactly 0.5 
+any(mles_original$rhat == 0.5) # No 
+# all snp_count <= 5 and uninformative
+mles_extended[which(mles_extended$rhat == 0.5),] 
+
 # Compare uninformative
 eps <- 0.01
 sum((mles_original$r2.5. < eps) & (mles_original$r97.5. > (1-eps)), na.rm = T) 

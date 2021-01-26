@@ -75,6 +75,22 @@ sids_1stperCC_ordered <- sids_1stperCC[order_of_sample_dates] # reorder sample I
 names(CC_chr_names) = as.character(M_high[sids_1stperCC_ordered]) # Ensure CC names are ordered as memberships
 #--------------------------------------------------------
 
+#----------------------------------------------------------
+# Create a list with CC members for each cc
+# Added Jan 2021
+Clonal_components <- lapply(names(CC_chr_names), function(cc){
+  sids <- names(which(M_high == as.numeric(cc)))
+  as.character(SNPData[sids, "SAMPLE.CODE"])
+})
+
+# Rename Clonal_components
+names(Clonal_components) <- CC_chr_names
+
+# Reorder Clonal_components and save
+save(Clonal_components, file = "../RData/Clonal_components.RData")
+#----------------------------------------------------------
+
+
 #--------------------------------------------------------
 # Extract table of site and date of earliest sample per CC 
 supp_table = data.frame(CC = CC_chr_names, 

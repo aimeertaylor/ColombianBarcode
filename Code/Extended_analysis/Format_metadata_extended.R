@@ -152,6 +152,10 @@ metadata_extended$PloSGen2020 <- metadata_extended$SAMPLE.CODE %in% SNPData$SAMP
 # Add rownames
 rownames(metadata_extended) <- metadata_extended$SAMPLE.CODE
 
+# Add SNP counts per sample
+metadata_extended$snp_count <- colSums(!is.na(snpdata[,rownames(metadata_extended)]))
+
+  
 # =============== Save the extended set of metadata  ===============
 metadata <- metadata_extended
 save(metadata, file = "../../RData/metadata_extended.RData")

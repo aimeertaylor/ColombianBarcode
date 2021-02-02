@@ -180,8 +180,6 @@ par(mfrow = c(1,2))
 summarise_mles(mle_CIs, zoom = T)
 mle_CIs <- mle_CIs[!to_filter,] # Remove boundary problems
 summarise_mles(mle_CIs, zoom = T)
-mle_CIs <- mle_CIs[!(mle_CIs$r2.5. < eps & mle_CIs$r97.5. > (1-eps)), ] # Remove uninformative
-summarise_mles(mle_CIs, zoom = T)
 
 # Save data frame
 save(mle_CIs, file = sprintf("../../RData/mles_CIs_extended_freqs%s_meta.RData", freqs_used))

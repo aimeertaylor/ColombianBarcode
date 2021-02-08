@@ -76,7 +76,7 @@ names(CC_chr_names) = as.character(M_high[sids_1stperCC_ordered]) # Ensure CC na
 #--------------------------------------------------------
 
 #----------------------------------------------------------
-# Create a list with CC members for each cc
+# Create a list with CC members for each cc and assess cliques
 # Added Jan 2021
 Clonal_components <- lapply(names(CC_chr_names), function(cc){
   sids <- names(which(M_high == as.numeric(cc)))
@@ -85,6 +85,9 @@ Clonal_components <- lapply(names(CC_chr_names), function(cc){
 
 # Rename Clonal_components
 names(Clonal_components) <- CC_chr_names
+
+# Reorder Clonal_components and save
+save(Clonal_components, file = "../RData/Clonal_components.RData")
 
 # Check to see how many cliques there are per clonal_component
 clique_count_per_component <- sapply(names(CC_chr_names), function(cc){
@@ -99,9 +102,6 @@ names(clique_count_per_component) <- CC_chr_names
 
 # Three components are not cliques: 2, 15, 18
 which(clique_count_per_component != 1)
-
-# Reorder Clonal_components and save
-save(Clonal_components, file = "../RData/Clonal_components.RData")
 #----------------------------------------------------------
 
 

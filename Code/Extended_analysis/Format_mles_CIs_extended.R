@@ -16,6 +16,14 @@ freqs_used <- "Taylor2020"
 load(sprintf('../../RData/mles_CIs_extended_freqs%s.RData', freqs_used)) # Load All_results
 mle_CIs$CI_width <- (mle_CIs$r97.5. - mle_CIs$r2.5.) # Add CI width to relatedness estimates
 
+# Remove NAs
+par(mfrow = c(1,2))
+summarise_mles(mle_CIs, zoom = T)
+mle_CIs <- mle_CIs[!is.na(mle_CIs$rhat),] 
+summarise_mles(mle_CIs, zoom = T)
+par(mfrow = c(1,1))
+
+
 # ========== Check missing loci count ==========
 # Load the extended data set
 load(file = "../../RData/snpdata_extended.RData")
@@ -124,10 +132,7 @@ to_filter <- mle_CIs$CI_width < 0.02 & # Too tight CI
 # Filtering mles
 #===============================
 par(mfrow = c(1,2))
-summarise_mles(mle_CIs, zoom = T)
 mle_CIs <- mle_CIs[!to_filter,] # Remove boundary problems
-summarise_mles(mle_CIs, zoom = T)
-mle_CIs <- mle_CIs[!is.na(mle_CIs$rhat),] # Remove NAs
 summarise_mles(mle_CIs, zoom = T)
 
 # Save data frame

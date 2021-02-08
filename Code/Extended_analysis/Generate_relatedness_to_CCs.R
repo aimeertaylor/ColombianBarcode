@@ -1,25 +1,24 @@
 ##############################################################
 # Script to generate matrices of relatedness between 
-# "new" samples/CCs and "old" CCs (CCs of Taylor et al.)
+# "new" and "old" CCs (CCs of Taylor et al.)
 # 
 # Notes: 
 # - Takes a few moments to run
-# - Could extend to samples of Tayor et al. 
+# - Consider replacing new CCs (Clonal_components_extended_FSVC_LCIthrehold_0.75.RData)
+#   with WGS-based clusters
 ##############################################################
 rm(list = ls())
-eps <- 0.01 # threshold below which LCI is considered zero in Taylor et al. 2019
 
 # Load relatedness results
 freqs_used <- "Taylor2020"
 load(sprintf('../../RData/mles_CIs_extended_freqs%s_meta.RData', freqs_used)) 
-mle_CIs <- mle_CIs[!is.na(mle_CIs$rhat), ] # remove NAs 
-mle_CIs <- mle_CIs[!(mle_CIs$r2.5. < eps & mle_CIs$r97.5. > (1-eps)), ] # Remove uninformative
+any(is.na(mle_CIs$rhat)) # Check for NAs
 
 # Load Clonal components 
 load("../../RData/Clonal_components.RData")
 CC_original <- Clonal_components
-load("../../RData/Clonal_components_extended_FSVC_sid.RData")
-CC_extended <- Clonal_components
+load("../../RData/Clonal_components_extended_FSVC_LCIthrehold_0.75.RData")
+cc_extended <- Clonal_components
 
 # Load metadata for sorting sids below
 load("../../RData/metadata_extended.RData")
@@ -30,33 +29,12 @@ load("../../RData/metadata_extended.RData")
 FSVC_sid_all <- metadata$SAMPLE.CODE[!metadata$PloSGen2020]
 FSVC_sid_ind <- FSVC_sid_all %in% c(mle_CIs$individual1, mle_CIs$individual2) 
 FSVC_sid <- FSVC_sid_all[FSVC_sid_ind]
-names(FSVC_sid) = FSVC_sid
-
-#======================================================
-# Relatedness estimates between 
-# Clonal components of FSVC and Taylor et al 2020
-#======================================================
-cc_extended_to_cc_original <- lapply(CC_extended, function(cc_e){
-  sapply(CC_original, function(cc_o){
-    inds <- mle_CIs$individual1 %in% cc_o & 
-      mle_CIs$individual2 %in% cc_e |
-      mle_CIs$individual1 %in% cc_e & 
-      mle_CIs$individual2 %in% cc_o
-    if(any(inds)){
-      c(av_rhat = mean(mle_CIs[inds,"rhat"], na.rm = T), 
-        av_r2.5 = mean(mle_CIs[inds,"r2.5."], na.rm = T), 
-        av_r97.5 = mean(mle_CIs[inds,"r97.5."], na.rm = T), 
-        mn_r2.5 = min(mle_CIs[inds,"r2.5."], na.rm = T), 
-        mx_r97.5 = max(mle_CIs[inds,"r97.5."], na.rm = T))
-    } else {
-      c(av_rhat = NA, av_r2.5 = NA, av_r97.5 = NA, mn_r2.5 = NA, mx_r97.5 = NA)
-    }
-  })
-}) 
+names(FSVC_sid) <- FSVC_sid
 
 #======================================================
 # Relatedness estimates between FSVC samples and 
 # Clonal components of Taylor et al 2020
+# Includes samples listed in sids_remv
 #======================================================
 sid_extended_to_cc_original <- lapply(FSVC_sid, function(sid){
   sapply(CC_original, function(cc){
@@ -80,6 +58,29 @@ sid_extended_to_cc_original <- lapply(FSVC_sid, function(sid){
 # had no comparisons for a given CC
 to_keep <- !sapply(sid_extended_to_cc_original, function(x) all(is.na(x)))
 sid_extended_to_cc_original <- sid_extended_to_cc_original[to_keep]
+
+
+#======================================================
+# Relatedness estimates between 
+# clonal components of FSVC and Taylor et al 2020
+#======================================================
+cc_extended_to_cc_original <- lapply(cc_extended, function(cc_e){
+  sapply(CC_original, function(cc_o){
+    inds <- mle_CIs$individual1 %in% cc_o & 
+      mle_CIs$individual2 %in% cc_e |
+      mle_CIs$individual1 %in% cc_e & 
+      mle_CIs$individual2 %in% cc_o
+    if(any(inds)){
+      c(av_rhat = mean(mle_CIs[inds,"rhat"], na.rm = T), 
+        av_r2.5 = mean(mle_CIs[inds,"r2.5."], na.rm = T), 
+        av_r97.5 = mean(mle_CIs[inds,"r97.5."], na.rm = T), 
+        mn_r2.5 = min(mle_CIs[inds,"r2.5."], na.rm = T), 
+        mx_r97.5 = max(mle_CIs[inds,"r97.5."], na.rm = T))
+    } else {
+      c(av_rhat = NA, av_r2.5 = NA, av_r97.5 = NA, mn_r2.5 = NA, mx_r97.5 = NA)
+    }
+  })
+}) 
 
 
 # Save results

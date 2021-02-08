@@ -86,6 +86,20 @@ Clonal_components <- lapply(names(CC_chr_names), function(cc){
 # Rename Clonal_components
 names(Clonal_components) <- CC_chr_names
 
+# Check to see how many cliques there are per clonal_component
+clique_count_per_component <- sapply(names(CC_chr_names), function(cc){
+  sids <- names(which(M_high == as.numeric(cc)))
+  subG <- subgraph(G_high, sids)
+  x <- maximal.cliques.count(subG, min = 2)
+  # Plot, remembering this is after setting edges to zero if not > 0.99
+  if(x != 1) plot(subG, main = CC_chr_names[cc])
+  return(x)
+})
+names(clique_count_per_component) <- CC_chr_names
+
+# Three components are not cliques: 2, 15, 18
+which(clique_count_per_component != 1)
+
 # Reorder Clonal_components and save
 save(Clonal_components, file = "../RData/Clonal_components.RData")
 #----------------------------------------------------------

@@ -74,6 +74,14 @@ for(i in 1:length(A_est_fulls)){
 
 # Summarise samples kept and removed
 sids_keep <- unique(unlist(dimnames(A_est_full_new)))
+
+# Samples excluded in Format_mles_CIs_extended.R: 
+setdiff(FSVC_sid, c(mle_CIs$individual1[FSVC_pair_ind], mle_CIs$individual2[FSVC_pair_ind]))
+
+# Samples removed here only: 
+setdiff(c(mle_CIs$individual1[FSVC_pair_ind], mle_CIs$individual2[FSVC_pair_ind]), sids_keep)
+
+# Samples removed in Format_mles_CIs_extended.R and here: 
 sids_remv <- setdiff(FSVC_sid, sids_keep)
 
 # Metadata of removed SNPs
@@ -86,3 +94,13 @@ inds <- mle_CIs$individual1 %in% sids_keep & mle_CIs$individual2 %in% sids_keep
 range(mle_CIs$CI_width[inds])
 
 save(sids_remv, file = "../../RData/sids_to_remove_from_graphs.RData")
+
+source("../../Code/Extended_analysis/summarise_mles.R")
+summarise_mles(mle_CIs[FSVC_pair_ind,])
+summarise_mles(mle_CIs[inds, ])
+
+
+
+
+
+

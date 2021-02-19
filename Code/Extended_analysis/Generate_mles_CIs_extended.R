@@ -17,7 +17,7 @@ epsilon <- 0.001 # Fix epsilon throughout
 # For CIs 
 # with nboot = 5 using 3 cores = 3.436389 hours
 # with nboot = 100 using 2 cores = 33 hours (don't understand how)
-nboot <- 10 
+nboot <- 100
 set.seed(1) # For reproducibility
 Ps = c(0.025, 0.975) # CI quantiles
 
@@ -29,6 +29,7 @@ freqs_to_use <- "Taylor2020" # "AllAvailable"
 ## Mechanism to compute MLE given fs, distances, Ys, epsilon
 ## NB optim no-longer returns an error when no data are returned
 compute_rhat_hmm <- function(frequencies, distances, Ys, epsilon){
+  if(any(is.na(Ys))) stop ("NAs in Ys not allowed")
   ll <- function(k, r) loglikelihood_cpp(k, r, Ys, frequencies, distances, epsilon, rho = 7.4 * 10^(-7))
   optimization <- optim(par = c(50, 0.5), fn = function(x) - ll(x[1], x[2]))
   rhat <- optimization$par
@@ -39,6 +40,19 @@ compute_rhat_hmm <- function(frequencies, distances, Ys, epsilon){
 simulate_Ys_hmm <- function(frequencies, distances, k, r, epsilon){
   Ys <- simulate_data(frequencies, distances, k = k, r = r, epsilon, rho = 7.4 * 10^(-7))
   return(Ys)
+}
+
+## Function to compute distances (stand-apart function because need to 
+# recompute distances everytime there are NAs in Ys)
+compute_distances <- function(x){
+  # compute distances
+  x$dt <- c(diff(x$pos), Inf)
+  # find places where chromosome changes
+  pos_change_chrom <- 1 + which(diff(x$chrom) != 0) 
+  # replace chromosome limits with Inf
+  x$dt[pos_change_chrom-1] <- Inf
+  # end of function
+  return(x$dt)
 }
 
 #=====================================
@@ -56,14 +70,11 @@ for (i in 1:(nindividuals-1)){
   }
 }
 
-#=====================================
-# Sort data by chromosome and position 
-#=====================================
+#===============================================================
+# Sort data by chromosome and position and extract pos and chrom
+#===============================================================
 snpdata <- snpdata %>% arrange(chrom, pos) 
-snpdata$dt <- c(diff(snpdata$pos), Inf)
-pos_change_chrom <- 1 + which(diff(snpdata$chrom) != 0) # find places where chromosome changes
-snpdata$dt[pos_change_chrom-1] <- Inf
-distances = snpdata$dt
+pos_chrom <- snpdata[,c("pos", "chrom")]
 
 #========================================================
 if(freqs_to_use == "Taylor2020"){
@@ -102,10 +113,12 @@ if(freqs_to_use == "Taylor2020") {
 
 #=====================================
 # Calculate mles 
+# num_temp <-nrow(name_combinations) # uncomment for debugging
+# icombination <- num_temp # uncomment for debugging
 #=====================================
 system.time(
   
-  # For each pair...  # 
+  # For each pair...  
   mle_CIs <- foreach(icombination = 1:nrow(name_combinations),.combine = rbind) %dorng% {
     
     # Let's focus on one pair of individuals
@@ -119,20 +132,28 @@ system.time(
     # Extract data and check if informative
     subdata <- snpdata[,c(i1,i2)]
     names(subdata) <- c("Yi", "Yj")
-    NAs <- is.na(subdata) # NA template to apply to simulated data
-    snp_count <- sum(rowSums(NAs) == 0)
-    
+    snps_to_keep_ind <- rowSums(is.na(subdata)) == 0 
+    snp_count <- sum(snps_to_keep_ind)
+       
     if (snp_count > 0) {
       
+      # Extract non-NA observed genotypes
+      Ys_ <- as.matrix(cbind(subdata$Yi[snps_to_keep_ind], 
+                   subdata$Yj[snps_to_keep_ind]))
+      frequencies_ <- frequencies[snps_to_keep_ind,]
+      distances_ <- compute_distances(pos_chrom[snps_to_keep_ind,])
+      
       # Generate mle
-      krhat_hmm <- compute_rhat_hmm(frequencies, distances, 
-                                    Ys = cbind(subdata$Yi, subdata$Yj), epsilon)
+      krhat_hmm <- compute_rhat_hmm(frequencies = frequencies_, 
+                                    distances = distances_, 
+                                    Ys = Ys_, epsilon)
+      
       
       # Generate parametric bootstrap mles 
       krhats_hmm_boot = foreach(iboot = 1:nboot, .combine = rbind) %dorng% {
-        Ys_boot <- simulate_Ys_hmm(frequencies, distances = snpdata$dt, k = krhat_hmm[1], r = krhat_hmm[2], epsilon)
-        Ys_boot[NAs] <- NA # Apply NA template (did not do in Taylor et al. Genetics 2019 or Plos Genetics 2020)
-        compute_rhat_hmm(frequencies, distances, Ys_boot, epsilon)
+        Ys_boot <- simulate_Ys_hmm(frequencies = frequencies_, 
+                                   distances = distances_, k = krhat_hmm[1], r = krhat_hmm[2], epsilon)
+        compute_rhat_hmm(frequencies_, distances_, Ys_boot, epsilon)
       }
       
       CIs = apply(krhats_hmm_boot, 2, function(x)quantile(x, probs=Ps)) # Few seconds

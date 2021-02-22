@@ -15,8 +15,7 @@ sourceCpp("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/hmmloglikelihood.cpp") #
 registerDoParallel(cores = detectCores()-2)
 epsilon <- 0.001 # Fix epsilon throughout
 # For CIs 
-# with nboot = 5 using 3 cores = 3.436389 hours
-# with nboot = 100 using 2 cores = 33 hours (don't understand how)
+# with nboot = 100 using 2 cores 24 hours
 nboot <- 100
 set.seed(1) # For reproducibility
 Ps = c(0.025, 0.975) # CI quantiles
@@ -140,7 +139,7 @@ system.time(
       # Extract non-NA observed genotypes
       Ys_ <- as.matrix(cbind(subdata$Yi[snps_to_keep_ind], 
                    subdata$Yj[snps_to_keep_ind]))
-      frequencies_ <- frequencies[snps_to_keep_ind,]
+      frequencies_ <- frequencies[snps_to_keep_ind,,drop=F]
       distances_ <- compute_distances(pos_chrom[snps_to_keep_ind,])
       
       # Generate mle

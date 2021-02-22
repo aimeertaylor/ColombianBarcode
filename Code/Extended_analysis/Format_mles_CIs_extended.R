@@ -2,7 +2,7 @@
 # README!!!!!!!!!!!!!!!!
 # This script adds metadata to the dataframe of relatedness estimates
 # We also remove overly precise estimates close to zero and one
-# Must do this part by hand!!!
+# Must do this part by sohand!!!
 #################################################################
 rm(list = ls())
 source("../../Code/Extended_analysis/summarise_mles.R")
@@ -74,23 +74,24 @@ mle_CIs$sample_comp = apply(mle_CIs[, c("individual1", "individual2")], 1,
 
 
 ##############################################################
-# Removal of overly precise estimates close to zero and one
-# Must do this part by hand!!!
+#' Removal of overly precise estimates close to zero and one 
+#' Must do this part by hand!!!
 #
-# Explaination: intuitively, one expects a smaller CI width with higher SNP count
-# However, due to limitations of the parametric bootstrap given an mle plug-in,
-# there can be some anomalies where rhat is equal to zero or one
-# we remove these anomalies by bespoke visual inspection. 
+#Explanation: intuitively, one expects a smaller CI width with higher SNP
+#count However, due to limitations of the parametric bootstrap given an mle
+#plug-in, there can be some anomalies where rhat is equal to zero or one (but
+#less so for zero because IBS is compatible with not IBD but not IBS is not
+#compatible with IBD). We remove these anomalies by bespoke visual inspection.
 ##############################################################
 
 #===== Boundry close to zero =====
 unrelated_ind <- mle_CIs$r2.5. < eps & mle_CIs$r97.5. < 0.5
 
-# Extract point estimates and map to zero one to project to grayscale
+# Extract point estimates and map to range zero to one to project to grayscale
 rhats_unrelated <- mle_CIs$rhat[unrelated_ind] 
 rhats_unrelated_01 <- (rhats_unrelated  - min(rhats_unrelated, na.rm = T)) / diff(range(rhats_unrelated, na.rm = T))
 
-# Plot: no outliers
+# Visually identify outliers: no outliers
 plot(y = mle_CIs$CI_width[unrelated_ind], 
      x = mle_CIs$snp_count[unrelated_ind], 
      bg = sapply(1-rhats_unrelated_01, function(x) ifelse(is.na(x), NA, gray(x))), 
@@ -106,7 +107,7 @@ clone_ind <- mle_CIs$r2.5. > 0.5 & mle_CIs$r97.5. > (1-eps)
 rhats_clones <- mle_CIs$rhat[clone_ind] 
 rhats_clones_01 <- (rhats_clones - min(rhats_clones, na.rm = T)) / diff(range(rhats_clones, na.rm = T))
 
-# All: problem seems to dissappear above 50 SNPs
+# All: problem seems to dissappear above 30 SNPs
 plot(y = mle_CIs$CI_width[clone_ind], 
      x = mle_CIs$snp_count[clone_ind], 
      bg = sapply(1-rhats_clones_01, function(x) ifelse(is.na(x), NA, gray(x))), 
@@ -123,7 +124,7 @@ plot(y = mle_CIs$CI_width[clone_ind],
      xlim = c(0,50), ylim = c(0,0.1)) 
 abline(v = 30, lty = "dashed")
 
-# Lets manually replace point estimates with CIs < 0.02 and SNP count < 30 with NAs
+# Lets manually filter point estimates with CIs < 0.02 and SNP count < 30 with NAs
 to_filter <- mle_CIs$CI_width < 0.02 & # Too tight CI
   mle_CIs$snp_count <= 30 & # Too few data
   mle_CIs$r2.5. > 0.5 & mle_CIs$r97.5. > (1-eps) # Clone
@@ -132,6 +133,7 @@ to_filter <- mle_CIs$CI_width < 0.02 & # Too tight CI
 # Filtering mles
 #===============================
 par(mfrow = c(1,2))
+summarise_mles(mle_CIs, zoom = T)
 mle_CIs <- mle_CIs[!to_filter,] # Remove boundary problems
 summarise_mles(mle_CIs, zoom = T)
 

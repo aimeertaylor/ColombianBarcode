@@ -1,5 +1,5 @@
 # Function to summarise mles to track formatting
-summarise_mles <- function(x, snp_count_threshold = 10, 
+summarise_mles <- function(x, metadata_, snp_count_threshold = 10, 
                            zoom = F, eps = 0.01){
   
   x <- dplyr::arrange(x, rhat, CI_width)
@@ -37,7 +37,7 @@ summarise_mles <- function(x, snp_count_threshold = 10,
   # Summarise data paucity
   snp_counts <- array(0, dim = c(2,snp_count_threshold), 
                       dimnames = list(c("per_sample", "per_sample_pair"), 1:snp_count_threshold))
-  snp_counts[1, ] <- table(metadata[unique(c(x$individual1, x$individual2)), "snp_count"])[colnames(snp_counts)]
+  snp_counts[1, ] <- table(metadata_[unique(c(x$individual1, x$individual2)), "snp_count"])[colnames(snp_counts)]
   snp_counts[2, ] <- table(x$snp_count)[colnames(snp_counts)]
   
   writeLines(paste(sprintf("No. sample pairs: %s", nrow(x)), 

@@ -79,12 +79,13 @@ pos_chrom <- snpdata[,c("pos", "chrom")]
 if(freqs_to_use == "Taylor2020"){
   
   # Cannot use frequencies from TxtData/hmmInput.txt since it is encoded differently
-  # s.t. some zeros in new encoding will be ones in old and vice versa without knowing which
+  # i.e. some zeros in new encoding will be ones in old and vice versa without knowing which
   load(file = "../../RData/SNPData.RData")
   sids <- as.character(SNPData$SAMPLE.CODE)
   if (!all(sids %in% colnames(snpdata))) stop("Some samples from Taylor2020 are missing")
   snpdata$fs = rowMeans(snpdata[,-(1:2)][,sids], na.rm = TRUE) # Calculate frequencies
   frequencies = cbind(1-snpdata$fs, snpdata$fs)
+  plot(frequencies[,1], colMeans(SNPData[,c(6:255)], na.rm = T)) # Check frequencies match 
   
 } else if (freqs_to_use == "AllAvailable") {
   
@@ -102,11 +103,6 @@ plot(snpdata$pos, type = 'l')
 # Check all frequencies in (0,1): 
 all(snpdata$fs > 0 & snpdata$fs < 1)
 nrow(snpdata) 
-
-# Check frequencies
-if(freqs_to_use == "Taylor2020") {
-  plot(frequencies[,1], colMeans(SNPData[,c(6:255)], na.rm = T))
-}
 
 
 

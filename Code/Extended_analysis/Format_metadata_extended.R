@@ -44,7 +44,9 @@ unique(metadata$City) # Problem with "Sucumbios" and "Sucumbíos"
 nrow(metadata) == length(unique(metadata$SAMPLE.CODE))
 
 # Remove duplicate rows 
-metadata <- dplyr::distinct(metadata) # Removes 40 rows. 
+nrow(metadata)
+metadata <- dplyr::distinct(metadata) # Removes 14 rows. 
+nrow(metadata)
 
 # Check unique sample per row: still no
 nrow(metadata) == length(unique(metadata$SAMPLE.CODE))
@@ -58,7 +60,7 @@ problem_metadata <- metadata[inds_not_unique, ]
 problem_metadata <- dplyr::arrange(problem_metadata, SAMPLE.CODE)
 write.csv(problem_metadata, file = '../../recodedgoldengatedata/problem_meta.csv')
 
-# Manuela checked an there was some error introduced in a merge
+# Manuela checked and there was some error introduced in a merge
 # Let's correct by hand: 
 metadata <- metadata[!inds_not_unique, ] # Remove the problem data
 # Load the corrected problem metadata 
@@ -71,37 +73,6 @@ metadata <- dplyr::full_join(problem_metadata_corrected, metadata)
 
 # Re check metadata: one row per sample :-)
 nrow(metadata) == length(unique(metadata$SAMPLE.CODE))
-
-# ==================================================================
-#' #' Aside, let's see what the SNP data look like for these samples Summary:
-#' #' Although these five samples have poor coverage, they're not among the worst covered.
-#' #' Moreover, they don't all belong to the same clone: three samples seem to
-#' #' share one genomic sequence across the 250 SNPs (give or take one SNP), while
-#' #' the other two samples share another.
-#' load("../../RData/snpdata_extended.RData")
-#' unique(problem_metadata$SAMPLE.CODE) # Five samples
-#' par(mfrow = c(1,1), family = 'serif', mar = c(2,2,1,1))
-#' cols <- RColorBrewer::brewer.pal(4,'Dark2')
-#' snpdata_problem <- as.matrix(snpdata[,colnames(snpdata) %in% problem_metadata$SAMPLE.CODE])
-#' image(snpdata_problem, ylab = '', xlab = '', xaxt = 'n', yaxt = 'n', col = cols[1:3])
-#' 
-#' # Are they all the same besides NAs? No
-#' polymorphic <- apply(snpdata_problem, 1, function(x){
-#'   length(unique(x[!is.na(x)]))>1}) 
-#' 
-#' # Let's look at the polymorphic SNPs: 
-#' # Give or take a SNP, seems to be only two clones:
-#' # two samples of one clone, three of the other 
-#' image(snpdata_problem[polymorphic, ], 
-#'       ylab = '', xlab = '', xaxt = 'n', yaxt = 'n', col = cols[1:3])
-#' 
-#' # Whick ones are they among the masses: 
-#' # Change there values so they are differently coloured
-#' snpdata[,colnames(snpdata) %in% problem_metadata$SAMPLE.CODE] <-
-#'   snpdata[,colnames(snpdata) %in% problem_metadata$SAMPLE.CODE] * 0.5
-#' image(as.matrix(snpdata[,-(1:2)]), 
-#'       ylab = '', xlab = '', xaxt = 'n', yaxt = 'n', col = cols[1:3])
-# ==================================================================
 
 # Check for overlap:
 table(metadata$SAMPLE.CODE %in% SNPData$SAMPLE.CODE) # No overlap
@@ -126,14 +97,15 @@ class(metadata$COLLECTION.DATE)
 metadata$Year <- metadata$COLLECTION.DATE
 metadata$Year <- sapply(strsplit(metadata$Year, split = "-"), function(x) x[1])
 
-# Convert metadata Collection date into a data
+# Convert metadata Collection date into a date
 COLLECTION.DATE_ <- as.Date(rep(NA, nrow(metadata)), format = "%Y-%m-%d")
 for(i in 1:length(COLLECTION.DATE_)){
   COLLECTION.DATE_[i] <- as.Date(metadata$COLLECTION.DATE[i], format = "%Y-%m-%d")
 }
 
-# Check same where match: yes
+# Check same where match: yes (only non-matching are NAs)
 COLLECTION.DATE_[!as.character(COLLECTION.DATE_) %in% as.character(metadata$COLLECTION.DATE)]
+cbind(as.character(COLLECTION.DATE_), as.character(metadata$COLLECTION.DATE))
 
 # Replace
 metadata$COLLECTION.DATE <- COLLECTION.DATE_

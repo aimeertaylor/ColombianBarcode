@@ -1,8 +1,5 @@
 #################################################################################
-#' Script to generate and plot graphs using relatedness point estimates. Because
-#' NA graph edges are ambiguous (setting NAs to one augments connectivity,
-#' setting NAs to zero decreases it), we remove samples with one or more NA
-#' relatedness estimates; see Generate_sids_remv.R.
+#' Script to generate and plot a graph of relatedness between samples
 #################################################################################
 rm(list = ls())
 library(igraph) 
@@ -13,7 +10,6 @@ a = 0; b = 0.5; c = 0.25 # Scaling parameters for plotting edge width and transp
 PDF <- TRUE
 
 if(PDF) pdf("../../Plots/Relatedness_graphs.pdf")
-
 
 # Load relatedness results and metadata
 freqs_used <- "Taylor2020"

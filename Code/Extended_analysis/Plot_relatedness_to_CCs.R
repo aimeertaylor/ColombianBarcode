@@ -2,9 +2,11 @@
 #' Script to plot matrices and graphs of relatedness between "extended"
 #' CCs/samples and "original" CCs (CCs of Taylor et al.).
 #'
-#' For publication grade heatmaps: change legend cex and mark NAs. For
-#' publication grade graphs: add inter-relatedess & collection date of first (as
-#' annotation).
+#' For publication grade heatmaps: change legend cex and mark NAs.
+#'
+#' For publication grade graphs: rename ccs so ccs based on FSVC only are not
+#' confused with ccs based on all (as in Compare_components.R). Add
+#' inter-relatedess & collection date of first sample per CC (as annotation).
 #############################################################################
 rm(list = ls())
 library(RColorBrewer) # For colours
@@ -96,6 +98,7 @@ for(x in c("av_rhat", "av_r2.5", "av_r97.5", "mn_r2.5", "mx_r97.5")){
 #' graph_from_adjacency_matrix, graph_from_incidence_matrix returns an error if
 #' the incidence matrix contains NAs.
 #============================================
+
 for(relatedness_between in c("clusters", "sids")){
   
   if (relatedness_between == "clusters") {

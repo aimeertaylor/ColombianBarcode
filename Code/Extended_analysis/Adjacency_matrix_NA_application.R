@@ -1,4 +1,6 @@
 #################################################################################
+#' Obsolte, since graph_from_adjacency_matrix understood
+#'
 #' Script to demonstrate the impact of igraph's treatment of NAs on the graphs
 #' generated using the extended relatedness estimates. Compare the number of
 #' cliques each sample belongs to to the number of NA comparisons each sample

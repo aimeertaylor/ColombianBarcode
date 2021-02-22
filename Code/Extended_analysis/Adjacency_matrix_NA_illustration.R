@@ -1,4 +1,6 @@
 ###########################################################################
+#' Obsolte, since graph_from_adjacency_matrix understood
+#'
 #' A script to demonstrate igraph's treatment of NAs In plots of graphs
 #' generated using graph_from_adjacency_matrix with weighted = TRUE vertices
 #' whose edge weights are NA are connected. Using graph_from_adjacency_matrix

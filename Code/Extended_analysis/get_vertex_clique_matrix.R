@@ -1,4 +1,6 @@
 #===============================================================================
+#' Obsolete script; see comments of clarify_relatedmess.R
+#' 
 #' Function written to get a N by M vertex clique membership matrix where N is
 #' the number of maximal cliques of two or more vertices in the input G and
 #' M is the number of vertices

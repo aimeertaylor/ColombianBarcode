@@ -1,4 +1,6 @@
 #=============================================================
+#' Obsolete script
+#' 
 #' This script was written to guide structure discovery in relatedmess graphs
 #' based on the removal of vertices that belong to many cliques, removing those
 #' with sparse data first. It requires a graph with named vertices that also
@@ -6,15 +8,9 @@
 #'
 #' On Feb 2 I discovered that graph_from_adjacency_matrix imputes NAs as "1"
 #' when weighted = T (and 0 when weighted = NULL). I thus realised that
-#' membership to many cliques is just a correlate of have many NA relatedness
-#' comparisons. This raises several points. First, instead of pruning based on
-#' clique membership, we should prune based on NA comparisons, rendering this
-#' scipt obsolte. Second, is pruning based on NA comparisons a more round-about
-#' way of introducing a hard cut off on marker count per sample? Third, could we
-#' use the transitivity property of clones etc. to impute NAs? This third point
-#' is a project in itself. 
-#'
-#' Compare any relatedmess approach with thresholding and ground truth
+#' membership to many cliques is just a correlate of have NA relatedness
+#' comparison counts. Instead of pruning based on clique membership, we thus
+#' prune based on NA comparisons, rendering this scipt obsolte.
 #=============================================================
 require(igraph)
 source("../Extended_analysis/get_vertex_clique_matrix.R")

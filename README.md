@@ -34,7 +34,7 @@ Follow the following steps to reproduce the extended analaysis.
 - Run Compare_components.R to see how the extended data set clonally clusters with clonal components reported in Taylor et al. 2020.
 - Run Plot_relatedness_graph.R and Plot_relatedness_to_CCs.R 
 
-Otherfiles include summarise_mles.R (used in Filter_mles_CIs_extended.R and Generate_sids_remv.R), Checking_mles.R (can be used to check mles of Taylor et al. 2020 with those re-generated and for any inconsistencies in lower confidence interval limits near zero); and scripts in Archive, which are obsolete but kept for reference. 
+Other files include summarise_mles.R (used in Filter_mles_CIs_extended.R and Generate_sids_remv.R), Checking_mles.R (can be used to check mles of Taylor et al. 2020 with those re-generated and for any inconsistencies in lower confidence interval limits near zero); and scripts in Archive, which are obsolete but kept for reference. 
 
 # Notes-to-self (for post-pandemic)
 - !.gitignore "../GISData/CP_coast.shp" and re-add Plot_network.R (outputs Colombia_network%d.png and Colombia_Map.png) 

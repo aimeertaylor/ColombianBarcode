@@ -8,8 +8,7 @@ load(file = "../../RData/metadata_extended.RData")
 
 # Load filtered relatedness estimates
 freqs_used <- "Taylor2020"
-load(sprintf("../../RData/mles_CIs_extended_freqs%s_filtered.RData", freqs_used)) # Load All_results
-mle_CIs$CI_width <- (mle_CIs$r97.5. - mle_CIs$r2.5.) # Add CI width to relatedness estimates
+load(sprintf("../../RData/mles_CIs_extended_freqs%s_filtered.RData", freqs_used)) 
 
 # Factors to characters
 if(class(mle_CIs$individual1) == 'factor'){mle_CIs$individual1 = as.character(mle_CIs$individual1)}

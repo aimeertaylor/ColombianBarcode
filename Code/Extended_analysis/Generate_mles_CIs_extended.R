@@ -165,6 +165,8 @@ system.time(
   }
 )
 
+# Remove NAs and save
+mle_CIs <- mle_CIs[!is.na(mle_CIs$rhat),] 
 save(mle_CIs, file = sprintf("../../RData/mles_CIs_extended_freqs%s.RData", freqs_to_use))
 
 

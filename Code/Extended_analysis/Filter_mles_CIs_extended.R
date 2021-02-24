@@ -21,13 +21,6 @@ freqs_used <- "Taylor2020"
 load(sprintf('../../RData/mles_CIs_extended_freqs%s.RData', freqs_used)) # Load All_results
 mle_CIs$CI_width <- (mle_CIs$r97.5. - mle_CIs$r2.5.) # Add CI width to relatedness estimates
 
-# Remove NAs
-par(mfrow = c(1,2))
-summarise_mles(mle_CIs, metadata_ = metadata, zoom = T)
-mle_CIs <- mle_CIs[!is.na(mle_CIs$rhat),] 
-summarise_mles(mle_CIs, metadata_ = metadata, zoom = T)
-
-
 #===== Boundry close to zero =====
 unrelated_ind <- mle_CIs$r2.5. < eps & mle_CIs$r97.5. < 0.5
 

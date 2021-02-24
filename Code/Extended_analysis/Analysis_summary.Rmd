@@ -1,0 +1,160 @@
+---
+title: "Pacific coast 250-SNP barcode analysis"
+author: "Aimee Taylor"
+header-includes:
+   - \usepackage{mdframed}
+   - \usepackage{xcolor}
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r, include=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, include=TRUE, cache=TRUE, 
+                      cache.comments = FALSE, fig.pos = 'H', fig.width = 7, dev = 'png', dpi = 300)
+library(RColorBrewer)
+library(kableExtra)
+library(knitr)
+source("../../Code/Extended_analysis/generate_counts_table.R")
+```
+
+
+
+```{r}
+# Load and summarise raw data 
+load('../../RData/snpdata_extended.RData') 
+load('../../RData/metadata_extended.RData')
+
+sids <- colnames(snpdata[,-(1:2)])
+sids_no_data <- names(which(apply(snpdata, 2, function(x) all(is.na(x)))))
+sids_wt_data <- setdiff(sids, sids_no_data)
+
+counts_sids_no_data <- generate_counts_table(city_year = metadata[sids_no_data,c("City", "Year")])
+counts_sids_wt_data <- generate_counts_table(city_year = metadata[sids_wt_data,c("City", "Year")])
+
+kable(counts_sids_no_data, format = 'latex', caption = '\\label{tab: sids_no_data sample counts} Yearly sample counts per city of the samples with no 250-SNP data.')
+
+kable(counts_sids_wt_data, format = 'latex', caption = '\\label{tab: sids_wt_data sample counts} Yearly sample counts per city of the samples with some 250-SNP data.') %>%
+  kable_styling(font_size = 4)
+```
+\normalsize
+
+```{r Raw_data_ordered, include=TRUE, fig.cap= "\\label{fig: Raw data} Plot of 250-SNP data, excluding samples with no 250-SNP data."}
+# Plot the raw data 
+par(mfrow = c(1,1), family = 'serif', mar = c(2,2,1,1))
+cols <- brewer.pal(3,'Dark2')
+image(as.matrix(snpdata[,sids_wt_data]), 
+      ylab = '', xlab = '', xaxt = 'n', yaxt = 'n', col = cols)
+title(ylab = sprintf('Sample ID (%s samples)', length(sids_wt_data)), 
+      xlab = sprintf('SNP ID (%s SNPs)', nrow(snpdata)), line = 1)
+legend('topleft', bty = 'n', legend =
+         c('Major', 'Minor', 'Missing'), fill = c(cols[c(1,3)], adjustcolor('white')))
+```
+
+# Methods
+
+## Pre-processing of data 
+
+The extended `r nrow(snpdata)` SNP data set (snpdata.RData, formated in Format_snpdata_extended.R) includes `r ncol(snpdata[,-(1:2)])` samples. Of these, `r length(sids_no_data)` samples have no 250-SNP barcode data. Their sample ids are `r sids_no_data`. The year and place of sampling of these `r length(sids_no_data)` samples are summarised in Table \ref{tab: sids_no_data sample counts}. 
+
+Removal of the `r length(sids_no_data)` samples with no data, leaves `r length(sids_wt_data)` samples with data on `r min(metadata[sids_wt_data, "snp_count"])` to `r max(metadata[sids_wt_data, "snp_count"])` SNPs (Figure \ref{fig: Raw data}). The year and place of sampling of the `r length(sids_wt_data)` samples with some 250-SNP data are summarised in Table \ref{tab: sids_wt_data sample counts}. The full set of metadata are provided in metadata.RData, formatted in Format_metadata_extended.R. 
+
+## Generation of relatedness estimates and confidence intervals
+
+```{r}
+# Load and summarise relatedness estimates 
+load('../../RData/mles_CIs_extended_freqsTaylor2020.RData')
+mle_CIs_sids <- unique(c(mle_CIs$individual1, mle_CIs$individual2))
+```
+
+Relatedness inference between the `r length(sids_wt_data)` samples with some 250-SNP data was attemped for all pairs that shared at least one SNP of data (Generate_mles_CIs_extended.R). Using this very tolerant specification, `r nrow(mle_CIs)` relatedness estimates were computed based on data on `r min(mle_CIs$snp_count)` to `r max(mle_CIs$snp_count)` SNPs shared between pairs among `r length(mle_CIs_sids)` samples. 
+
+```{r, include=TRUE, fig.cap= "\\label{fig: snp counts} Histogram of SNP data counts"}
+snp_counts <- metadata[sids_wt_data, "snp_count"]
+study_inds <- metadata[sids_wt_data, "PloSGen2020"]
+
+hist(snp_counts[!study_inds], main = "", xlab = "SNP data count")
+hist(snp_counts[study_inds], add = T, col = "blue")
+legend("topleft", fill = c("gray", "blue"), bty = "n", 
+       legend = c("Samples not in Taylor et al. 2020", "Samples in Taylor et al. 2020"))
+```
+
+Note that the confidence intervals presented in Taylor et al. 2020 (and in Taylor et al. Genetics 2019) were computed assuming data were available on all 250 SNPs, i.e. unlike the real data that had some missing SNPs, the data simulated during the parametric bootstrap did not have any missing SNPs. 
+This oversight has very little bearing on the samples that feature in Taylor et al. 2020, because there are few missing SNPs among these samples (Figure \ref{fig: snp counts}). It has been corrected in the current analysis, where it has a large impact among the samples that did not feature in Taylor et al. 2020 due to many missing SNPs (Figure \ref{fig: snp counts}). 
+
+
+## Post-processing of relatedness estimates 
+
+### Removal of relatedness estimates where the parametric bootstrap clearly failed
+
+Confidence intervals around relatedness estimates, which are maximum likelihood estimates (mles), were computed using the parametric bootstrap (we cannot use the standard bootstrap because we cannot sample loci with replacement and we cannot use standard asymptotic theory because of the finite length of the genome; see Taylor et al. Genetics 2019). Intuitively, for a given value of relatedness, one expects confidence intervals to be large when the data are sparse. However, when the data are sparse and the relatedess estimate is close to zero or one (especially one), the parametric bootstrap fails (explained below by analogy with a fair coin that is flipped only once; Box 1). In Filter_mles_CIs_extended.R, we identify and remove the relatedness estimates where the parametric bootstrap has clearly failed. We do this by plotting the confidence interval width per relatedness estimate against the number of SNPs with data per relatedness estimate and looking for points (relatedness estimates) that deviate from the expected trend between confidence interval width and data sparasity. 
+
+```{r}
+# Load and summarise filtered relatedness estimates 
+# (both NAs and cases where parametric bootstrap failed have been removed)
+rm(list = c("mle_CIs", "mle_CIs_sids"))
+load('../../RData/mles_CIs_extended_freqsTaylor2020_filtered.RData') 
+mle_CIs_sids <- unique(c(mle_CIs$individual1, mle_CIs$individual2))
+```
+
+Removal of the relatedness estimates where the parametric bootstrap has clearly failed, leaves `r nrow(mle_CIs)` relatedness estimates based on data on `r min(mle_CIs$snp_count)` to `r max(mle_CIs$snp_count)` SNPs shared between pairs among `r length(mle_CIs_sids)` samples. Meta data are added to these estimates in Format_mles_CIs_extended.R. 
+
+### Removal of samples with one or more missing relatedness estimates
+
+In various scripts we generate graphs whose edges are weighted by relatedness estimates. These graphs do not support samples that are missing estimates of relatedness with one or more of the other samples (igraph::graph_from_incidence_matrix() with weighted = T returns an error if a vertex with one or more missing edges is within the incidence matrix; igraph::graph_from_adjacency_matrix imputes missing edges if weighted = T and vertices with one or more missing edges are within the adjacency matrix). As such, in Generate_sids_remv.R, we generate a list of samples to remove before generating weighted graphs. We do this by computing the number of NA relatedness estimates per sample, removing the sample with the highest count and iterating. Although there is a strong association between per-sample NA relatedness counts and per-sample marker data count, the removed sample doesn't always have fewest data.
+
+```{r}
+# Load and summarise filtered relatedness estimates with added meta data
+load('../../RData/mles_CIs_extended_freqsTaylor2020_meta.RData') 
+load('../../RData/sids_to_remove_from_graphs.RData')
+keep_ind <- !(mle_CIs$individual1 %in% sids_remv | mle_CIs$individual2 %in% sids_remv)
+mle_CIs_in_graphs <- mle_CIs[keep_ind, ]
+mle_CIs_in_graphs_sids <- unique(c(mle_CIs_in_graphs$individual1,
+                                   mle_CIs_in_graphs$individual2)) 
+
+counts_sids_remv <- generate_counts_table(city_year = metadata[sids_remv,c("City", "Year")])
+counts_sids_graph <- generate_counts_table(city_year = metadata[mle_CIs_in_graphs_sids,c("City", "Year")])
+
+kable(counts_sids_remv, format = 'latex', caption = '\\label{tab: sids_remv sample counts} Yearly sample counts per city of the samples ommitted from graphs due to one or more missing relatedness estimate.')
+
+kable(counts_sids_graph, format = 'latex', caption = '\\label{tab: sids_graph sample counts} Yearly sample counts per city of the samples included in graphs') %>%
+  kable_styling(font_size = 4)
+```
+
+Removal of `r length(sids_remv)` samples with one or more missing relatedness estimates, leaves `r nrow(mle_CIs_in_graphs)` relatedness estimates based on data on `r min(mle_CIs_in_graphs$snp_count)` to `r max(mle_CIs_in_graphs$snp_count)` SNPs shared between pairs among `r length(mle_CIs_in_graphs_sids)` samples. The year and place of sampling of the samples with one or more missing relatedness estimates are summarised in Table \ref{tab: sids_remv sample counts}. The year and place of sampling of the remaining `r length(mle_CIs_in_graphs_sids)` samples (the samples used to generate graphs) are summarised in Table \ref{tab: sids_graph sample counts}.
+
+## Graph analyses 
+
+Unless otherwise stated, the graph analyses exclude samples with one or missing relatedness analyses, which were identified in Generate_sids_remv.R.
+
+To see how the new samples (those that didn't feature in Taylor et al. 2020) and the old samples (those that did feature in Taylor et al. 2020) are related to one another, we plot a graph of relatedness in Plot_relatedness_graph.R. 
+
+To see how the new samples relate to the 46 clonal components reported in Taylor et al. 2020 (46 CCs), we generate clonal components using the new samples (in Generate_components.R), and then (in Generate_relatedness_to_CCs.R) we compute the average relatedness between the 46 CCs and the new-data clonal components and between the 46 CCs and the new samples, where the latter set of new samples includes the samples that have one or more missing relatedness estimates. Heatplots and graphs of relatedness between the 46 CCs and the new-data clonal components and the new samples are generated in Plot_relatedness_to_CCs.R.  
+
+To see how the new samples cluster with the 46 CCs, we generate clonal components using all the data together (in Generate_components.R), and then (in Compare_components.R) we take each of the 46 CCs, categorising them as either identical to one of the all-data clonal components, extended (nested within one of the all-data clonal components), or broken apart across one or more of the all-data clonal components. 
+
+
+## Connectivity analyses
+
+Yet-to-do. 
+The connectivity analyses should include samples with one or missing relatedness analyses and be done with and without uninformative comparison
+
+\pagebreak
+
+\vspace{1cm}
+\begin{mdframed}[backgroundcolor=blue!20] 
+\section*{Box 1}
+
+Consider a fair coin, whose probability of heads, $p = 0.5$, we want to estimate with confidence intervals using a Binomial model and the parametric bootstrap. The parametric bootstrap works by computing an estimate of $p$ (e.g. a maximum likelihood estimate, mle) based on some observed real data; plugging that estimate, $\widehat{p}$, into the model; simulating data many times under the model with $\widehat{p}$ plugged-in; re-estimating $p$ using the simulated data; and using a summary of the distribution of the many estimates of $p$ based on simulated data to construct a confidence interval for $\widehat{p}$.
+
+In the extremely sparse setting where the coin is flipped only once, the mle of $p$ will either be zero (if the flip returns a tail) or one (if the flip returns a head). The data simulated under the model (the Binomial distribution with $n = 1$ flip) with probablity set equal to either $\hat{p} = 0$ or 1 will either be all tails (if $\hat{p} = 0$) or all heads (if $\hat{p} = 1$) and the estimates of $p$ based on simulated data will either be all zero or all one, respectively. Otherwise stated, there will be no diversity among estimates of $p$ based on data simulated under a coin model whose probability is set equal to the mle based on a single flip.  
+
+Similarly, when the relatedness estimate, $\widehat{r}$, is one and there are data on only one SNP, the parametric bootstrap generates data simulated from a single locus that is IBD with probability equal to $\widehat{r} = 1$. Unless there are genotyping errors, all the simulated data will be IBS and all the relatedness estimates based on the simulated data will be equal to that based on the observed data. When $\widehat{r} = 0$ data are simulated from a single locus that is IBD with probability equal to $\widehat{r} = 0$. Depending on the allele frequencies, the observed data can either be IBS or not, and so relatedness estimates based on simulated data can either be one value that is different to the observed data or another value that is the same as the observed data. 
+\vspace{0.5cm}
+\end{mdframed}
+
+
+
+
+

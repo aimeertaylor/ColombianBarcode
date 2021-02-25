@@ -77,6 +77,11 @@ summarise_mles(mle_CIs, metadata_ = metadata, zoom = T)
 mle_CIs <- mle_CIs[!to_filter,] # Remove boundary problems
 summarise_mles(mle_CIs, metadata_ = metadata,  zoom = T)
 
+# How many still uninformative? 
+hist(mle_CIs$CI_width)
+mean(mle_CIs$CI_width > 0.5)
+mean(mle_CIs$CI_width > 0.95)
+
 # Replot all to check all problematic removed
 # Looks like the negative trends is somehow stratified
 par(mfrow = c(1,1))

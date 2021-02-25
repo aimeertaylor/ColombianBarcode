@@ -22,7 +22,7 @@ To reproduce the work in the manuscript entitled "Identity-by-descent relatednes
 - Knit to PDF Data_summary.Rmd (outputs Data_summary.pdf)
 
 # Extended analysis 
-Follow the following steps to reproduce the extended analaysis.
+Follow the following steps to reproduce the extended analaysis (see Code/Extended_analysis/Analysis_summary.pdf for more details). From within Code/Extended_analysis/
 - Run Format_snpdata_extended.R
 - Run Format_metadata_extended.R
 - Run Generate_mles_CIs_extended.R

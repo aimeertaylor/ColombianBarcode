@@ -137,8 +137,7 @@ To see how the new samples cluster with the 46 CCs, we generate clonal component
 
 ## Connectivity analyses
 
-Yet-to-do. 
-The connectivity analyses should include samples with one or missing relatedness analyses and be done with and without uninformative comparison
+A brief connectivity analysis (Generate_and_plot_connectivity.R) to see if there are links between ports suggests there are not strong links between ports in Colombia (Buenaventura and Tumaco) and Ecudaor (Esmeraldas). However, the data from Esmeraldas essentially come from a single clonal expansion. 
 
 \pagebreak
 

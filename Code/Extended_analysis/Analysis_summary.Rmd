@@ -49,7 +49,7 @@ image(as.matrix(snpdata[,sids_wt_data]),
 title(ylab = sprintf('Sample ID (%s samples)', length(sids_wt_data)), 
       xlab = sprintf('SNP ID (%s SNPs)', nrow(snpdata)), line = 1)
 legend('topleft', bty = 'n', legend =
-         c('Major', 'Minor', 'Missing'), fill = c(cols[c(1,3)], adjustcolor('white')))
+         c('0', '1', 'Missing'), fill = c(cols[c(1,3)], adjustcolor('white')))
 ```
 
 # Methods

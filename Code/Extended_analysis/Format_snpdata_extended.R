@@ -10,7 +10,7 @@ dataset <- read.delim("../../OriginalData/GGCalls_based_on_3d7_w_Guapi_for_Aimee
                       stringsAsFactors = F) 
 head(dataset[,1:10]) 
 colnames(dataset)[1:3] <- c("chrom", "pos", "marker_name") # Rename first three cols
-snpdata <- dataset[,!colnames(dataset) %in% c("marker_name", "GGSite")]  # Remove "marker name" and rogue "GGSite"
+snpdata <- dataset[,-3]  # Remove "marker name" 
 
 # =============== Replace three 2s with NA ===============
 # SNP calls in the extended data set: 

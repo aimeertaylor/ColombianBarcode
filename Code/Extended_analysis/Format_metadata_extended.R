@@ -11,8 +11,9 @@
 # Set wrking data to source file location
 rm(list = ls())
 
-# Formatted version of agreed upon extended SNP data
-load('../../RData/snpdata_extended.RData')
+# Meta data on new samples: 
+metadata <- read.csv("../../recodedgoldengatedata/Guapi_metadata_forAimee_v2.csv", 
+                     check.names = FALSE)
 
 # Meta data used in Taylor et al. 2020 (Plos Genetics)
 load('../../RData/SNPData.RData')
@@ -23,22 +24,21 @@ for(j in 1:ncol(SNPData)){
   }
 }
 
-# Meta data on Guapi samples: 
-metadata <- read.csv("../../recodedgoldengatedata/Guapi_metadata_forAimee_v2.csv", 
-                     check.names = FALSE)
+# Check if any samples in Taylor et al. are listed in metadata and vice versa
+any(SNPData$SAMPLE.CODE %in% metadata$SAMPLE.CODE)
+any(metadata$SAMPLE.CODE %in% SNPData$SAMPLE.CODE)
 
 # Get rid of spaces in nouns
 metadata$SAMPLE.CODE <- gsub(" ", "", metadata$SAMPLE.CODE) 
 metadata$STATE <- gsub(" ", "", metadata$STATE) 
 metadata$City <- gsub(" ", "", metadata$City) 
 
-# Check for spelling inconsistencies
+# Check for spelling inconsistencies and homogenise 
 unique(metadata$STATE)
 unique(metadata$City) # Problem with "Sucumbios" and "Sucumbíos" 
-# Homogenise 
 # metadata$City[metadata$City == "Sucumbos"] <- "Sucumbíos" # This doesn't work for some reason, must be a accent problem
 metadata$City[grepl("Sucumb", metadata$City)] <- "Sucumbios"
-unique(metadata$City) # Problem with "Sucumbios" and "Sucumbíos" 
+unique(metadata$City) # Check problem resolved
 
 # Check unique sample per row: no!
 nrow(metadata) == length(unique(metadata$SAMPLE.CODE))
@@ -56,8 +56,7 @@ rows_per_sid <- table(metadata$SAMPLE.CODE)
 inds_not_unique <- metadata$SAMPLE.CODE %in% names(rows_per_sid[rows_per_sid > 1])
 
 # Send back to Angela/Manuela for checking: 
-problem_metadata <- metadata[inds_not_unique, ]
-problem_metadata <- dplyr::arrange(problem_metadata, SAMPLE.CODE)
+problem_metadata <- dplyr::arrange(metadata[inds_not_unique, ], SAMPLE.CODE)
 write.csv(problem_metadata, file = '../../recodedgoldengatedata/problem_meta.csv')
 
 # Manuela checked and there was some error introduced in a merge
@@ -74,20 +73,8 @@ metadata <- dplyr::full_join(problem_metadata_corrected, metadata)
 # Re check metadata: one row per sample :-)
 nrow(metadata) == length(unique(metadata$SAMPLE.CODE))
 
-# Check for overlap:
-table(metadata$SAMPLE.CODE %in% SNPData$SAMPLE.CODE) # No overlap
-table(SNPData$SAMPLE.CODE %in% metadata$SAMPLE.CODE) # No overlap
-
-# Check metadata available for all samples: yes
-sids_snp <- colnames(snpdata[,-c(1:2)])
-sids_meta <- c(metadata$SAMPLE.CODE, as.character(SNPData$SAMPLE.CODE))
-all(sids_snp %in% sids_meta)
-length(sids_snp); length(sids_meta)
-all(sids_snp == unique(sids_snp)) # No duplicates
-all(sids_meta == unique(sids_meta)) # No duplicates
-
 #===========================================================
-# Stitch together metadata into one file
+# Sort COLLECTION.DATE
 #===========================================================
 # First sort COLLECTION.DATE
 class(SNPData$COLLECTION.DATE)
@@ -105,7 +92,7 @@ for(i in 1:length(COLLECTION.DATE_)){
 
 # Check same where match: yes (only non-matching are NAs)
 COLLECTION.DATE_[!as.character(COLLECTION.DATE_) %in% as.character(metadata$COLLECTION.DATE)]
-cbind(as.character(COLLECTION.DATE_), as.character(metadata$COLLECTION.DATE))
+unique(as.character(COLLECTION.DATE_) == as.character(metadata$COLLECTION.DATE))
 
 # Replace
 metadata$COLLECTION.DATE <- COLLECTION.DATE_
@@ -124,10 +111,6 @@ metadata_extended$PloSGen2020 <- metadata_extended$SAMPLE.CODE %in% SNPData$SAMP
 # Add rownames
 rownames(metadata_extended) <- metadata_extended$SAMPLE.CODE
 
-# Add SNP counts per sample
-metadata_extended$snp_count <- colSums(!is.na(snpdata[,rownames(metadata_extended)]))
-
-  
 # =============== Save the extended set of metadata  ===============
 metadata <- metadata_extended
 save(metadata, file = "../../RData/metadata_extended.RData")

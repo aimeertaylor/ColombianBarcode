@@ -12,10 +12,10 @@ gsub(":Aimee","",fuzzy_match$Version1)
 snp_original_order <- read.csv("../../OriginalData/Colombian snp data and flanking secs.csv")[-1,]
 snp_reordered <- data.frame(snp_no = snp_original_order$X.11[1:250], 
                             snp_name_original = snp_original_order$X.12[1:250])
-snp_reordered$snp_name_pos <- sapply(snp_original_order$X.12[1:250], function(x) as.numeric(strsplit(x, split = "-")[[1]][2]))
-snp_reordered$snp_name_chrom <- sapply(snp_original_order$X.12[1:250], function(x) as.numeric(gsub("MAL", "", strsplit(x, split = "-")[[1]][1])))
+snp_reordered$snp_name_pos_original <- sapply(snp_original_order$X.12[1:250], function(x) as.numeric(strsplit(x, split = "-")[[1]][2]))
+snp_reordered$snp_name_chrom_original <- sapply(snp_original_order$X.12[1:250], function(x) as.numeric(gsub("MAL", "", strsplit(x, split = "-")[[1]][1])))
 snp_reordered$snp_name_reordered <- snp_reordered %>% 
-  arrange(snp_name_chrom, snp_name_pos) %>% 
+  arrange(snp_name_chrom_original, snp_name_pos_original) %>% 
   pull(snp_name_original)
 
 
@@ -31,4 +31,4 @@ if(test_result) {
   writeLines("Is alphabetically miss-ordered hypothesis correct? No")
 }
 
-
+save(snp_reordered, file = "../../RData/snp_reordered.RData")

@@ -32,15 +32,9 @@ rownames(mles_extended) <- paste(mles_extended$individual1,
 # Check all there
 all(rownames(mles_original) %in% rownames(mles_extended))
 
-# Compare estimates: not all. 
+# Compare estimates: don't expect exact match (SNP positions have changed)
 plot(x = mles_original$rhat, 
      y = mles_extended[rownames(mles_original), "rhat"])
-
-# Are mismatches due to snp counts < 250? No
-mismatch_ind <- which(abs(mles_original$rhat- mles_extended[rownames(mles_original), "rhat"]) > 0.01)
-plot(y = abs(mles_original$rhat - mles_extended[rownames(mles_original), "rhat"]), 
-     x = mles_extended[rownames(mles_original), "snp_count"], 
-     xlab = "Shared SNP count", ylab = "Difference in estimates")
 
 # Compare CIs: don't expect exact match (random numbers different, NA treatment different)
 plot(x = mles_original$r97.5., 

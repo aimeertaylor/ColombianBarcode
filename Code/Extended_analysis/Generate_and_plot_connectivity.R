@@ -109,8 +109,8 @@ for(n_threshold in c(0,100,200)){
   
   # Legends
   legend("right", pch = c(16,17,1), 
-         legend = c("Features in Taylor et al. 2020", 
-                    "Does not feature in Taylor et al. 2020", 
+         legend = c("Does not feature in Taylor et al. 2020", 
+                    "Features in Taylor et al. 2020", 
                     "Comparison across ports"), 
          bty = "n", cex = 0.5, pt.cex = 0.75, title.adj = 0,  
          title = "Point character coding")

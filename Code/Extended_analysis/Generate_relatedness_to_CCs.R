@@ -88,10 +88,4 @@ save(sid_extended_to_cc_original, cc_extended_to_cc_original,
      file = "../../RData/relatedness_to_CCs.RData")
 
 
-# NB: although uninformative relatedness values are removed,
-# the averaged values range from zero to one
-range(cc_extended_to_cc_original)
-range(sid_extended_to_cc_original, na.rm = T)
-
-
 

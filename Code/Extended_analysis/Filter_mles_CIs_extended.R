@@ -52,7 +52,7 @@ plot(y = mle_CIs$CI_width[clone_ind],
      ylab = "CI width", xlab = "SNP count") 
 abline(v = 50, lty = "dashed")
 
-# Zoom in: problem up to 30 SNPs 
+# Zoom in: problem up to 40 SNPs 
 plot(y = mle_CIs$CI_width[clone_ind], 
      x = mle_CIs$snp_count[clone_ind], 
      bg = sapply(1-rhats_clones_01, function(x) ifelse(is.na(x), NA, gray(x))), 

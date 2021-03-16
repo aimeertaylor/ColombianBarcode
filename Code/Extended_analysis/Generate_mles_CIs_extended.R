@@ -15,12 +15,12 @@ sourceCpp("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/hmmloglikelihood.cpp") #
 registerDoParallel(cores = detectCores()-2)
 epsilon <- 0.001 # Fix epsilon throughout
 # For CIs 
-# with nboot = 100 using 2 cores 24 hours
+# with nboot = 100 using 2 cores 21 hours, 
 nboot <- 100
 set.seed(1) # For reproducibility
 Ps = c(0.025, 0.975) # CI quantiles
 
-# Load the extended data set
+# Load the extended data 
 load(file = "../../RData/snpdata_extended.RData")
 
 freqs_to_use <- "Taylor2020" # "AllAvailable"
@@ -80,13 +80,19 @@ if(freqs_to_use == "Taylor2020"){
   
   # Cannot use frequencies from TxtData/hmmInput.txt since it is encoded differently
   # i.e. some zeros in new encoding will be ones in old and vice versa without knowing which
-  load(file = "../../RData/SNPData.RData")
-  sids <- as.character(SNPData$SAMPLE.CODE)
-  if (!all(sids %in% colnames(snpdata))) stop("Some samples from Taylor2020 are missing")
-  snpdata$fs = rowMeans(snpdata[,-(1:2)][,sids], na.rm = TRUE) # Calculate frequencies
+  snpdataPlosGen2020 <- read.delim(file = "../../TxtData/hmmInput.txt")
+  load("../../RData/metadata_extended.RData")
+  sids <- metadata$SAMPLE.CODE[metadata$PloSGen2020]
+  rownames(snpdataPlosGen2020) <- snpdataPlosGen2020$pos
+  snpdata$fs = rowMeans(snpdata[,colnames(snpdata) %in% sids], na.rm = TRUE) # Calculate frequencies
   frequencies = cbind(1-snpdata$fs, snpdata$fs)
-  plot(frequencies[,1], colMeans(SNPData[,c(6:255)], na.rm = T)) # Check frequencies match 
-  
+  chrom_inds <- (snpdata$chrom %in% c(1:4,6))
+  # Check frequencies or 1-frequencies match for chrom 1:4,6 
+  plot(y = frequencies[,1], 
+       x = rowMeans(snpdataPlosGen2020[as.character(snpdata$pos), -(1:2)], na.rm = T), 
+       pch = c(1,20)[chrom_inds+1]) 
+  abline(a = 1, b = -1); abline(a = 0, b = 1)
+
 } else if (freqs_to_use == "AllAvailable") {
   
   # Calculate frequencies using all available data
@@ -95,73 +101,75 @@ if(freqs_to_use == "Taylor2020"){
 }
 #========================================================
 
-
 # Check ordering of markers
 plot(snpdata$chrom, type = 'l')
 plot(snpdata$pos, type = 'l')
 
-# Check all frequencies in (0,1): 
-all(snpdata$fs > 0 & snpdata$fs < 1)
-nrow(snpdata) 
-
-
+if(any(snpdata$fs == 0) |
+   any(snpdata$fs == 1) |
+   any(is.na(snpdata$fs))) {
+  stop("Some incompatible frequencies")
+}
 
 #=====================================
 # Calculate mles 
-# num_temp <-nrow(name_combinations) # uncomment for debugging
-# icombination <- num_temp # uncomment for debugging
+ #icombination = 1:10nrow(name_combinations)
+ #num_temp <-nrow(name_combinations) # uncomment for debugging
+ #icombination <- num_temp # uncomment for debugging
+ #nrow(name_combinations)
 #=====================================
+ 
 system.time(
   
   # For each pair...  
   mle_CIs <- foreach(icombination = 1:nrow(name_combinations),.combine = rbind) %dorng% {
     
-    # Let's focus on one pair of individuals
-    individual1 <- name_combinations[icombination,1]
-    individual2 <- name_combinations[icombination,2]
-    
-    # Indeces of pair
-    i1 <- which(individual1 == names(snpdata))
-    i2 <- which(individual2 == names(snpdata))
-    
-    # Extract data and check if informative
-    subdata <- snpdata[,c(i1,i2)]
-    names(subdata) <- c("Yi", "Yj")
-    snps_to_keep_ind <- rowSums(is.na(subdata)) == 0 
-    snp_count <- sum(snps_to_keep_ind)
-       
-    if (snp_count > 0) {
+      # Let's focus on one pair of individuals
+      individual1 <- name_combinations[icombination,1]
+      individual2 <- name_combinations[icombination,2]
       
-      # Extract non-NA observed genotypes
-      Ys_ <- as.matrix(cbind(subdata$Yi[snps_to_keep_ind], 
-                   subdata$Yj[snps_to_keep_ind]))
-      frequencies_ <- frequencies[snps_to_keep_ind,,drop=F]
-      distances_ <- compute_distances(pos_chrom[snps_to_keep_ind,])
+      # Indeces of pair
+      i1 <- which(individual1 == names(snpdata))
+      i2 <- which(individual2 == names(snpdata))
       
-      # Generate mle
-      krhat_hmm <- compute_rhat_hmm(frequencies = frequencies_, 
-                                    distances = distances_, 
-                                    Ys = Ys_, epsilon)
+      # Extract data and check if informative
+      subdata <- snpdata[,c(i1,i2)]
+      names(subdata) <- c("Yi", "Yj")
+      snps_to_keep_ind <- rowSums(is.na(subdata)) == 0 
+      snp_count <- sum(snps_to_keep_ind)
       
-      
-      # Generate parametric bootstrap mles 
-      krhats_hmm_boot = foreach(iboot = 1:nboot, .combine = rbind) %dorng% {
-        Ys_boot <- simulate_Ys_hmm(frequencies = frequencies_, 
-                                   distances = distances_, k = krhat_hmm[1], r = krhat_hmm[2], epsilon)
-        compute_rhat_hmm(frequencies_, distances_, Ys_boot, epsilon)
+      if (snp_count > 0) {
+        
+        # Extract non-NA observed genotypes
+        Ys_ <- as.matrix(cbind(subdata$Yi[snps_to_keep_ind], 
+                               subdata$Yj[snps_to_keep_ind]))
+        frequencies_ <- frequencies[snps_to_keep_ind,,drop=F]
+        distances_ <- compute_distances(pos_chrom[snps_to_keep_ind,])
+        
+        # Generate mle
+        krhat_hmm <- compute_rhat_hmm(frequencies = frequencies_, 
+                                      distances = distances_, 
+                                      Ys = Ys_, epsilon)
+        
+        
+        # Generate parametric bootstrap mles 
+        krhats_hmm_boot = foreach(iboot = 1:nboot, .combine = rbind) %dorng% {
+          Ys_boot <- simulate_Ys_hmm(frequencies = frequencies_, 
+                                     distances = distances_, k = krhat_hmm[1], r = krhat_hmm[2], epsilon)
+          compute_rhat_hmm(frequencies_, distances_, Ys_boot, epsilon)
+        }
+        
+        CIs = apply(krhats_hmm_boot, 2, function(x)quantile(x, probs=Ps)) # Few seconds
+        X = data.frame('individual1' = individual1, 'individual2' = individual2, 
+                       rhat = krhat_hmm[2], 'r2.5%' = CIs[1,2], 'r97.5%' = CIs[2,2],
+                       khat = krhat_hmm[1], 'k2.5%' = CIs[1,1], 'k97.5%' = CIs[2,1], 
+                       snp_count = snp_count)
+      } else {
+        X = data.frame('individual1' = individual1, 'individual2' = individual2, 
+                       rhat = NA, 'r2.5%' = NA, 'r97.5%' = NA,
+                       khat = NA, 'k2.5%' = NA, 'k97.5%' = NA,
+                       snp_count = snp_count)
       }
-      
-      CIs = apply(krhats_hmm_boot, 2, function(x)quantile(x, probs=Ps)) # Few seconds
-      X = data.frame('individual1' = individual1, 'individual2' = individual2, 
-                     rhat = krhat_hmm[2], 'r2.5%' = CIs[1,2], 'r97.5%' = CIs[2,2],
-                     khat = krhat_hmm[1], 'k2.5%' = CIs[1,1], 'k97.5%' = CIs[2,1], 
-                     snp_count = snp_count)
-    } else {
-      X = data.frame('individual1' = individual1, 'individual2' = individual2, 
-                     rhat = NA, 'r2.5%' = NA, 'r97.5%' = NA,
-                     khat = NA, 'k2.5%' = NA, 'k97.5%' = NA,
-                     snp_count = snp_count)
-    }
   }
 )
 

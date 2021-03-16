@@ -26,16 +26,21 @@ Follow the following steps to reproduce the extended analaysis (see Code/Extende
 - Run Format_metadata_extended.R
 - Run Format_snpdata_extended.R
 - Run Generate_mles_CIs_extended.R
+- Run Checking_mles.R to check mles against those of Taylor et al. 2020 and to check for any inconsistencies in lower confidence interval limits near zero
 - Run Filter_mles_CIs_extended.R to filter problematic clonal estimates
-- Run Format_mles_CIs_extended.R to add metadata to relatedness estimates. 
-- Run Generate_sids_remv.R to generate a list of samples with one or more NA comparisons. These are samples that need removing before generating graphs.
-- Run Generate_components.R to generate clonal components. 
+- Run Format_mles_CIs_extended.R to add metadata to relatedness estimates
+- Run Generate_sids_remv.R to generate a list of samples with one or more NA comparisons. These are samples that need removing before generating graphs
+- Run Generate_components.R  
 - Run Generate_relatedness_to_CCs.R to compute average relatedness between old CCs and new samples and between old CCs and CCs based on new samples only
 - Run Compare_components.R to see how the extended data set clonally clusters with clonal components reported in Taylor et al. 2020.
 - Run Plot_relatedness_graph.R and Plot_relatedness_to_CCs.R
 - Run Generate_and_plot_connectivity.R
+- Run Analysis_summary.Rmd to summarise data on which analyses were done 
 
-Other files include summarise_mles.R (used in Filter_mles_CIs_extended.R and Generate_sids_remv.R), Checking_mles.R (can be used to check mles of Taylor et al. 2020 with those re-generated and for any inconsistencies in lower confidence interval limits near zero); and scripts in Archive, which are obsolete but kept for reference. 
+Other files include summarise_mles.R (used in Filter_mles_CIs_extended.R and Generate_sids_remv.R) and generate_counts_table.R (used in Analysis_summary.Rmd); scripts to-do with data checking (Check_snpname_order_hypothesis.R); and scripts in Archive, which are obsolete but kept for reference. 
+
+# Re-do Taylor et al. to check clonal components
+# Re-do Taylor et al. to check LCI of clones
 
 # Notes-to-self (for post-pandemic)
 - !.gitignore "../GISData/CP_coast.shp" and re-add Plot_network.R (outputs Colombia_network%d.png and Colombia_Map.png) 

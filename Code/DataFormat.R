@@ -16,8 +16,13 @@ nsamp <- nrow(SNPData)
 nSNPs <- nrow(SNPPos)
 rownames(SNPPos) <- as.character(SNPPos$V1) # Name rows by SNP names for indexing downstream
 rownames(SNPData) <- paste('sid', 1:nsamp, sep = '')
-colnames(SNPData)[6:255] <- rownames(SNPPos)
-         
+
+# Code added to fix alphabetically miss-ordering of markers
+# see Extended_analysis/Check_snpname_order_hypothesis.R
+load(file = "../RData/snp_reordered.RData")
+rownames(snp_reordered) <- paste0("SNP.", snp_reordered$snp_no) # Characterise to join on  
+colnames(SNPData)[6:255] <- snp_reordered[colnames(SNPData)[6:255], "snp_name_reordered"]
+
 # Re-order SNPs
 pos <- SNPPos$V5
 chroms <- as.numeric(do.call(rbind, strsplit(as.character(SNPPos$V2), split = '_'))[,2])
@@ -84,3 +89,8 @@ write.table(HMMData, file = '../TxtData/hmmInput.txt',
             quote = FALSE, row.names = FALSE, sep = '\t')
 save(SNPData, file = '../RData/SNPData.RData')
 toc()
+
+# Check all the same
+all(t(SNPData[,6:255]) == HMMData[,-(1:2)], na.rm = T)
+
+

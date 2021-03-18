@@ -4,7 +4,6 @@
 #' computed using the extended data. 
 ###############################################################################
 rm(list = ls())
-set.seed(1)
 library(ggplot2)
 library(dplyr)
 library(Rcpp)
@@ -17,7 +16,6 @@ epsilon <- 0.001 # Fix epsilon throughout
 # For CIs 
 # with nboot = 100 using 2 cores 21 hours, 
 nboot <- 100
-set.seed(1) # For reproducibility
 Ps = c(0.025, 0.975) # CI quantiles
 
 # Load the extended data 
@@ -153,6 +151,7 @@ system.time(
         
         
         # Generate parametric bootstrap mles 
+        set.seed(1) # For reproducibility 
         krhats_hmm_boot = foreach(iboot = 1:nboot, .combine = rbind) %dorng% {
           Ys_boot <- simulate_Ys_hmm(frequencies = frequencies_, 
                                      distances = distances_, k = krhat_hmm[1], r = krhat_hmm[2], epsilon)

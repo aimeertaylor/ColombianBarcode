@@ -3,10 +3,8 @@
 # s.t. all mles and parametric bootstrap mles for Colombia only
 # are calculated in one script.
 # 134690 seconds on my Pro with nrepeat = 500. 
-# consider changing nboot to 100 and dropping those for k
 ###################################################################
 rm(list = ls())
-set.seed(1)
 library(ggplot2)
 library(dplyr)
 library(Rcpp)
@@ -16,13 +14,12 @@ source("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/simulate_data.R") # Downloa
 sourceCpp("~/Dropbox/IBD_IBS/PlasmodiumRelatedness/Code/hmmloglikelihood.cpp") # Download this script from https://github.com/artaylor85/PlasmodiumRelatedness
 registerDoParallel(cores = detectCores()-1)
 epsilon <- 0.001 # Fix epsilon throughout
-nboot <- 100 # For CIs 
-set.seed(1) # For reproducibility
+nboot <- 100 # For CIs 100 with 3 cores 12hr
 Ps = c(0.025, 0.975) # CI quantiles
 
 ## Mechanism to compute MLE given fs, distances, Ys, epsilon
 compute_rhat_hmm <- function(frequencies, distances, Ys, epsilon){
-  ndata <- nrow(frequencies)
+  if(any(is.na(Ys))) stop ("NAs in Ys not allowed")
   ll <- function(k, r) loglikelihood_cpp(k, r, Ys, frequencies, distances, epsilon, rho = 7.4 * 10^(-7))
   optimization <- optim(par = c(50, 0.5), fn = function(x) - ll(x[1], x[2]))
   rhat <- optimization$par
@@ -33,6 +30,19 @@ compute_rhat_hmm <- function(frequencies, distances, Ys, epsilon){
 simulate_Ys_hmm <- function(frequencies, distances, k, r, epsilon){
   Ys <- simulate_data(frequencies, distances, k = k, r = r, epsilon, rho = 7.4 * 10^(-7))
   return(Ys)
+}
+
+## Function to compute distances (stand-apart function because need to 
+# recompute distances everytime there are NAs in Ys)
+compute_distances <- function(x){
+  # compute distances
+  x$dt <- c(diff(x$pos), Inf)
+  # find places where chromosome changes
+  pos_change_chrom <- 1 + which(diff(x$chrom) != 0) 
+  # replace chromosome limits with Inf
+  x$dt[pos_change_chrom-1] <- Inf
+  # end of function
+  return(x$dt)
 }
 
 # Load data
@@ -58,6 +68,7 @@ data_set$dt <- c(diff(data_set$pos), Inf)
 pos_change_chrom <- 1 + which(diff(data_set$chrom) != 0) # find places where chromosome changes
 data_set$dt[pos_change_chrom-1] <- Inf
 frequencies <- cbind(1-data_set$fs, data_set$fs)
+pos_chrom <- data_set[,c("pos", "chrom")]
 
 system.time(
   
@@ -72,19 +83,33 @@ system.time(
     i1 <- which(individual1 == names(data_set))
     i2 <- which(individual2 == names(data_set))
     
-    # Extract data 
-    subdata <- cbind(data_set[,c("fs","dt")],data_set[,c(i1,i2)])
-    names(subdata) <- c("fs","dt","Yi","Yj")
+    # Extract data and check if informative
+    subdata <- cbind(Yi = data_set[,i1], Yj = data_set[,i2])
+    snps_to_keep_ind <- apply(subdata, 1, function(x) !any(is.na(x))) 
+    snp_count <- sum(snps_to_keep_ind)
+    
+    if (snp_count == 0) next()
+  
+    # Extract non-NA observed genotypes
+    Ys_ <- subdata[snps_to_keep_ind,,drop = F]
+    frequencies_ <- frequencies[snps_to_keep_ind,,drop=F]
+    distances_ <- compute_distances(pos_chrom[snps_to_keep_ind,])
     
     # Generate mle
-    krhat_hmm <- compute_rhat_hmm(frequencies, subdata$dt, cbind(subdata$Yi, subdata$Yj), epsilon)
-    
+    krhat_hmm <- compute_rhat_hmm(frequencies = frequencies_, 
+                                  distances = distances_, 
+                                  Ys = Ys_, 
+                                  epsilon)
+  
     # Generate parametric bootstrap mles 
+    set.seed(1) # For reproducibility 
     krhats_hmm_boot = foreach(iboot = 1:nboot, .combine = rbind) %dorng% {
-      Ys_boot <- simulate_Ys_hmm(frequencies, distances = data_set$dt, k = krhat_hmm[1], r = krhat_hmm[2], epsilon)
-      compute_rhat_hmm(frequencies, subdata$dt, Ys_boot, epsilon)
+      Ys_boot <- simulate_Ys_hmm(frequencies = frequencies_, distances = distances_, 
+                                 k = krhat_hmm[1], r = krhat_hmm[2], epsilon)
+      compute_rhat_hmm(frequencies_, distances_, Ys_boot, epsilon)
     }
     
+  
     CIs = apply(krhats_hmm_boot, 2, function(x)quantile(x, probs=Ps)) # Few seconds
     X = data.frame('individual1' = individual1, 'individual2' = individual2, 
                    rhat = krhat_hmm[2], 'r2.5%' = CIs[1,2], 'r97.5%' = CIs[2,2],

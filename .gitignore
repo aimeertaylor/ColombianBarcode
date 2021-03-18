@@ -28,6 +28,10 @@ RData/**
 !RData/populations_cities.RData
 !RData/populations_states.RData
 
+!RData/metadata_extended.RData
+!RData/snpdata_extended.RData
+!RData/mles_CIs_extended_freqsTaylor2020.RData
+
 # Scripts to ignore
 Code/Generate_plot_PCA.R
 Code/Plot_proportions_GRC_2019.R

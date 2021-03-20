@@ -21,16 +21,16 @@ TxtData/**
 !TxtData/hmmInput.txt 
 !TxtData/Geo_coordinates.txt
 
-# Don't ignore things that take a long time to generate
-RData/**
-!RData/SNPData.RData
-!RData/mles_CIs.RData
-!RData/populations_cities.RData
-!RData/populations_states.RData
-
-!RData/metadata_extended.RData
-!RData/snpdata_extended.RData
-!RData/mles_CIs_extended_freqsTaylor2020.RData
+# Ignore everything inside RData besides things that take a long time to generate, processed data, and necessary files from Taylor et al. 2020 
+RData/* 
+!/RData/SNPData.RData
+!/RData/mles_CIs.RData
+!/RData/populations_cities.RData
+!/RData/populations_states.RData
+!/RData/metadata_extended.RData
+!/RData/snpdata_extended.RData
+!/RData/mles_CIs_extended_freqsTaylor2020.RData
+!/RData/PlosGen2020
 
 # Scripts to ignore
 Code/Generate_plot_PCA.R

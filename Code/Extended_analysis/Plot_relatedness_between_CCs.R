@@ -18,6 +18,8 @@ PDF <- T
 load(sprintf('../../RData/metadata_extended.RData'))
 load(file = "../../RData/relatedness_to_CCs.RData")
 
+load("../../RData/Clonal_components_extended_all_LCIthrehold_0.75.RData")
+CC_all <- Clonal_components
 load("../../RData/Clonal_components_extended_FSVC_LCIthrehold_0.75.RData")
 CC_extended <- Clonal_components
 load("../../RData/Clonal_components.RData")
@@ -104,8 +106,8 @@ for(relatedness_between in c("clusters", "sids")){
   if (relatedness_between == "clusters") {
     
     # Concatenate all components/clusters
-    CC_all <- c(CC_original, CC_extended)
-    CC_sizes <- sapply(CC_all, length)
+    CC_original_extended <- c(CC_original, CC_extended)
+    CC_sizes <- sapply(CC_original_extended, length)
     
   } else {
     
@@ -120,16 +122,11 @@ for(relatedness_between in c("clusters", "sids")){
     # Concatenate all components/clusters
     sid_list <- as.list(colnames(CCs_av_rhat))
     names(sid_list) <- colnames(CCs_av_rhat)
-    CC_all <- c(CC_original, sid_list)
-    CC_sizes <- sapply(CC_all, length)
+    CC_original_extended <- c(CC_original, sid_list)
+    CC_sizes <- sapply(CC_original_extended, length)
   }
   
-  # Sample counts per city for pie charts
-  sample_count_per_city_per_CC <- array(0, dim = c(length(CC_all),
-                                                   length(cities)), 
-                                        dimnames = list(names(CC_all), cities))
-  
-  sample_count_per_city_per_CC <- lapply(CC_all, function(cc){
+  sample_count_per_city_per_CC <- lapply(CC_original_extended, function(cc){
     # Initialise empty vector of city counts
     city_count_per_CC_inc_zeros = array(0, dim = length(cities), dimnames = list(cities))
     # Extract number of samples per CC per city
@@ -172,8 +169,9 @@ for(relatedness_between in c("clusters", "sids")){
                                            ncol(CCs_av_rhat))),
                                 vertex_spacing[V(BiG)$name])
   
-  writeLines("Average relatedness estimates range from and to:")
-  round(range(edge_attr(BiG, "weight")), 3)
+  writeLines(sprintf("Average relatedness estimates range from %s and to %s", 
+                     round(min(edge_attr(BiG, "weight")), 3),
+                     round(max(edge_attr(BiG, "weight")), 3)))
   
   # Plot
   par(mar = c(1,1,1,1))
@@ -227,5 +225,81 @@ for(relatedness_between in c("clusters", "sids")){
          col = cols_cities[cities_], legend = cities_)
   
 }
+
+
+# Relatedness between cc_all 
+for(singletons in c("inc", "exc")){
+  
+  if(singletons == "inc"){
+    CCs_av_rhat <- sapply(within_cc_extended_inc_singletons, function(x) x["av_rhat", ])
+  } else {
+    CCs_av_rhat <- sapply(within_cc_extended_exc_singletons, function(x) x["av_rhat", ])  
+  }
+  colnames(CCs_av_rhat) <- rownames(CCs_av_rhat)
+  
+  # Sample counts per city for pie charts
+  sample_count_per_city_per_CC <- lapply(CC_all, function(cc){
+    # Initialise empty vector of city counts
+    city_count_per_CC_inc_zeros = array(0, dim = length(cities), dimnames = list(cities))
+    # Extract number of samples per CC per city
+    city_count_per_CC_exc_zeros <-  table(metadata[cc,"City"])
+    # Populate initial empty vector of city counts
+    city_count_per_CC_inc_zeros[names(city_count_per_CC_exc_zeros)] <- city_count_per_CC_exc_zeros
+    return(city_count_per_CC_inc_zeros)
+  })
+  
+  Graph <- graph_from_adjacency_matrix(CCs_av_rhat, weighted = TRUE, diag = FALSE, mode = "undirected")
+  writeLines(sprintf("Average relatedness estimates range from %s and to %s", 
+                     round(min(edge_attr(Graph, "weight")), 3),
+                     round(max(edge_attr(Graph, "weight")), 3)))
+  
+  
+  layout_fr <- layout_with_fr(Graph)
+  
+  # Plot
+  par(mar = c(1,1,1,1))
+  plot(Graph,
+       layout = layout_fr, 
+       vertex.shape = "pie", 
+       vertex.pie = sample_count_per_city_per_CC[V(Graph)$name], 
+       vertex.pie.color = list(cols_cities[cities]), 
+       vertex.pie.lwd = 0.25, 
+       vertex.frame.color = NA, # colours segment outline as well as circumference
+       vertex.size = sapply(CC_all, length)[attr(V(Graph), "names")], 
+       vertex.label = NA,
+       edge.width = edge_attr(Graph, "weight"),
+       edge.color = sapply(edge_attr(Graph, "weight"), function(x)adjustcolor('black', alpha.f = x)))
+  
+  # Legend
+  city_counts <- sapply(sample_count_per_city_per_CC[V(Graph)$name], function(x){x})
+  cities_ <- names(which(rowSums(city_counts) > 0))
+  legend('bottom', pch = 16, bty = 'n', cex = 0.5, pt.cex = 1, ncol = 2, 
+         col = cols_cities[cities_], legend = cities_)
+  
+  # Plot
+  par(mar = c(1,1,1,1))
+  plot(Graph,
+       layout = layout_fr, 
+       vertex.shape = "pie", 
+       vertex.pie = sample_count_per_city_per_CC[V(Graph)$name], 
+       vertex.pie.color = list(cols_cities[cities]), 
+       vertex.pie.lwd = 0.25, 
+       vertex.label.size = 0.5,
+       vertex.frame.color = NA, # colours segment outline as well as circumference
+       vertex.size = sapply(CC_all, length)[attr(V(Graph), "names")],
+       edge.width = edge_attr(Graph, "weight"),
+       edge.color = sapply(edge_attr(Graph, "weight"), function(x)adjustcolor('black', alpha.f = x)))
+  
+  # Legend
+  city_counts <- sapply(sample_count_per_city_per_CC[V(Graph)$name], function(x){x})
+  cities_ <- names(which(rowSums(city_counts) > 0))
+  legend('bottom', pch = 16, bty = 'n', cex = 0.5, pt.cex = 1, ncol = 2, 
+         col = cols_cities[cities_], legend = cities_)
+  
+  
+}
+
+
+
 
 if (PDF) dev.off()

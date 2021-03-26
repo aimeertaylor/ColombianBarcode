@@ -88,7 +88,7 @@ cc_extended_to_cc_original <- lapply(cc_extended, function(cc_e){
 # clonal components within the extended set of inc. singletons
 #======================================================
 within_cc_extended_inc_singletons <- lapply(names(cc_all), function(cc_i){
-  sapply(setdiff(names(cc_all), cc_i), function(cc_j){
+  sapply(names(cc_all), function(cc_j){
     inds <- mle_CIs$individual1 %in% cc_all[[cc_i]] & 
       mle_CIs$individual2 %in% cc_all[[cc_j]] |
       mle_CIs$individual1 %in% cc_all[[cc_j]] & 
@@ -110,7 +110,7 @@ within_cc_extended_inc_singletons <- lapply(names(cc_all), function(cc_i){
 #======================================================
 cc_all_exc_singletons <- names(which(sapply(cc_all, length) > 1))
 within_cc_extended_exc_singletons <- lapply(cc_all_exc_singletons, function(cc_i){
-  sapply(setdiff(cc_all_exc_singletons, cc_i), function(cc_j){
+  sapply(cc_all_exc_singletons, function(cc_j){
     inds <- mle_CIs$individual1 %in% cc_all[[cc_i]] & 
       mle_CIs$individual2 %in% cc_all[[cc_j]] |
       mle_CIs$individual1 %in% cc_all[[cc_j]] & 

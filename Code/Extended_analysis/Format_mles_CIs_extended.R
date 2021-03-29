@@ -5,6 +5,8 @@ rm(list = ls())
 
 # Load metadata
 load(file = "../../RData/metadata_extended.RData")
+load(file = "../../RData/LonLats.RData")
+source("../../Code/gcd.hf.R")
 
 # Load filtered relatedness estimates
 freqs_used <- "Taylor2020"
@@ -24,6 +26,15 @@ mle_CIs$State2 = metadata[mle_CIs$individual2, 'STATE']
 
 # Add city comparisons
 mle_CIs$City12 = apply(mle_CIs[,c('City1','City2')], 1, function(x)paste(sort(x),collapse="_"))
+
+# Add city distance
+city_comb <- unique(mle_CIs[, c("City1", "City2", "City12")])
+intercity_dists <- sapply(1:nrow(city_comb), function(i){
+  gcd.hf(A = as.matrix(LonLats[city_comb[i, "City1"], c('Longitude', 'Latitude')]), 
+         B = as.matrix(LonLats[city_comb[i, "City2"], c('Longitude', 'Latitude')]))
+})
+names(intercity_dists) <- city_comb$City12
+mle_CIs$int_dist <- intercity_dists[mle_CIs$City12]
 
 # Check NA returned for missing sids: yes
 metadata['agsdhfsdhf', 'COLLECTION.DATE']

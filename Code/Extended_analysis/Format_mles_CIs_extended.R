@@ -42,6 +42,9 @@ mle_CIs$year2 = metadata[mle_CIs$individual2, 'Year']
 mle_CIs$time_dist = abs(difftime(as.Date(mle_CIs$date1), 
                                  as.Date(mle_CIs$date2), units = 'weeks'))
 
+# Add year dist based on yearly label (e.g. not round to less than, more than a year)
+mle_CIs$year_dist <- abs(as.numeric(mle_CIs$year1) - as.numeric(mle_CIs$year2))
+
 # Add sample comp
 mle_CIs$sample_comp = apply(mle_CIs[, c("individual1", "individual2")], 1, 
                             function(x) paste(sort(x), collapse = "_"))

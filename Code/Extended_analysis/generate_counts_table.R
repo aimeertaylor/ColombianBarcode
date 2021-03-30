@@ -6,8 +6,8 @@
 
 generate_counts_table <- function(city_year){
   
-  unique_cities <- unique(city_year$City)
-  unique_years <- unique(city_year$Year)
+  unique_cities <- sort(unique(city_year$City))
+  unique_years <- sort(unique(city_year$Year))
   
   counts_table <- array(dim = c(length(unique_cities)+1, length(unique_years)+1), 
                         dimnames = list(c(unique_cities, 'Total'), c(unique_years, 'Total')))

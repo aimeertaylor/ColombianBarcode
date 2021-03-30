@@ -85,7 +85,7 @@ cc_extended_to_cc_original <- lapply(cc_extended, function(cc_e){
 
 #======================================================
 # Relatedness estimates between all the 
-# clonal components within the extended set of inc. singletons
+# clonal components within the extended set inc. singletons
 #======================================================
 within_cc_extended_inc_singletons <- lapply(names(cc_all), function(cc_i){
   sapply(names(cc_all), function(cc_j){
@@ -105,8 +105,9 @@ within_cc_extended_inc_singletons <- lapply(names(cc_all), function(cc_i){
   })
 }) 
 
+#======================================================
 # Relatedness estimates between all the 
-# clonal components within the extended set of exc. singletons
+# clonal components within the extended set exc. singletons
 #======================================================
 cc_all_exc_singletons <- names(which(sapply(cc_all, length) > 1))
 within_cc_extended_exc_singletons <- lapply(cc_all_exc_singletons, function(cc_i){

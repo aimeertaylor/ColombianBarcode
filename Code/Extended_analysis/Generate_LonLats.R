@@ -1,5 +1,6 @@
 # Distances extended
 rm(list = ls())
+library(tidymodels)
 load("../../RData/metadata_extended.RData")
 load("../../RData/geo_dist_info_cities.RData")
 library(measurements) # For conv_unit
@@ -36,5 +37,8 @@ LonLats["Orellana",c("Latitude","Longitude")]  = c(-0.71126, -77.15426)
 LonLats["SanLorenzo",c("Latitude","Longitude")]  = c(1.26947, -78.84392)
 LonLats["Sucumbios",c("Latitude","Longitude")]  = c(0.08892, -76.88975)
 LonLats["TobarDonoso",c("Latitude","Longitude")]  = c(0.99959, -78.42971)
+
+LonLats$Port <- c(1,0,0,0,0,0,0,0,0,0,1,0,1) 
+LonLats$CoastAccess <- c(1,0,1,1,0,1,0,0,0,0,1,1,1) 
 
 save(LonLats, file = "../../RData/LonLats.RData")

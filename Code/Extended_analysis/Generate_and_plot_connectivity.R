@@ -1,124 +1,126 @@
 ###############################################################################
-#' Script to explore evidence of connectivity accross sampling locations. Could
-#' re-analyse without relatedness estimates whose CIs range from zero to one.
+#' Script to explore evidence of connectivity accross sampling dates and locations
 ###############################################################################
-library(tidymodels)
-load("../../RData/mles_CIs_extended_freqsTaylor2020_meta.RData")
-load("../../RData/metadata_extended.RData")
-nboot <- 50
-PDF <- TRUE
+load("../../RData/fraction_highly_related_extended.RData")
+library(RColorBrewer)
+PNG <- FALSE
+CEX.LAB = 1.15
+CEX.AXIS = 1
+CEX.LEGEND = 1.25
+remove_small_samples <- TRUE
 
-#============== Data wrangling =================
-
-# Compute the fraction highly related
-high_relatedness_threshold <- 0.25
-mle_CIs$highly_related <- as.numeric(mle_CIs$rhat > high_relatedness_threshold)
-
-# Extract the fraction related and number of pairs
-fraction_highly_related <- mle_CIs %>%
-  group_by(City12) %>%
-  summarise(fHR = mean(highly_related), 
-            npairs = length(highly_related)) %>%
-  arrange(fHR)
-
-# Compute CIs using the bootstrap 
-# use group by (instead of argument strata because 
-# "strata below 10% of the total are pooled together")
-boots <- mle_CIs %>%
-  group_by(City12) %>%
-  bootstraps(times = nboot) 
-
-# Matrix to collect fractions highly related
-boots_fHR_matrix = array(dim = c(nrow(fraction_highly_related), nboot), 
-                         dimnames = list(fraction_highly_related$City12, NULL))
-
-# Extract fractions highly related into the matrix  
-for(i in 1:length(boots$splits)){ # using forloop because boots$splits not all same length
-  x <- analysis(boots$splits[[i]])
-  booti <- x %>%
-    group_by(City12) %>%
-    summarise(fHR = mean(highly_related))  
-  boots_fHR_matrix[booti$City12, i] <- booti$fHR
+if(PNG) png(file = '../../Plots/connectivity%d.png', width = 1500, height = 1500, res = 300)
+if(remove_small_samples){
+  
+  fraction_highly_related_year <- fraction_highly_related_year[fraction_highly_related_year$npairs >= 10, ]
+  Error_bars_year <- Error_bars_year[as.character(fraction_highly_related_year$year_diff), ]
+  
+  fraction_highly_related_city <- fraction_highly_related_city[fraction_highly_related_city$min_n_pair >= 10, ]
+  Error_bars_city <- Error_bars_city[fraction_highly_related_city$City12, ]
 }
 
-# Compute CIs
-CIs <- t(apply(boots_fHR_matrix, 1, quantile, probs = c(0.025, 0.975), na.rm = T))
 
-# Extract ind for within same city or not
-within_city_ind <- sapply(fraction_highly_related$City12, function(x){
-  split_cities <- strsplit(x, split = "_")[[1]]
-  if("Iscuande" %in% split_cities) {
-    length(unique(split_cities)) == 2
-  } else {
-    length(unique(split_cities)) == 1
-  }
-})
+#============== By year =================
+X <- barplot(fraction_highly_related_year$fHR, 
+             col = brewer.pal(5, "GnBu")[3], 
+             las = 2, xlab = 'Collection date yearly difference', 
+             xaxt = 'n', 
+             cex.lab = CEX.LAB,  
+             cex.axis = CEX.AXIS,  
+             ylab = expression('Fraction of highly-related'~italic('P. falciparum')~'sample pairs'), 
+             cex.names = 1, 
+             ylim = c(0,max(Error_bars_year)))
 
-# Extract ind for in Taylor et al. 2020 or not
-load("../../RData/geo_dist_info_cities.RData")
-old_ind <- fraction_highly_related$City12 %in% names(geo_dist_info$pairwise_site_distance_all)
+segments(y0 = Error_bars_year[,'2.5%'], y1 = Error_bars_year[,'97.5%'], x0 = X, x1 = X)
+axis(side = 1, at = X[,1], labels = fraction_highly_related_year$year_diff)
 
-# Check
-all(rownames(boots_fHR_matrix) == fraction_highly_related$City12)
 
-#============== Plots =================
-if(PDF) pdf("../../Plots/Connectivity_extended.pdf")
-for(n_threshold in c(0,100,200)){
-  
-  plot_inds <- fraction_highly_related$npairs > n_threshold 
-  
-  # Plot all 
-  plot(x = fraction_highly_related$fHR[plot_inds], 
-       y = 1:nrow(fraction_highly_related[plot_inds,]),
-       pch = c(16,17)[old_ind[plot_inds] + 1], 
-       col = c("red","blue")[within_city_ind[plot_inds] + 1],
-       xlim = c(0, 1.2), bty = "n", cex.main = 0.75, cex = 0.5, 
-       xaxt = "n", yaxt = "n", ylab = "", 
-       xlab = "Fraction highly related", 
-       main = sprintf("All location pairs with %s or more sample pairs", n_threshold),
-       panel.first = abline(v = seq(0,1,0.2), 
-                            col = "lightgray", 
-                            lty = "dotted"))
-  
-  text(y = 1:nrow(fraction_highly_related[plot_inds,]), 
-       x = fraction_highly_related$fHR[plot_inds], 
-       labels = fraction_highly_related$City12[plot_inds], 
-       cex = 0.25, pos = 4)
-  
-  axis(side = 1, at = seq(1,0,-0.2))
-  
-  # Add boostrapped fractions
-  segments(x0 = CIs[plot_inds, "2.5%"], 
-           x1 = CIs[plot_inds, "97.5%"],
-           y0 = 1:sum(plot_inds),
-           y1 = 1:sum(plot_inds),
-           col = sapply(c("red","blue")[within_city_ind[plot_inds] + 1], 
-                        adjustcolor, alpha.f = 0.5))
-  
-  # Circle points
-  port_ind <- which(fraction_highly_related$City12[plot_inds] == "Esmeraldas_Tumaco" | 
-                      fraction_highly_related$City12[plot_inds] == "Buenaventura_Tumaco" |
-                      fraction_highly_related$City12[plot_inds] == "Buenaventura_Esmeraldas" |
-                      fraction_highly_related$City12[plot_inds] == "Buenaventura_Buenaventura"|
-                      fraction_highly_related$City12[plot_inds] == "Tumaco_Tumaco" | 
-                      fraction_highly_related$City12[plot_inds] == "Esmeraldas_Esmeraldas") 
-  
-  points(x = fraction_highly_related$fHR[plot_inds][port_ind], 
-         y = (1:nrow(fraction_highly_related[plot_inds,]))[port_ind],
-         pch = 1)
-  
-  # Legends
-  legend("right", pch = c(16,17,1), 
-         legend = c("Does not feature in Taylor et al. 2020", 
-                    "Features in Taylor et al. 2020", 
-                    "Comparison across ports"), 
-         bty = "n", cex = 0.5, pt.cex = 0.75, title.adj = 0,  
-         title = "Point character coding")
-  
-  legend("bottomright", col = c("blue", "red"), pch = 15,  
-         legend = c("Within loction comparison", 
-                    "Accross location comparison"), 
-         bty = "n", cex = 0.5, pt.cex = 1, title.adj = 0,  
-         title = "Colour coding")
+#============== By City inter/intra =================
+# For addition of distance line 
+normalised_geo_dist = (fraction_highly_related_city$intercity_dist - min(fraction_highly_related_city$intercity_dist))/diff(range(fraction_highly_related_city$intercity_dist))
+
+# Bar plot 
+X <- barplot(fraction_highly_related_city$fHR, 
+             las = 2, col = brewer.pal(5, "GnBu")[3], 
+             density = c(35,NA)[(fraction_highly_related_city$intercity_dist == 0)+1], 
+             xlab = '', xaxt = 'n', 
+             cex.lab = CEX.LAB,  
+             cex.axis = CEX.AXIS,  
+             ylab = expression('Fraction of highly-related'~italic('P. falciparum')~'sample pairs'), 
+             ylim = c(-0.1,max(Error_bars_city)+0.1))
+segments(y0 = Error_bars_city[,'2.5%'], y1 = Error_bars_city[,'97.5%'],
+         x0 = X, x1 = X)
+
+# x labels rotate 60 degrees, srt=60
+text(x = X, y = -max(Error_bars_city)/75, 
+     srt = 35, adj= 1, xpd = TRUE, 
+     cex = 0.25, 
+     labels = gsub("_", " ",fraction_highly_related_city$City12))
+
+# Add distance 
+# note that par(new = T) resulted in expansion of plotting space for which I couldn't find any
+# documentation. I'm therefore plotting distance directly onto the barplot
+lines(x = X, y = normalised_geo_dist, 
+      type = 'b', pch = 20, #panel.first = grid(nx = NA), 
+      yaxt = 'n', xaxt = 'n', ylab = ' ', xlab = ' ', bty = 'n')
+text(x = max(X), pos = 3, cex = CEX.AXIS, 
+     y = max(normalised_geo_dist), 
+     labels = bquote(.(round(max(fraction_highly_related_city$intercity_dist), 0))))
+
+Esmeraldas_Quibdo_ind <- which(fraction_highly_related_city$City12 == "Esmeraldas_Quibdo")
+text(x = X[Esmeraldas_Quibdo_ind,], pos = 4, cex = CEX.AXIS, 
+     y = normalised_geo_dist[Esmeraldas_Quibdo_ind], 
+     labels = bquote(.(round(fraction_highly_related_city$intercity_dist[Esmeraldas_Quibdo_ind], 0))))
+
+# Legend
+legend('top',density = c(100,35), fill = brewer.pal(5, "GnBu")[3], 
+       bty = 'n', cex = CEX.LEGEND, inset = 0.10, 
+       legend = c('within cities','across cities'))
+legend('top', lty = 1, pch = 20, legend = 'Inter-city great-circle distance (km)', 
+       bty = 'n', cex = 1)
+
+
+
+#============== By City coast access =================
+# Bar plot 
+X <- barplot(fraction_highly_related_city$fHR, 
+             las = 2, col = c(brewer.pal(5, "GnBu")[3],"#000000FF")[(!fraction_highly_related_city$Coast & fraction_highly_related_city$intercity_dist > 0)+1], 
+             density = c(NA,35)[(fraction_highly_related_city$Coast & fraction_highly_related_city$intercity_dist > 0)+1], 
+             xlab = '', xaxt = 'n', 
+             cex.lab = CEX.LAB,  
+             cex.axis = CEX.AXIS,  
+             ylab = expression('Fraction of highly-related'~italic('P. falciparum')~'sample pairs'), 
+             ylim = c(-0.1,max(Error_bars_city)+0.1))
+segments(y0 = Error_bars_city[,'2.5%'], y1 = Error_bars_city[,'97.5%'],
+         x0 = X, x1 = X)
+
+# x labels rotate 60 degrees, srt=60
+text(x = X, y = -max(Error_bars_city)/75, 
+     srt = 35, adj= 1, xpd = TRUE, 
+     cex = 0.25, 
+     labels = gsub("_", " ",fraction_highly_related_city$City12))
+
+# Add distance 
+lines(x = X, y = normalised_geo_dist, 
+      type = 'b', pch = 20, 
+      yaxt = 'n', xaxt = 'n', ylab = ' ', xlab = ' ', bty = 'n')
+
+if(!remove_small_samples){
+text(x = max(X), pos = 3, cex = CEX.AXIS,
+     y = max(normalised_geo_dist),
+     labels = bquote(.(round(max(fraction_highly_related_city$intercity_dist), 0))))
 }
-if(PDF) dev.off()
+
+Esmeraldas_Quibdo_ind <- which(fraction_highly_related_city$City12 == "Esmeraldas_Quibdo")
+text(x = X[Esmeraldas_Quibdo_ind,], pos = 4, cex = CEX.AXIS, 
+     y = normalised_geo_dist[Esmeraldas_Quibdo_ind], 
+     labels = bquote(.(round(fraction_highly_related_city$intercity_dist[Esmeraldas_Quibdo_ind], 0))))
+
+# Legend
+legend('top',density = c(35,NA), fill = c(brewer.pal(5, "GnBu")[3], "black"), 
+       bty = 'n', cex = CEX.LEGEND, inset = 0.10, 
+       legend = c('Coastal','Not coastal'))
+legend('top', lty = 1, pch = 20, legend = 'Inter-city great-circle distance (km)', 
+       bty = 'n', cex = 1)
+
+if(PNG) dev.off()

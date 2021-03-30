@@ -86,22 +86,22 @@ Clonal_components <- lapply(names(CC_chr_names), function(cc){
 # Rename Clonal_components
 names(Clonal_components) <- CC_chr_names
 
-# Reorder Clonal_components and save
-save(Clonal_components, file = "../RData/Clonal_components.RData")
-
 # Check to see how many cliques there are per clonal_component
 clique_count_per_component <- sapply(names(CC_chr_names), function(cc){
   sids <- names(which(M_high == as.numeric(cc)))
   subG <- subgraph(G_high, sids)
   x <- maximal.cliques.count(subG, min = 2)
   # Plot, remembering this is after setting edges to zero if not > 0.99
-  if(x != 1) plot(subG, main = CC_chr_names[cc])
+  if(x != 1) plot(subG, main = CC_chr_names[cc], vertex.label = NA, vertex.color = "black", edge.width = 1.5)
   return(x)
 })
 names(clique_count_per_component) <- CC_chr_names
 
-# Three components are not cliques: 2, 15, 18
+# Components that are not cliques: 
 which(clique_count_per_component != 1)
+
+# Reorder Clonal_components and save
+save(Clonal_components, clique_count_per_component, file = "../RData/Clonal_components.RData")
 #----------------------------------------------------------
 
 
@@ -548,7 +548,7 @@ kable(round(Mean_sd_matrix[order_by_CC_name,order_by_CC_name,'r mean'],3), forma
 round(Mean_sd_matrix[order_by_CC_name,order_by_CC_name, 'r 2.5%'], 3)
 
 # Aside: relatedness between CC20, CC15 and CC14: valid example of recombination? Likely via some intermediates
-earliest_sids_CC20_15_14 <- sids_1stperCC_ordered[c(20,15,14)] # For c("CC20", "CC15", "CC14")
+earliest_sids_CC20_15_14 <- sids_1stperCC_ordered[c(20,15,14)] # For c("CC19", "CC15", "CC14")
 G_earliest_sids_CC20_15_14 <- induced_subgraph(G_related, vids = earliest_sids_CC20_15_14)
 plot(G_earliest_sids_CC20_15_14, 
      edge.width = E(G_earliest_sids_CC20_15_14)$weight*2, 

@@ -174,18 +174,18 @@ segments(y0 = proportions_time['2.5%',], y1 = proportions_time['97.5%',], x0 = X
 legend('topright', fill = rainbow(no_site_comps), bty = 'n', legend = site_comps_text, cex = 0.5)
 
 
-#===========================================================
-# Barplot of site partitioned by clone
-#===========================================================
-X <- barplot(proportions_geo_cloned[,site_comps,'r_threshold'], las = 2, xlab = '', 
-             ylab = bquote('Proportion with LCI of'~italic(widehat(r))>.(r_threshold)), 
-             cex.names = 0.7, ylim = c(0,max(proportions_geo)), 
-             col = rownames(proportions_geo_cloned[,site_comps,'all']), 
-             xaxt = 'n')
-segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
-         x0 = X, x1 = X)
-text(x = X, y = -max(proportions_geo)/50, srt = 30, adj= 1, xpd = TRUE, 
-     labels = site_comps_text, cex=0.5)
+# #===========================================================
+# # Barplot of site partitioned by clone
+# #===========================================================
+# X <- barplot(proportions_geo_cloned[,site_comps,'r_threshold'], las = 2, xlab = '', 
+#              ylab = bquote('Proportion with LCI of'~italic(widehat(r))>.(r_threshold)), 
+#              cex.names = 0.7, ylim = c(0,max(proportions_geo)), 
+#              col = rownames(proportions_geo_cloned[,site_comps,'all']), 
+#              xaxt = 'n')
+# segments(y0 = proportions_geo['2.5%',site_comps], y1 = proportions_geo['97.5%',site_comps],
+#          x0 = X, x1 = X)
+# text(x = X, y = -max(proportions_geo)/50, srt = 30, adj= 1, xpd = TRUE, 
+#      labels = site_comps_text, cex=0.5)
 
 #===========================================================
 # Barplot of site partioned by time

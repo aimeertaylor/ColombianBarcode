@@ -1,7 +1,6 @@
 #################################################################
 # This script 
 # 1) loads the output from Generate_mles_CIs.R and adds metadata 
-# (currently using frequencies unif and true)
 # 2) loads the mles with add data and filter
 #################################################################
 

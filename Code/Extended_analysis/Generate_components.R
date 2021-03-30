@@ -27,6 +27,7 @@ eps <- 0.01 # threshold below which LCI is considered zero in Taylor et al. 2019
 a = 0; b = 1; c = 1 # Scaling parameters for plotting edge width and transparancy 
 PDF <- TRUE
 label_art_pnts <- TRUE
+set.seed(1)
 
 # Load relatedness results and metadata
 freqs_used <- "Taylor2020"
@@ -68,7 +69,6 @@ hist(mles_to_keep$r2.5.[mles_to_keep$r97.5. >= 1-eps & DE_pair_ind],
 
 # Define threholds
 LCI_thresholds <- c(0,0.75,0.95)
-
 
 if(PDF) pdf("../../Plots/Clonal_components.pdf")
 for(comparisons in c("all", "FSVC")){
@@ -147,9 +147,35 @@ for(comparisons in c("all", "FSVC")){
       names(which(ccompnts$membership == as.numeric(cc)))
     })
     names(Clonal_components) <- paste0("cc_", 1:length(Clonal_components))
+    
+    # How many non-cliques? 
+    # Check to see how many cliques there are per clonal_component
+    clique_count_per_component <- sapply(names(Clonal_components), function(cc){
+      sids <- Clonal_components[[cc]]
+      if(length(sids) > 1){
+        subG <- subgraph(G_clonal, sids)
+        x <- maximal.cliques.count(subG, min = 2)
+        # Plot, remembering this is after setting edges to zero if not clonal
+        if(x != 1) plot(subG, 
+                        main = cc, 
+                        sub = x,
+                        vertex.color = cols_cities[metadata[V(subG)$name, "City"]] , 
+                        edge.width = 1, 
+                        edge.color = "black", 
+                        vertex.size = 5, 
+                        vertex.label.size = 0.5, 
+                        vertex.label = V(subG)$name, #metadata[V(subG)$name, "Year"], 
+                        vertex.label.color = "black", 
+                        vertex.shape = c("square","circle")[metadata[V(subG)$name, "PloSGen2020"] + 1])
+        return(x)
+      } else {
+        return(0)
+      }
+    })
+    names(clique_count_per_component) <- names(Clonal_components)
   
     # save
-    save(Clonal_components, 
+    save(Clonal_components, clique_count_per_component, 
          file = sprintf("../../RData/Clonal_components_extended_%s_LCIthrehold_%s.RData", 
                         comparisons, LCI_threshold))
   }

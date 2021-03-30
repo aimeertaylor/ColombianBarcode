@@ -13,10 +13,16 @@
 rm(list = ls())
 load(file = "../../RData/Clonal_components.RData")
 CC_original <- Clonal_components
+clique_count_original <- clique_count_per_component
 
-LCI_threshold <- 0.75 # Toggle between 0, 0.75 and 0.95 (make no difference)
+LCI_threshold <- 0.75 # Toggle between 0, 0.75 and 0.95 
 load(file = sprintf("../../RData/Clonal_components_extended_all_LCIthrehold_%s.RData", LCI_threshold))
 CC_extended <- Clonal_components
+clique_count_extended <- clique_count_per_component
+
+cc_extended_size <- sapply(CC_extended, length)
+sum(cc_extended_size > 1)
+cc_extended_size[which.max(cc_extended_size)]
 
 length(CC_extended)
 length(CC_original)
@@ -58,12 +64,13 @@ identical_components_key
 broken_components 
 extended_components 
 
-# Inspect metadata
-load(sprintf('../../RData/metadata_extended.RData'))
-extended_components_metadata <- lapply(extended_components, function(x){
-  metadata[unlist(x), ]
-})
-extended_components_metadata
+save(extended_components, identical_components_key, broken_components, 
+     file = "../../RData/Compare_components.RData")
 
+# Components that are not cliques: 
+identical_components_key[names(which(clique_count_original > 1))] 
+clique_count_original[which(clique_count_original > 1)]
+clique_count_extended[which(clique_count_extended > 1)]
+sum(clique_count_extended > 1)
 
 

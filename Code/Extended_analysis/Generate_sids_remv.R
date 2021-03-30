@@ -13,6 +13,9 @@
 rm(list = ls())
 library(igraph) 
 source('../igraph_functions.R') # construct_adj_matrix
+PNG <- TRUE
+eps <- 0.01 # Used to define clones in Taylor et al. 2020
+if(PNG) png(file = '../../Plots/Generate_sids_remv%d.png', width = 1500, height = 1500, res = 300)
 
 # Load relatedness results and metadata
 load('../../RData/mles_CIs_extended_freqsTaylor2020_meta.RData') 
@@ -23,8 +26,10 @@ A_est <- construct_adj_matrix(mle_CIs, Entry = 'rhat')
 A_est_full <- A_est
 A_est_full[lower.tri(A_est_full)] <- t(A_est_full)[lower.tri(A_est_full)]
 diag(A_est_full) <- 1
-fields::image.plot(A_est)
-fields::image.plot(A_est_full) 
+
+fields::image.plot(A_est, xaxt = "n", yaxt = "n")
+fields::image.plot(A_est_full, xaxt = "n", yaxt = "n") 
+
 
 # Compute number of NA comparisons per sample
 na_count_per_sample <- rowSums(is.na(A_est_full))
@@ -86,8 +91,18 @@ source("../../Code/Extended_analysis/summarise_mles.R")
 summarise_mles(mle_CIs, metadata_ = metadata)
 summarise_mles(mle_CIs[inds, ], metadata_ = metadata)
 
+writeLines(sprintf("Minimum SNP count among initial sample pairs: %s", min(mle_CIs[, "snp_count"])))
+writeLines(sprintf("Minimum SNP count among initial samples: %s", min(metadata[colnames(A_est), "snp_count"])))
+writeLines(sprintf("Minimum SNP count among remaining sample pairs: %s", min(mle_CIs[inds, "snp_count"])))
+writeLines(sprintf("Minimum SNP count among remaining samples: %s", min(metadata[sids_keep, "snp_count"])))
+
+# Uninformative among remaining?
+writeLines(sprintf("Number of uninformative relatedness estimates remaining: %s", 
+                   sum(mle_CIs$r2.5.[inds] < 0.01 & mle_CIs$r97.5.[inds] > 1-0.01)))
 
 
+
+if(PNG) dev.off()
 
 
 

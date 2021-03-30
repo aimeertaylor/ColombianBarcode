@@ -16,13 +16,19 @@ summarise_mles <- function(x, metadata_, snp_count_threshold = 10,
            y0 = x$r2.5., y1 = x$r97.5.,
            lwd = 0.1, col = 'gray')
   lines(x$rhat, lwd = 1, col = "black") # Add mles
-  abline(h = 1-eps, lty = "dashed", col = 'blue', lwd = 0.5)
+  abline(h = 1-eps, lty = "dotted", lwd = 0.5)
   
   if(zoom) {
+    
+    lower_rhat <- min(x$rhat[x$r2.5. > 0.5 & x$r97.5. > (1-eps)])
+    
+    # Extract point estimates and map to zero one to project to grayscale
+    rhats_clones <- mle_CIs$rhat[clone_ind] 
+    
     # Plot relatedness values
     plot(NULL, main = "", 
          ylim = c(0,1), 
-         xlim = c(sum(x$rhat < 0.8, na.rm = T),length(x$rhat)), 
+         xlim = c(sum(x$rhat <= lower_rhat), length(x$rhat)), 
          ylab = 'Relatedness estimate', 
          xlab = "Sample pair index", 
          las = 2, panel.first = grid(), bty = "n", tck = -0.01, xaxt = "n")
@@ -31,7 +37,7 @@ summarise_mles <- function(x, metadata_, snp_count_threshold = 10,
              y0 = x$r2.5., y1 = x$r97.5.,
              lwd = 0.1, col = 'gray')
     lines(x$rhat, lwd = 1, col = "black") # Add mles
-    abline(h = 1-eps, lty = "dashed", col = 'blue', lwd = 0.5)
+    abline(h = 1-eps, lty = "dotted", lwd = 0.5)
   }
   
   # Summarise data paucity

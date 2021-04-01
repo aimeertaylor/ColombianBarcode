@@ -4,11 +4,13 @@
 rm(list = ls())
 load(file = "../../RData/Compare_components.RData")
 load(file = "../../RData/metadata_extended.RData")
-PDF <- F
+PDF <- T
 if(PDF) pdf("../../Plots/Extended_components.pdf")
 
 # SNP counts among samples that feature in extended components
-sort(metadata[unlist(lapply(extended_components, unlist)), "snp_count"])
+min(metadata[unlist(lapply(extended_components, unlist)), "snp_count"])
+writeLines(sprintf("Number of samples among extended ccs: %s", length(unique(unlist(extended_components)))))
+
 
 # City colours
 cities <- unique(metadata$City)

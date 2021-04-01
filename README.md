@@ -48,7 +48,7 @@ The extended analysis is based on data with correctly ordered markers (see above
 - Run Generate_LonLats.R, Generate_fraction_highly_related.R, Plot_fraction_highly_related.R and Generate_regression_trends.R for connectivity analysis
 - Run Analysis_summary.Rmd to summarise data on which analyses were done
 
-Other files include summarise_mles.R and generate_counts_table.R (used in Analysis_summary.Rmd); scripts to-do with data checking (Check_snpname_order_hypothesis.R); and scripts in Archive, which are obsolete but kept for reference. 
+Other files include summarise_mles.R and generate_counts_table.R (used in Analysis_summary.Rmd); scripts to-do with data checking (Check_snpname_order_hypothesis.R); scripts in Archive, which are obsolete but kept for reference; and Generate_and_plot_extended_components_using_snp_cutoff.R, used to asses value of confidence intervals among samples included in the extended component analysis. 
 
 # Notes-to-self (for post-pandemic)
 - !.gitignore "../GISData/CP_coast.shp" and re-add Plot_network.R (outputs Colombia_network%d.png and Colombia_Map.png) 

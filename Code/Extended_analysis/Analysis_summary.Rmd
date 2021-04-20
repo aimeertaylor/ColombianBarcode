@@ -61,12 +61,12 @@ legend('topleft', bty = 'n', legend =
 
 # Methods
 
-This summary describes analyses done for the extended data after have done the marker reordered analysis of the samples that feature in Taylor et al. 2020 (see README.md). The 325 samples that feature in Taylor et al. 2020 are those deemed monoclonal in Echeverry et al. 2013. For brevity, we refer to these as the samples that feature in Taylor et al. 2020. 
+This summary describes analyses of the extended data after having done the marker reordered analysis of the samples that feature in Taylor et al. 2020 (see README.md). The 325 samples that feature in Taylor et al. 2020 are those deemed monoclonal in Echeverry et al. 2013. For brevity, we refer to these as the samples that feature in Taylor et al. 2020. 
 
 ## Pre-processing of data 
 
 The raw SNP-barcode data set (Diego-Vladimir-Fabian_GG3D7_Recode_V2_07March2021.txt formatted to snpdata.RData in Format_snpdata_extended.R) of `r ncol(rawdata[,-(1:3)])` samples and `r nrow(rawdata)` markers, includes 
-`r sum(mids_no_data_ind)` markers with no data (one on chromosome 4 was deleted across all samples because it was missing among samples that did not feature in Taylor et al. 2020; another on chromosome 8 was deleted across all samples because it was deemed unreliable due to some inconsistencies across WGS and re-coded Golden gate data on some samples that feature in Taylor et al. 2020), and 
+`r sum(mids_no_data_ind)` markers with no data (data for one SNP on chromosome 4 were deleted across all samples because because they were missing among samples that did not feature in Taylor et al. 2020; data for another SNP on chromosome 8 were deleted across all samples because the SNP was deemed unreliable due to some inconsistencies across WGS and re-coded Golden gate data for some samples that feature in Taylor et al. 2020) and 
 `r length(sids_no_data)` samples with no data. 
 The year and place of sampling of these `r length(sids_no_data)` samples are summarised in Table \ref{tab: sids_no_data sample counts}. Their sample ids are `r sids_no_data`.
 
@@ -124,15 +124,11 @@ Removal of the relatedness estimates where the parametric bootstrap has clearly 
 
 ### Removal of uninformative estimates
 
-Many estimates have 95\% confidence intervals that extend all the way from zero to one. Removal of these relatedness estimates, which we consider to be uninformative, leaves `r mle_CIs_comparison_count` relatedness estimates based on data on `r min(mle_CIs$snp_count)` to `r max(mle_CIs$snp_count)` SNPs shared between pairs among `r length(mle_CIs_sids)` samples. Metadata are added to these estimates in Format_mles_CIs_extended.R. 
-
-In addition, in the plots of the connectivity analyses, fractions are limited to those with numerators of at least 10 observations per yearly partition and at least 10 samples per city for the city partitions. 
-
-
+Many estimates have 95\% confidence intervals that extend all the way from zero to one. Removal of these relatedness estimates, which we consider to be uninformative, leaves `r mle_CIs_comparison_count` relatedness estimates based on data on `r min(mle_CIs$snp_count)` to `r max(mle_CIs$snp_count)` SNPs shared between pairs among `r length(mle_CIs_sids)` samples. 
 
 ### Removal of samples with one or more missing relatedness estimates
 
-In various scripts we generate graphs whose edges are weighted by relatedness estimates. These graphs do not support samples that are missing estimates of relatedness with one or more of the other samples (igraph::graph_from_incidence_matrix() with weighted = T returns an error if a vertex with one or more missing edges is within the incidence matrix; igraph::graph_from_adjacency_matrix imputes missing edges if weighted = T and vertices with one or more missing edges are within the adjacency matrix). As such, in Generate_sids_remv.R, we generate a list of samples to remove before generating weighted graphs. We do this by computing the number of NA relatedness estimates per sample, removing the sample with the highest count and iterating. Although there is a strong association between per-sample NA relatedness counts and per-sample marker data count, the removed sample doesn't always have fewest data.
+In various scripts we generate graphs whose edges are weighted by relatedness estimates. These graphs do not support samples that are missing estimates of relatedness with one or more of the other samples (igraph::graph_from_incidence_matrix() with weighted = T returns an error if a vertex with one or more missing edges is within the incidence matrix; igraph::graph_from_adjacency_matrix imputes missing edges if weighted = T and vertices with one or more missing edges are within the adjacency matrix). As such, in Generate_sids_remv.R, we generate a list of samples to remove before generating weighted graphs. We do this by computing the number of NA relatedness estimates per sample, removing the sample with the highest count and iterating. Although there is a strong association between per-sample NA relatedness counts and per-sample marker data count, the removed sample doesn't always have fewest SNPs with data.
 
 ```{r}
 # Load and summarise filtered relatedness estimates with added meta data
@@ -169,6 +165,7 @@ To see how the new samples cluster with the 45 CCs, we generate clonal component
 
 A brief connectivity analysis (Generate_LonLats.R, Generate_fraction_highly_related.R, Plot_fraction_highly_related.R and Generate_regression_trends.R) suggests access by ports and along the coast increases the probability of high relatedness to a greater extent to that of which distance in space and time decreases it. It also shows that the data from Esmeraldas essentially comes from a single clonal expansion. 
 
+In the plots of the connectivity analyses fractions are limited to those with denominators of at least 10 observations per yearly partition and at least 10 samples per city for the city partitions. 
 
 \pagebreak
 
@@ -253,8 +250,7 @@ Relative to confidence-interval based non-graph and graph analyses respectively,
 (`r setdiff(cities_connectivity, cities_connectivity_100)`) and 
 (`r setdiff(cities_graph, cities_graph_100)`) using a 100-SNP cut-off. 
 
-In the plots of the connectivity analyses fractions are limited to those with numerators of at least 10 observations per yearly partition and at least 10 samples per city for the city partitions. 
-
+In the plots of the connectivity analyses fractions are limited to those with denominators of at least 10 observations per yearly partition and at least 10 samples per city for the city partitions. 
 
 
 

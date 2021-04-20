@@ -73,4 +73,11 @@ clique_count_original[which(clique_count_original > 1)]
 clique_count_extended[which(clique_count_extended > 1)]
 sum(clique_count_extended > 1)
 
+# Clique counts of extended components
+clique_count_extended[unique(sapply(extended_components, names))]
 
+# Relatedness between extended components 
+load("../../RData/relatedness_to_CCs.RData")
+CCs_av_rhat <- sapply(within_cc_extended_exc_singletons, function(x) x["av_rhat", ])  
+colnames(CCs_av_rhat) <- rownames(CCs_av_rhat)
+round(CCs_av_rhat[unique(sapply(extended_components, names)), unique(sapply(extended_components, names))],2)

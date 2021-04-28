@@ -163,7 +163,7 @@ To see how the new samples cluster with the 45 CCs, we generate clonal component
 
 ## Connectivity analyses
 
-A brief connectivity analysis (Generate_LonLats.R, Generate_fraction_highly_related.R, Plot_fraction_highly_related.R and Generate_regression_trends.R) suggests access by ports and along the coast increases the probability of high relatedness to a greater extent to that of which distance in space and time decreases it. It also shows that the data from Esmeraldas essentially comes from a single clonal expansion. 
+A brief connectivity analysis (Generate_LonLats.R, Generate_fraction_highly_related.R, Plot_fraction_highly_related.R and Generate_regression_trends.R) suggests access by ports and along the coast increases the probability of high relatedness to a greater extent to that by which distance in space and time decreases it, and that being within Ecuador or comparing with Ecuador increases the log odds of being highly related (see Generate_regression_trends.R). It also shows that the data from Esmeraldas essentially comes from a single clonal expansion. 
 
 In the plots of the connectivity analyses fractions are limited to those with denominators of at least 10 observations per yearly partition and at least 10 samples per city for the city partitions. 
 

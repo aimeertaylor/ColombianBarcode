@@ -1,5 +1,4 @@
 ################################################################################
-################################################################################
 #' In this script logistic regression models are fit to sample pairs classified
 #' as highly related or not. The model is miss-specified since the sample pairs
 #' are not independent. The qqnorm plot of the residuals confirms this.

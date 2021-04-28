@@ -84,8 +84,8 @@ legend('top', lty = 1, pch = 20, legend = 'Inter-city great-circle distance (km)
 #============== By City coast access =================
 # Bar plot 
 X <- barplot(fraction_highly_related_city$fHR, 
-             las = 2, col = c(brewer.pal(5, "GnBu")[3],"#000000FF")[(!fraction_highly_related_city$Coast & fraction_highly_related_city$intercity_dist > 0)+1], 
-             density = c(NA,35)[(fraction_highly_related_city$Coast & fraction_highly_related_city$intercity_dist > 0)+1], 
+             las = 2, col = c(brewer.pal(5, "GnBu")[3],"#000000FF")[(!fraction_highly_related_city$InterCoast & fraction_highly_related_city$intercity_dist > 0)+1], 
+             density = c(NA,35)[(fraction_highly_related_city$InterCoast & fraction_highly_related_city$intercity_dist > 0)+1], 
              xlab = '', xaxt = 'n', 
              cex.lab = CEX.LAB,  
              cex.axis = CEX.AXIS,  
@@ -119,7 +119,7 @@ text(x = X[Esmeraldas_Quibdo_ind,], pos = 4, cex = CEX.AXIS,
 # Legend
 legend('top',density = c(35,NA), fill = c(brewer.pal(5, "GnBu")[3], "black"), 
        bty = 'n', cex = CEX.LEGEND, inset = 0.10, 
-       legend = c('Coastal','Not coastal'))
+       legend = c('InterCoastal','Not coastal'))
 legend('top', lty = 1, pch = 20, legend = 'Inter-city great-circle distance (km)', 
        bty = 'n', cex = 1)
 

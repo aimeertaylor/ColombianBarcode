@@ -1,4 +1,5 @@
 ################################################################################
+################################################################################
 #' In this script logistic regression models are fit to sample pairs classified
 #' as highly related or not. The model is miss-specified since the sample pairs
 #' are not independent. The qqnorm plot of the residuals confirms this.
@@ -80,7 +81,6 @@ mle_CIs %>% group_by(Ecuador) %>%
 # Create batch factor --------------------------------------------------------
 # -1 = intra old batch; 0 = inter new and old batch; 1 inter new batch
 mle_CIs$Batch <- as.factor((mle_CIs$year1 > 2008) + (mle_CIs$year2 > 2008) - 1)
-mle_CIs$Batch <- relevel(mle_CIs$Batch, ref = 2) # Set zero to reference level
 mle_CIs %>% group_by(Batch) %>% 
   summarise(fract = mean(highly_related), n = n()) %>% 
   arrange(n) # Check 0 largest: yes

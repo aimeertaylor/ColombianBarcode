@@ -103,11 +103,8 @@ if(freqs_to_use == "Taylor2020"){
 plot(snpdata$chrom, type = 'l')
 plot(snpdata$pos, type = 'l')
 
-if(any(snpdata$fs == 0) |
-   any(snpdata$fs == 1) |
-   any(is.na(snpdata$fs))) {
-  stop("Some incompatible frequencies")
-}
+if(any(is.na(snpdata$fs))) stop("Some NA frequencies")
+
 
 #=====================================
 # Calculate mles 

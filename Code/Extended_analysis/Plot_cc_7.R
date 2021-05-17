@@ -5,9 +5,6 @@ library(igraph)
 library(RColorBrewer)
 source('../igraph_functions.R') # construct_adj_matrix
 eps <- 0.01 # threshold below which LCI is considered zero in Taylor et al. 2019
-a = 0; b = 1; c = 0.5 # Scaling parameters for plotting edge width and transparancy 
-PDF <- TRUE
-label_art_pnts <- TRUE
 
 # Load relatedness results, metadata and data
 freqs_used <- "Taylor2020"
@@ -19,12 +16,12 @@ load(file = "../../RData/snpdata_extended.RData")
 LCI_threshold <- 0.75 # Toggle between 0, 0.75 and 0.95 
 load(file = sprintf("../../RData/Clonal_components_extended_all_LCIthrehold_%s.RData", LCI_threshold))
 sids <- Clonal_components$cc_7
+image(as.matrix(snpdata[,c(sids)])) # SNP data suggest definitely not clones
 
 # Sort sids, inc. those on either spurious edge (see Clonal_components.pdf)
 break1 <- c("03014D0", "TC01D0", "SPT26314", "SPT26309","Pf067","Pf030","SPT26313")
-break2 <- c("PW0067-C", "PW0080-C")
+break2 <- c("PW0067-C", "PW0080-C") 
 sids_nucleus <- sids[!sids %in% c(break1, break2)]
-sids <- c(sids_nucleus, break1, break2) # Re-group ordered by breaks
 
 # Inspect metadata
 table(metadata[unlist(Clonal_components$cc_7), c("City", "Year")]) # all 
@@ -32,27 +29,46 @@ table(metadata[break1, c("City", "Year")]) # break one
 table(metadata[break2, c("City", "Year")]) # break two
 table(metadata[sids_nucleus, c("City", "Year")]) # nucleus
 
-# Plot data
-image(as.matrix(snpdata[,sids])) # SNP data suggest definitely not clones
+# Relatedness of edges classified clonal between break 1 and nucleus
+x <- mle_CIs[mle_CIs$individual1 %in% sids_nucleus & mle_CIs$individual2 %in% break1 |
+                  mle_CIs$individual2 %in% sids_nucleus & mle_CIs$individual1 %in% break1,]
+x[x$r2.5. > LCI_threshold & x$r97.5. > (1-eps),] # just one edge
 
-# Extract relatedness estimates (toggle between nucleus or not)
-mles <- mle_CIs[mle_CIs$individual1 %in% sids_nucleus & mle_CIs$individual2 %in% sids_nucleus,]
-#mles <- mle_CIs[mle_CIs$individual1 %in% sids & mle_CIs$individual2 %in% sids,]
+# Relatedness of edges classified potentially clonal between break 2 and nucleus
+x <- mle_CIs[mle_CIs$individual1 %in% sids_nucleus & mle_CIs$individual2 %in% break2 |
+               mle_CIs$individual2 %in% sids_nucleus & mle_CIs$individual1 %in% break2, ]
+x[x$r2.5. > LCI_threshold & x$r97.5. > (1-eps),] # three edges
+
+# Average relatedness between break 1 and nucleus
+mean(mle_CIs[mle_CIs$individual1 %in% sids_nucleus & mle_CIs$individual2 %in% break1 |
+               mle_CIs$individual2 %in% sids_nucleus & mle_CIs$individual1 %in% break1, "rhat"])
+
+# Average relatedness between break 2 and nucleus
+mean(mle_CIs[mle_CIs$individual1 %in% sids_nucleus & mle_CIs$individual2 %in% break2 |
+               mle_CIs$individual2 %in% sids_nucleus & mle_CIs$individual1 %in% break2, "rhat"])
+
+
+#====================================================================
+# Inspection of individual subparts (toggle between different sids)
+sids <- c(sids_nucleus, break2, break1) # Entire component
+sids <- sids_nucleus # Just the nucleus
+#====================================================================
+# Extract relatedness estimates 
+mles <- mle_CIs[mle_CIs$individual1 %in% sids & mle_CIs$individual2 %in% sids,]
 
 # Inspect low snp_counts
 table(sort(mles$snp_count[mles$snp_count <= 100]))
 
-# Define city cols
+# Define city cols for graph vertex colours
 cities <- unique(metadata$City)
 cols_cities <- array(c(rev(brewer.pal(5, 'Spectral')), 
                        brewer.pal(length(cities)-5, 'Dark2')), 
                      dimnames = list(cities))
 
-# Using definition of clone where UCI "touches" one and LCI > threshold
+# Build adjacency matrix using definition of clone where UCI "touches" one and LCI > threshold
 A_low <- construct_adj_matrix(mles, Entry = 'r2.5.')
 A_high <- construct_adj_matrix(mles, Entry = 'r97.5.')
 A_est <- construct_adj_matrix(mles, Entry = 'rhat')
-
 A_clonal <- A_est 
 A_clonal[A_high < (1-eps) | A_low <= LCI_threshold] <- 0
 writeLines(sprintf("Minimum point estimate among those considered clones: %s", 
@@ -69,12 +85,14 @@ V(G_clonal)$city <- metadata[V(G_clonal)$name, "City"]
 V(G_clonal)$color <- cols_cities[V(G_clonal)$city] 
 
 # Highlight articulation points if any
+label_art_pnts <- TRUE 
 if(length(art_pnts) > 0 & label_art_pnts){
   vertex_labels <- V(G_clonal)$name
   vertex_labels[!V(G_clonal)$name %in% art_pnts] <- ""
 }
 
-# Rescale edge weights for plotting
+# Re-scale edge weights for plotting
+a = 0.1; b = 1; c = 0.5 # Scaling parameters for plotting edge width and transparency 
 if (identical(round(unique(E(G_clonal)$weight)), 1)){ # If all one
   weights_rescaled <- E(G_clonal)$weight
 } else { # Otherwise
@@ -93,16 +111,14 @@ plot(G_clonal,
      vertex.size = (1/c)*log(metadata[V(G_clonal)$name, "snp_count"]))
 
 # Title
-title(main = sprintf("Clonal def. UCI >= (1-%s) & LCI > %s", 
-                     eps, LCI_threshold), cex.main = 1)
+title(main = sprintf("Clonal def. UCI >= (1-%s) & LCI > %s", eps, LCI_threshold), cex.main = 1)
 
 # Legend
 cities_ <- unique(V(G_clonal)$city)
 legend('bottomleft', pch = 16, bty = 'n', cex = 0.5, pt.cex = 1, 
        inset = -0.1, col = cols_cities[cities_], legend = cities_)
 
-# Extract sids per component
-# include components of size one (for Compare_components.R)
+# Extract sids per component within subpart, including components of size one 
 Clonal_components <- lapply(1:length(ccompnts$csize), function(cc){
   names(which(ccompnts$membership == as.numeric(cc)))
 })

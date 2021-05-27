@@ -5,73 +5,83 @@ rm(list = ls())
 require(RColorBrewer)
 load(file = "../../RData/Compare_components.RData")
 load(file = "../../RData/metadata_extended.RData")
-PDF <- F
+PDF <- T
 if(PDF) pdf("../../Plots/Extended_components.pdf")
 
-# SNP counts among samples that feature in extended components
-min(metadata[unlist(lapply(extended_components, unlist)), "snp_count"])
-writeLines(sprintf("Number of samples among extended ccs: %s", length(unique(unlist(extended_components)))))
 
-
-# City colours
-cities <- unique(metadata$City)
-cols_cities <- array(c(rev(brewer.pal(5, 'Spectral')), 
-                       brewer.pal(length(cities)-5, 'Dark2')), 
-                     dimnames = list(cities))
-
-years_range <- range(sort(unique(as.numeric(metadata[unlist(lapply(extended_components, unlist)),"Year"]))))
-
-cities_inc <- unique(metadata[unlist(lapply(extended_components, unlist)),"City"])
-x <- unique(lapply(extended_components, unlist))
-names(x) <- names(lapply(extended_components, unlist))
-
-# Check for any converged components
-x_compared <- sapply(x, function(xi) sapply(x, function(xj) setequal(xi,xj)))
-if (any(x_compared[lower.tri(x_compared)])) {
-  stop("Some components converged: modify by hand")
+for(break_down_cc7 in c(F,T)){
+  
+  # SNP counts among samples that feature in extended components
+  min(metadata[unlist(lapply(extended_components, unlist)), "snp_count"])
+  writeLines(sprintf("Number of samples among extended ccs: %s", length(unique(unlist(extended_components)))))
+  
+  # City colours
+  cities <- unique(metadata$City)
+  cols_cities <- array(c(rev(brewer.pal(5, 'Spectral')), 
+                         brewer.pal(length(cities)-5, 'Dark2')), 
+                       dimnames = list(cities))
+  
+  years_range <- range(sort(unique(as.numeric(metadata[unlist(lapply(extended_components, unlist)),"Year"]))))
+  
+  cities_inc <- unique(metadata[unlist(lapply(extended_components, unlist)),"City"])
+  
+  
+  x <- unique(lapply(extended_components, function(z) unname(unlist(z))))
+  names_x <- lapply(extended_components, names) # Extract cc_ names 
+  x <- x[!duplicated(names_x)] # Remove duplicates (old CCs converged into new cc_s)
+  names(x) <- names_x[!duplicated(names_x)]
+  
+  if(break_down_cc7) {
+    # Additional version breaking down cc_7 
+    cc7_break1 <- c("03014D0", "TC01D0", "SPT26314", "SPT26309","Pf067","Pf030","SPT26313")
+    cc7_break2 <- c("PW0067-C", "PW0080-C") 
+    cc7_nucleus <- x$cc_7[!x$cc_7 %in% c(cc7_break1, cc7_break2)]
+    x <- x[names(x) != "cc_7"] # Remove cc_7
+    x <- c(cc7_break2 = list(cc7_break2), 
+           cc7_break1 = list(cc7_break1), 
+           cc7_nucleus = list(cc7_nucleus), 
+           x[names(x) != "cc_7"])
+  }
+  
+  cities_per_year_tab <- array(0, dim = length(cities_inc), dimnames = list(cities_inc))
+  y_pos <- seq(-1,1,length.out = length(x)+1)
+  
+  par(mar = c(7,1,7,1))
+  for(i in 1:length(x)){
+    
+    city_years <- metadata[x[[i]],c("City","Year")]
+    years_to_plot <- table(city_years$Year)
+    cities_per_year <- lapply(names(years_to_plot), function(y, cities_per_year_tab) {
+      z <- table(city_years$City[city_years$Year == y])
+      cities_per_year_tab[names(z)] <- z
+      return(cities_per_year_tab)}, cities_per_year_tab)
+    
+    Adjmatrix <- matrix(1, ncol = length(years_to_plot), nrow = length(years_to_plot))
+    diag(Adjmatrix) <- 0
+    Graph <- igraph::graph_from_adjacency_matrix(Adjmatrix, mode = "undirected")
+    
+    print(names(x)[i])
+    
+    plot(Graph, 
+         add = (i!=1), 
+         ylim = c(1,length(x)), 
+         xlim = years_range, 
+         rescale = FALSE, 
+         layout = cbind(as.numeric(names(years_to_plot)),rep(i, length(years_to_plot))), 
+         vertex.shape = "pie", 
+         vertex.pie = cities_per_year,#[V(Graph)$name], 
+         vertex.pie.color = list(cols_cities[cities_inc]), 
+         vertex.pie.lwd = 0.25, 
+         vertex.frame.color = NA, #NB, colours pi outline 
+         vertex.size = years_to_plot*7, 
+         vertex.label = NA,
+         edge.width = 0.5,
+         edge.color = "black")
+  }
+  
+  axis(side = 1, at = min(years_range):max(years_range), cex.axis = 1, las = 2)
+  legend("top",legend = cities_inc, pch = 16, ncol = 2, 
+         col = cols_cities[cities_inc], cex = 0.75, pt.cex = 1, bty = "n")
+  
 }
-
-
-x <- x[-5]
-
-cities_per_year_tab <- array(0, dim = length(cities_inc), dimnames = list(cities_inc))
-y_pos <- seq(-1,1,length.out = length(x)+1)
-
-par(mar = c(7,1,7,1))
-for(i in 1:length(x)){
-  
-  city_years <- metadata[x[[i]],c("City","Year")]
-  years_to_plot <- table(city_years$Year)
-  cities_per_year <- lapply(names(years_to_plot), function(y, cities_per_year_tab) {
-    z <- table(city_years$City[city_years$Year == y])
-    cities_per_year_tab[names(z)] <- z
-    return(cities_per_year_tab)}, cities_per_year_tab)
-  
-  Adjmatrix <- matrix(1, ncol = length(years_to_plot), nrow = length(years_to_plot))
-  diag(Adjmatrix) <- 0
-  Graph <- igraph::graph_from_adjacency_matrix(Adjmatrix, mode = "undirected")
-
-  print(names(x)[i])
-  
-  plot(Graph, 
-       add = (i!=1), 
-       ylim = c(1,length(x)), 
-       xlim = years_range, 
-       rescale = FALSE, 
-       layout = cbind(as.numeric(names(years_to_plot)),rep(i, length(years_to_plot))), 
-       vertex.shape = "pie", 
-       vertex.pie = cities_per_year,#[V(Graph)$name], 
-       vertex.pie.color = list(cols_cities[cities_inc]), 
-       vertex.pie.lwd = 0.25, 
-       vertex.frame.color = NA, #NB, colours pi outline 
-       vertex.size = years_to_plot*7, 
-       vertex.label = NA,
-       edge.width = 0.5,
-       edge.color = "black")
-}
-
-axis(side = 1, at = min(years_range):max(years_range), cex.axis = 1, las = 2)
-legend("top",legend = cities_inc, pch = 16, ncol = 2, 
-       col = cols_cities[cities_inc], cex = 0.75, pt.cex = 1, bty = "n")
-
 if(PDF) dev.off()

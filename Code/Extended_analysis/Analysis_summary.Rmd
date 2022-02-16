@@ -217,10 +217,10 @@ sids_graph_100 <- remv_function(mle_CIs[ind_100,])
 
 If confidence intervals were not computed, a hard SNP cut off would be required, e.g. only compute relatedness estimates for sample pairs with data on at least 50, or 100 SNPs. 
 
-If the cut of was data on at least 50 SNPs, there would be 
+If the cut off was data on at least 50 SNPs, there would be 
 `r length(sids_connectivity_50)` samples in the non-graph analyses, with `r sum(ind_50)` of `r length(sids_connectivity_50)`-choose-2 (`r choose(length(sids_connectivity_50),2)`) sample comparisons; and `r length(sids_graph_50)` samples in the graph analyses with all `r length(sids_graph_50)`-choose-2 (`r choose(length(sids_graph_50),2)`) sample comparisons. 
 
-If the cut of was data on at least 100 SNPs, there would be 
+If the cut off was data on at least 100 SNPs, there would be 
 `r length(sids_connectivity_100)` samples in the non-graph analyses, with `r sum(ind_100)` of `r length(sids_connectivity_50)`-choose-2 (`r choose(length(sids_connectivity_100),2)`) sample comparisons; and `r length(sids_graph_100)` samples in the graph analyses with all `r length(sids_graph_100)`-choose-2 (`r choose(length(sids_graph_100),2)`) sample comparisons.
 
 ```{r}

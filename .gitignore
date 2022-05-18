@@ -15,7 +15,7 @@ recodedgoldengatedata
 
 PopData/**
 GISData/**
-!GISData/CP_coast.shp
+!GISData/CP_coast.*
 
 # Don't ignore necessary intermediate data nor data that take a long time to generate
 TxtData/**

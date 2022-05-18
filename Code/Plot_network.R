@@ -3,17 +3,17 @@
 # 1) Map based on fraction of IBD proportions > 0.5 (2 plots, combined in manuscript)
 # This map was created using QGIS (QGIS Development Team 2017) and the raster (Hijmans 2016),
 # maptools (Bivand and Lewin-Koh 2017) and igraph (Csardi and Nepusz 2006) packages
-# Update for state possibility 
+# Update for state possibility
 ############################################################################################
 rm(list = ls())
-
+library(RColorBrewer)
 library(maptools)
 library(raster)
 library(igraph)
 library(sf) # For st_read instead of readShapeLines (returns warning: "use rgdal::readOGR or sf::st_read" )
-PDF = F # Set to true to generate pdfs
-DWN = F # Set to true to download country files
-ZM = F # Set to true to zoomed out plot surrounding countries (takes a while - few minutes)
+PDF = T # Set to true to generate pdfs
+DWN = T # Set to true to download country files
+ZM = T # Set to true to zoomed out plot surrounding countries (takes a while - few minutes)
 NET = T # Set to true to include network on coast
 Threshold = '0.25' # on edges
 Filter = 'Unfiltered' # on graph
@@ -35,49 +35,49 @@ for(Gravity in c(T,F)){ # Set to true to plot gravity vs genetic
       layout_lonlat <- LonLat_city[,2:1]
       intra = sapply(rownames(layout_lonlat), function(x)paste(x,x,sep= "_"))
       proportions = proportions_cities['mean',geo_order,Threshold,Filter]
-      Labels = array(c('Quibdó','Tadó','Buenaventura','Guapi','Tumaco'), 
+      Labels = array(c('Quibdó','Tadó','Buenaventura','Guapi','Tumaco'),
                      dimnames = list(rownames(layout_lonlat)))
     } else {
-      load('../RData/geo_dist_info_states.RData')  
+      load('../RData/geo_dist_info_states.RData')
       attach(geo_dist_info)
       layout_lonlat <- LonLat_state[,2:1]
       intra = sapply(rownames(layout_lonlat), function(x)paste(x,x,sep= "_"))
       proportions = proportions_states['mean',geo_order,Threshold,Filter]
-      Labels = array(c('Nariño','Cauca','Valle del Cauca','Chocó'), 
+      Labels = array(c('Nariño','Cauca','Valle del Cauca','Chocó'),
                      dimnames = list(rownames(layout_lonlat)))
-    } 
-    
+    }
+
     if(Gravity){
       X = geo_dist_info$pairwise_site_distance[,'gravity_estimate']
     } else {
       X = proportions
     }
-    
+
     # Creat a data.frame to covert into a graph
     mylinks <- data.frame(site1 = as.character(geo_dist_info$pairwise_site_distance[,1]),
-                          site2 = as.character(geo_dist_info$pairwise_site_distance[,2]), 
+                          site2 = as.character(geo_dist_info$pairwise_site_distance[,2]),
                           stringsAsFactors = F)
     mylinks$edge_weight <- (X - min(X))/(max(X) - min(X))
-    
+
     # Generate net, remove loops
     net <- graph.data.frame(mylinks[mylinks$site1 != mylinks$site2,], directed = FALSE)
-    
+
     # IBD barcode
     E(net)$width <- E(net)$edge_weight * 10
     E(net)$curved <- 0.69*c(1,-1,-0.3,1,0.3,-1,-1,1,1,1) # Designed for cities
     E(net)$color <- brewer.pal(5, "GnBu")[3] #adjustcolor(brewer.pal(5, "GnBu")[3], alpha.f = 0.80)
-    
+
     # Change labels, text colour etc.
     print(V(net)) # Print order
     V(net)$label <- Labels[attributes(V(net))$names]
     V(net)$label.color <- "black"
     V(net)$label.dist <- c(5,5,7,3,7)
-    V(net)$label.degree <- rep(2*pi, length(Labels)) 
+    V(net)$label.degree <- rep(2*pi, length(Labels))
     V(net)$label.cex <- 1.2
     V(net)$color <- "black"
-    V(net)$size <- 8 
+    V(net)$size <- 8
     V(net)$frame.color <- "white"
-    
+
     # Plot Net
     if(!NET){E(net)$color <- adjustcolor(blue_col_0.25, alpha.f = 0)} # Plot coast only
     par(mfrow = c(1,1), family = "serif", mar = c(0,0,1,0))
@@ -86,8 +86,8 @@ for(Gravity in c(T,F)){ # Set to true to plot gravity vs genetic
     compassRose(x = -78.5, y = 5.74)
     text(x = -78.52596, y = 3.72, labels = '50 km', cex = 1.2, pos = 3)
     segments(y0 = 3.7, y1 = 3.7, x0 = -78.75928, x1 = -78.29265, lwd = 2, col = 'black')
-  }  
-} 
+  }
+}
 if(PDF){dev.off()}
 
 
@@ -96,10 +96,10 @@ if(PDF){dev.off()}
 # Plot of surrounding countries (takes a long time)
 #================================================
 if(ZM){
-  
+
   if(PDF){png(file = '../Plots/Colombia_Map.png', height=7, width=6, units='in', res=300)}
-  
-  # Load or download country shape files from http://gadm.org/  
+
+  # Load or download country shape files from http://gadm.org/
   PATH = '../GISData/'
   Colombia <- getData("GADM",download = DWN,country="Colombia",level=0,path = PATH)
   Panama <- getData("GADM",download = DWN,country="Panama",level=0,path = PATH)
@@ -107,7 +107,7 @@ if(ZM){
   Brazil <- getData("GADM",download = DWN,country="Brazil",level=0,path = PATH)
   Peru <- getData("GADM",download = DWN,country="Peru",level=0,path = PATH)
   Ecuador <- getData("GADM",download = DWN,country="Ecuador",level=0,path = PATH)
-  
+
   par(mfrow = c(1,1), family = "serif", mar = c(0,0,0,0))
   plot(Colombia, col = 'gray', border = 'white', ylim = c(-1.5, 9.25), xlim = c(-82, -67))
   plot(Brazil, add = TRUE, col = 'gray', border = 'white')

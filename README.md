@@ -51,7 +51,6 @@ The extended analysis is based on data with correctly ordered markers (see above
 Other files include summarise_mles.R and generate_counts_table.R (used in Analysis_summary.Rmd); scripts to-do with data checking (Check_snpname_order_hypothesis.R); scripts in Archive, which are obsolete but kept for reference; and Generate_and_plot_extended_components_using_snp_cutoff.R, used to asses value of confidence intervals among samples included in the extended component analysis. 
 
 # Notes-to-self (for post-pandemic)
-- re-run Plot_network.R (outputs Colombia_network%d.png and Colombia_Map.png) 
 - ensure ignored files are synced across work and personal laptops and finalise .gitignore
-- check work laptop notes on Effect of COI and transmission intensity (duplicate analysis?)
+
 
